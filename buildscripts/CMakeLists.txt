@@ -37,12 +37,12 @@ set(MYGUI_VERSION 3.4.0)
 set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION v1.1.4)
-set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
+set(GL4ES_VERSION 202d69f88c2ec8555f963fc821dc2cd98b0ac58d)
+#set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://github.com/openscenegraph/OpenSceneGraph/releases
-set(OSG_VERSION 3.6.5)
-set(OSG_HASH SHA256=aea196550f02974d6d09291c5d83b51ca6a03b3767e234a8c0e21322927d1e12)
+set(OSG_VERSION 8358845c179122d4341321d9304e7c60b6365a9b)
+#set(OSG_HASH SHA256=aea196550f02974d6d09291c5d83b51ca6a03b3767e234a8c0e21322927d1e12)
 
 # https://github.com/lz4/lz4/releases
 set(LZ4_VERSION 1.9.3)
@@ -53,8 +53,8 @@ set(LUAJIT_VERSION 2.1.0-beta3)
 set(LUAJIT_HASH SHA256=1ad2e34b111c802f9d0cdf019e986909123237a28c746b21295b63c9e785d9c3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION e92fb245c6af82caf8d660e365c12e2369c76f62)
-set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
+set(OPENMW_VERSION 1a2efd441cee2f255b0b5586a72e785538b6dd19)
+#set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
 
@@ -304,7 +304,8 @@ ExternalProject_Add(bullet
 	-DBUILD_CPU_DEMOS=OFF
 	-DBUILD_UNIT_TESTS=OFF
 	-DBUILD_EXTRAS=OFF
-	-DUSE_DOUBLE_PRECISION=ON
+        -DUSE_DOUBLE_PRECISION=ON
+        -DBULLET2_MULTITHREADING=ON
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE)
 
@@ -312,14 +313,15 @@ ExternalProject_Add(bullet
 )
 
 ExternalProject_Add(gl4es
-	URL https://github.com/ptitSeb/gl4es/archive/${GL4ES_VERSION}.tar.gz
+#	URL https://github.com/ptitSeb/gl4es/archive/${GL4ES_VERSION}.tar.gz
+	URL https://github.com/AbduSharif/gl4es/archive/${GL4ES_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/gl4es-${GL4ES_VERSION}.gz
 	URL_HASH ${GL4ES_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
-	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/shared-library.patch
-	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/gamma.patch
-	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/keyword-usage.patch
+#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/shared-library.patch
+#	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/gamma.patch
+#	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/keyword-usage.patch
 
 	CONFIGURE_COMMAND ""
 
@@ -348,7 +350,7 @@ ExternalProject_Add(mygui
 	-DMYGUI_BUILD_TOOLS=OFF
 	-DMYGUI_BUILD_PLUGINS=OFF
 	-DFREETYPE_FT2BUILD_INCLUDE_DIR=${prefix}/include/freetype2/
-
+        -DMYGUI_DONT_USE_OBSOLETE=OFF
 	-DMYGUI_STATIC=ON
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE)
@@ -429,6 +431,10 @@ set(OSG_COMMON
 	-DBUILD_OSG_APPLICATIONS=OFF
 	-DBUILD_OSG_PLUGINS_BY_DEFAULT=OFF
 	-DBUILD_OSG_DEPRECATED_SERIALIZERS=OFF
+	-DOSG_WINDOWING_SYSTEM_NONE=ON
+#	-DOSG_USE_FLOAT_MATRIX=OFF
+#	-DOSG_USE_FLOAT_PLANE=OFF
+#	-DOSG_USE_FLOAT_QUAT=OFF
 )
 
 set(OSG_PATCH
@@ -444,7 +450,8 @@ set(OSG_PATCH
 ExternalProject_Add(osg
 	DEPENDS libjpeg-turbo libpng gl4es freetype2
 
-	URL https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-${OSG_VERSION}.tar.gz
+#	URL https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-${OSG_VERSION}.tar.gz
+	URL https://github.com/AbduSharif/osg/archive/OpenSceneGraph-${OSG_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/OpenSceneGraph-${OSG_VERSION}.tar.gz
 	URL_HASH ${OSG_HASH}
 	DOWNLOAD_DIR ${download_dir}
@@ -471,6 +478,7 @@ set(OPENMW_COMMON
 	-DBUILD_OPENCS=0
 	-DBUILD_WIZARD=0
 	-DBUILD_MYGUI_PLUGIN=0
+	-DOPENMW_LTO_BUILD=1
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENGL_ES=OFF
@@ -482,7 +490,7 @@ set(OPENMW_PATCH
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0001-loadingscreen-disable-for-now.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0009-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
-    patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0010-android-fix-context-being-lost-on-app-minimize.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0010-android-fix-context-being-lost-on-app-minimize.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0014-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0012-components-misc-stringops-use-boost-format-instead-o.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/fix-build.patch &&
