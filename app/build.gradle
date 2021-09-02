@@ -44,13 +44,21 @@ android {
     }
 
     compileOptions {
+        coreLibraryDesugaringEnabled = true
         targetCompatibility 1.8
         sourceCompatibility 1.8
     }
 
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt")),
+                "proguard-rules.pro"
         }
 
         debug {
