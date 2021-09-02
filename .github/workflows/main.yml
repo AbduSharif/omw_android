@@ -34,7 +34,7 @@ jobs:
         ARCH=${{ matrix.arch }} source buildscripts/include/version.sh
         sed -i "s/abiFilters.*/abiFilters '$ABI'/" app/build.gradle
         export ANDROID_NDK_HOME=$(pwd)/buildscripts/toolchain/ndk/
-        ./gradlew assembleNightlyRelease
+        ./gradlew
 
     - name: Collect outputs
       id: getfilename
