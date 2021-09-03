@@ -44,7 +44,7 @@ android {
     }
 
     compileOptions {
-        coreLibraryDesugaringEnabled = true
+        coreLibraryDesugaringEnabled = false
         targetCompatibility 1.8
         sourceCompatibility 1.8
     }
