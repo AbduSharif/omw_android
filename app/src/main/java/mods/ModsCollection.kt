@@ -126,7 +126,7 @@ class ModsCollection(private val type: ModType,
         }
 
         // Figure current maximum order, new mods will be pushed below it
-        var maxOrder = mods.maxByOrNull { it.order }?.order ?: 0
+        var maxOrder = mods.maxBy { it.order }?.order ?: 0
 
         // Create an entry for each mod that's on FS but not in DB and assign proper order
         val newMods = arrayListOf<Mod>()
