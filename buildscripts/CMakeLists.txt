@@ -53,7 +53,7 @@ set(LUAJIT_VERSION 2.1.0-beta3)
 set(LUAJIT_HASH SHA256=1ad2e34b111c802f9d0cdf019e986909123237a28c746b21295b63c9e785d9c3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 420eac3831b920cfcd3ce4f5777fd6e05038e61a)
+set(OPENMW_VERSION e2d0e860208b6f82f9b7e3d3529597a6e7520e7f)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -503,8 +503,8 @@ set(OPENMW_PATCH
 ExternalProject_Add(openmw
 	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit gl4es
 
-#	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
-	URL https://github.com/OpenMW/openmw/archive/${OPENMW_VERSION}.tar.gz
+	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+#	URL https://github.com/OpenMW/openmw/archive/${OPENMW_VERSION}.tar.gz
 	URL_HASH ${OPENMW_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
