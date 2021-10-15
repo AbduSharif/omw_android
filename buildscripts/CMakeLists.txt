@@ -53,7 +53,7 @@ set(LUAJIT_VERSION 2.1.0-beta3)
 set(LUAJIT_HASH SHA256=1ad2e34b111c802f9d0cdf019e986909123237a28c746b21295b63c9e785d9c3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 286e4b50465a119ef7d52f9ed28cf0d7f62a1df5)
+set(OPENMW_VERSION ed1953b8112bd09f2f6c77b65aadac3fadf286e0)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -440,7 +440,7 @@ set(OSG_COMMON
 
 set(OSG_PATCH
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/psa.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/disable-polygon-offset.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/disable-polygon-offset.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/remove-lib-prefix-from-plugins.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/fix-freetype-include-dirs.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/0001-Replace-Atomic-impl-with-std-atomic.patch &&
@@ -477,7 +477,7 @@ set(OPENMW_COMMON
 	-DBUILD_LAUNCHER=0
 	-DBUILD_MWINIIMPORTER=0
 	-DBUILD_ESSIMPORTER=0
-        -DBUILD_SIMPLIFIEDMESHTOOL=0
+#        -DBUILD_SIMPLIFIEDMESHTOOL=0
 	-DBUILD_OPENCS=0
 	-DBUILD_WIZARD=0
 	-DBUILD_MYGUI_PLUGIN=0
