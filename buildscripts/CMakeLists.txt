@@ -445,7 +445,7 @@ set(OSG_COMMON
 	-DOSG_GL_MATRICES_AVAILABLE=ON
 	-DOSG_GL_VERTEX_FUNCS_AVAILABLE=ON
 	-DOSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE=ON
-	-DOSG_GL_FIXED_FUNCTION_AVAILABLE=OFF
+	-DOSG_GL_FIXED_FUNCTION_AVAILABLE=ON
 	-DBUILD_OSG_APPLICATIONS=OFF
 	-DBUILD_OSG_PLUGINS_BY_DEFAULT=OFF
 	-DBUILD_OSG_DEPRECATED_SERIALIZERS=OFF
@@ -523,7 +523,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit
+	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit
 
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
