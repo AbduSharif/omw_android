@@ -149,7 +149,6 @@ index 1ee5745cb40c9bc44719de7d3b2e59446307d940..7405098a031fea692f118918b35b5787
  
 +        if (Settings::Manager::getBool("soft particles", "Shaders"))
 +        {
-+//            mOpaqueDepthTex = new osg::Texture2D(*mDepthTex);
 +            mOpaqueDepthTex = mDepthTex;
 +            mOpaqueDepthTex->setName("opaqueTexMap");
 +        }
