@@ -150,6 +150,7 @@ index 1ee5745cb40c9bc44719de7d3b2e59446307d940..7405098a031fea692f118918b35b5787
 +        if (Settings::Manager::getBool("soft particles", "Shaders"))
 +        {
 +//            mOpaqueDepthTex = new osg::Texture2D(*mDepthTex);
++            mOpaqueDepthTex = mDepthTex;
 +            mOpaqueDepthTex->setName("opaqueTexMap");
 +        }
 +
@@ -482,7 +483,7 @@ index 0000000000000000000000000000000000000000..fa8b4de4c118c7d0c14f5d92a7352f02
 @@ -0,0 +1,32 @@
 +uniform float near;
 +uniform float far;
-+uniform sampler2D opaqueDepthTex;
++uniform highp sampler2D opaqueDepthTex;
 +uniform vec2 screenRes;
 +uniform float particleSize;
 +
