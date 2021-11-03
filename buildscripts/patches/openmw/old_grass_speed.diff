@@ -1,0 +1,315 @@
+diff --git a/components/terrain/quadtreeworld.cpp b/components/terrain/quadtreeworld.cpp
+index 7fc0895846836bf19db4a5eec7faad089a355562..0282eb8de1509f7d04b5bdbb3eeeee2dcbf736f9 100644
+--- a/components/terrain/quadtreeworld.cpp
++++ b/components/terrain/quadtreeworld.cpp
+@@ -278,7 +278,6 @@ QuadTreeWorld::QuadTreeWorld(osg::Group *parent, osg::Group *compileRoot, Resour
+     , mViewDistance(std::numeric_limits<float>::max())
+     , mMinSize(1/8.f)
+     , mDebugTerrainChunks(debugChunks)
+-    , mRevalidateDistance(0.f)
+ {
+     mChunkManager->setCompositeMapSize(compMapResolution);
+     mChunkManager->setCompositeMapLevel(compMapLevel);
+@@ -347,25 +346,22 @@ unsigned int getLodFlags(QuadTreeNode* node, int ourLod, int vertexLodMod, const
+     return lodFlags;
+ }
+ 
+-void QuadTreeWorld::loadRenderingNode(ViewDataEntry& entry, ViewData* vd, float cellWorldSize, const osg::Vec4i &gridbounds, bool compile, float reuseDistance)
++void loadRenderingNode(ViewData::Entry& entry, ViewData* vd, int vertexLodMod, float cellWorldSize, const osg::Vec4i &gridbounds, const std::vector<QuadTreeWorld::ChunkManager*>& chunkManagers, bool compile, float reuseDistance)
+ {
+     if (!vd->hasChanged() && entry.mRenderingNode)
+         return;
+ 
+-    int ourLod = getVertexLod(entry.mNode, mVertexLodMod);
++    int ourLod = getVertexLod(entry.mNode, vertexLodMod);
+ 
+     if (vd->hasChanged())
+     {
+         // have to recompute the lodFlags in case a neighbour has changed LOD.
+-        unsigned int lodFlags = getLodFlags(entry.mNode, ourLod, mVertexLodMod, vd);
++        unsigned int lodFlags = getLodFlags(entry.mNode, ourLod, vertexLodMod, vd);
+         if (lodFlags != entry.mLodFlags)
+         {
+             entry.mRenderingNode = nullptr;
+             entry.mLodFlags = lodFlags;
+         }
+-        // have to revalidate chunks within a custom view distance.
+-        if (mRevalidateDistance && entry.mNode->distance(vd->getViewPoint()) <= mRevalidateDistance + reuseDistance)
+-            entry.mRenderingNode = nullptr;
+     }
+ 
+     if (!entry.mRenderingNode)
+@@ -376,9 +372,9 @@ void QuadTreeWorld::loadRenderingNode(ViewDataEntry& entry, ViewData* vd, float
+         const osg::Vec2f& center = entry.mNode->getCenter();
+         bool activeGrid = (center.x() > gridbounds.x() && center.y() > gridbounds.y() && center.x() < gridbounds.z() && center.y() < gridbounds.w());
+ 
+-        for (QuadTreeWorld::ChunkManager* m : mChunkManagers)
++        for (QuadTreeWorld::ChunkManager* m : chunkManagers)
+         {
+-            if (mRevalidateDistance && m->getViewDistance() && entry.mNode->distance(vd->getViewPoint()) > m->getViewDistance() + reuseDistance)
++            if (m->getViewDistance() && entry.mNode->distance(vd->getViewPoint()) > m->getViewDistance() + reuseDistance)
+                 continue;
+             osg::ref_ptr<osg::Node> n = m->getChunk(entry.mNode->getSize(), entry.mNode->getCenter(), ourLod, entry.mLodFlags, activeGrid, vd->getViewPoint(), compile);
+             if (n) pat->addChild(n);
+@@ -402,7 +398,7 @@ void updateWaterCullingView(HeightCullCallback* callback, ViewData* vd, osgUtil:
+     static bool debug = getenv("OPENMW_WATER_CULLING_DEBUG") != nullptr;
+     for (unsigned int i=0; i<vd->getNumEntries(); ++i)
+     {
+-        ViewDataEntry& entry = vd->getEntry(i);
++        ViewData::Entry& entry = vd->getEntry(i);
+         osg::BoundingBox bb = static_cast<TerrainDrawable*>(entry.mRenderingNode->asGroup()->getChild(0))->getWaterBoundingBox();
+         if (!bb.valid())
+             continue;
+@@ -461,15 +457,15 @@ void QuadTreeWorld::accept(osg::NodeVisitor &nv)
+ 
+     for (unsigned int i=0; i<vd->getNumEntries(); ++i)
+     {
+-        ViewDataEntry& entry = vd->getEntry(i);
+-        loadRenderingNode(entry, vd, cellWorldSize, mActiveGrid, false, mViewDataMap->getReuseDistance());
++        ViewData::Entry& entry = vd->getEntry(i);
++        loadRenderingNode(entry, vd, mVertexLodMod, cellWorldSize, mActiveGrid, mChunkManagers, false, mViewDataMap->getReuseDistance());
+         entry.mRenderingNode->accept(nv);
+     }
+ 
+     if (mHeightCullCallback && isCullVisitor)
+         updateWaterCullingView(mHeightCullCallback, vd, static_cast<osgUtil::CullVisitor*>(&nv), mStorage->getCellWorldSize(), !isGridEmpty());
+ 
+-    vd->setChanged(false);
++    vd->markUnchanged();
+ 
+     double referenceTime = nv.getFrameStamp() ? nv.getFrameStamp()->getReferenceTime() : 0.0;
+     if (referenceTime != 0.0)
+@@ -544,9 +540,9 @@ void QuadTreeWorld::preload(View *view, const osg::Vec3f &viewPoint, const osg::
+         const float reuseDistance = std::max(mViewDataMap->getReuseDistance(), std::abs(distanceModifier));
+         for (unsigned int i=startEntry; i<vd->getNumEntries() && !abort; ++i)
+         {
+-            ViewDataEntry& entry = vd->getEntry(i);
++            ViewData::Entry& entry = vd->getEntry(i);
+ 
+-            loadRenderingNode(entry, vd, cellWorldSize, grid, true, reuseDistance);
++            loadRenderingNode(entry, vd, mVertexLodMod, cellWorldSize, grid, mChunkManagers, true, reuseDistance);
+             if (pass==0) reporter.addProgress(entry.mNode->getSize());
+             entry.mNode = nullptr; // Clear node lest we break the neighbours search for the next pass
+         }
+@@ -583,8 +579,6 @@ void QuadTreeWorld::addChunkManager(QuadTreeWorld::ChunkManager* m)
+ {
+     mChunkManagers.push_back(m);
+     mTerrainRoot->setNodeMask(mTerrainRoot->getNodeMask()|m->getNodeMask());
+-    if (m->getViewDistance())
+-        mRevalidateDistance = std::max(m->getViewDistance(), mRevalidateDistance);
+ }
+ 
+ void QuadTreeWorld::rebuildViews()
+@@ -592,12 +586,4 @@ void QuadTreeWorld::rebuildViews()
+     mViewDataMap->rebuildViews();
+ }
+ 
+-void QuadTreeWorld::setViewDistance(float viewDistance)
+-{
+-    if (mViewDistance == viewDistance)
+-        return;
+-    mViewDistance = viewDistance;
+-    mViewDataMap->rebuildViews();
+-}
+-
+ }
+diff --git a/components/terrain/quadtreeworld.hpp b/components/terrain/quadtreeworld.hpp
+index 9d21d65fc56932492f5f366662f3f3f40e3c391b..3bd606d6c67d823d85d3c00ff6781e02d94963ce 100644
+--- a/components/terrain/quadtreeworld.hpp
++++ b/components/terrain/quadtreeworld.hpp
+@@ -16,9 +16,6 @@ namespace Terrain
+ {
+     class RootNode;
+     class ViewDataMap;
+-    class ViewData;
+-    struct ViewDataEntry;
+-    
+     class DebugChunkManager;
+ 
+     /// @brief Terrain implementation that loads cells into a Quad Tree, with geometry LOD and texture LOD.
+@@ -33,7 +30,7 @@ namespace Terrain
+ 
+         void enable(bool enabled) override;
+ 
+-        void setViewDistance(float distance) override;
++        void setViewDistance(float distance) override { mViewDistance = distance; }
+ 
+         void cacheCell(View *view, int x, int y) override {}
+         /// @note Not thread safe.
+@@ -63,7 +60,6 @@ namespace Terrain
+ 
+     private:
+         void ensureQuadTreeBuilt();
+-        void loadRenderingNode(ViewDataEntry& entry, ViewData* vd, float cellWorldSize, const osg::Vec4i &gridbounds, bool compile, float reuseDistance);
+ 
+         osg::ref_ptr<RootNode> mRootNode;
+ 
+@@ -79,7 +75,6 @@ namespace Terrain
+         float mMinSize;
+         bool mDebugTerrainChunks;
+         std::unique_ptr<DebugChunkManager> mDebugChunkManager;
+-        float mRevalidateDistance;
+     };
+ 
+ }
+diff --git a/components/terrain/viewdata.cpp b/components/terrain/viewdata.cpp
+index ae23f034a842da531fdeaf089f1b09f83aae8bc2..e517390b440d6f03244da7b0c8b9f81167375be3 100644
+--- a/components/terrain/viewdata.cpp
++++ b/components/terrain/viewdata.cpp
+@@ -12,10 +12,12 @@ ViewData::ViewData()
+     , mHasViewPoint(false)
+     , mWorldUpdateRevision(0)
+ {
++
+ }
+ 
+ ViewData::~ViewData()
+ {
++
+ }
+ 
+ void ViewData::copyFrom(const ViewData& other)
+@@ -36,17 +38,42 @@ void ViewData::add(QuadTreeNode *node)
+     if (index+1 > mEntries.size())
+         mEntries.resize(index+1);
+ 
+-    ViewDataEntry& entry = mEntries[index];
++    Entry& entry = mEntries[index];
+     if (entry.set(node))
+         mChanged = true;
+ }
+ 
++unsigned int ViewData::getNumEntries() const
++{
++    return mNumEntries;
++}
++
++ViewData::Entry &ViewData::getEntry(unsigned int i)
++{
++    return mEntries[i];
++}
++
++bool ViewData::hasChanged() const
++{
++    return mChanged;
++}
++
++bool ViewData::hasViewPoint() const
++{
++    return mHasViewPoint;
++}
++
+ void ViewData::setViewPoint(const osg::Vec3f &viewPoint)
+ {
+     mViewPoint = viewPoint;
+     mHasViewPoint = true;
+ }
+ 
++const osg::Vec3f& ViewData::getViewPoint() const
++{
++    return mViewPoint;
++}
++
+ // NOTE: As a performance optimisation, we cache mRenderingNodes from previous frames here.
+ // If this cache becomes invalid (e.g. through mWorldUpdateRevision), we need to use clear() instead of reset().
+ void ViewData::reset()
+@@ -83,13 +110,14 @@ bool ViewData::contains(QuadTreeNode *node) const
+     return false;
+ }
+ 
+-ViewDataEntry::ViewDataEntry()
++ViewData::Entry::Entry()
+     : mNode(nullptr)
+     , mLodFlags(0)
+ {
++
+ }
+ 
+-bool ViewDataEntry::set(QuadTreeNode *node)
++bool ViewData::Entry::set(QuadTreeNode *node)
+ {
+     if (node == mNode)
+         return false;
+@@ -145,7 +173,6 @@ ViewData *ViewDataMap::getViewData(osg::Object *viewer, const osg::Vec3f& viewPo
+             }
+             vd->setViewPoint(viewPoint);
+             vd->setActiveGrid(activeGrid);
+-            vd->setChanged(true);
+             needsUpdate = true;
+         }
+     }
+diff --git a/components/terrain/viewdata.hpp b/components/terrain/viewdata.hpp
+index b7dbc977b1c56019365a17f8c0a5d691dd32d556..5d814251ea63af28472d6ed5abb3e9e81dfa4715 100644
+--- a/components/terrain/viewdata.hpp
++++ b/components/terrain/viewdata.hpp
+@@ -13,18 +13,6 @@ namespace Terrain
+ 
+     class QuadTreeNode;
+ 
+-    struct ViewDataEntry
+-    {
+-        ViewDataEntry();
+-
+-        bool set(QuadTreeNode* node);
+-
+-        QuadTreeNode* mNode;
+-
+-        unsigned int mLodFlags;
+-        osg::ref_ptr<osg::Node> mRenderingNode;
+-    };
+-
+     class ViewData : public View
+     {
+     public:
+@@ -43,22 +31,33 @@ namespace Terrain
+ 
+         void copyFrom(const ViewData& other);
+ 
+-        unsigned int getNumEntries() const { return mNumEntries; }
+-        ViewDataEntry& getEntry(unsigned int i) { return mEntries[i]; }
++        struct Entry
++        {
++            Entry();
++
++            bool set(QuadTreeNode* node);
++
++            QuadTreeNode* mNode;
++
++            unsigned int mLodFlags;
++            osg::ref_ptr<osg::Node> mRenderingNode;
++        };
++
++        unsigned int getNumEntries() const;
++
++        Entry& getEntry(unsigned int i);
+ 
+         double getLastUsageTimeStamp() const { return mLastUsageTimeStamp; }
+         void setLastUsageTimeStamp(double timeStamp) { mLastUsageTimeStamp = timeStamp; }
+ 
+-        /// Indicates at least one mNode of mEntries has changed or the view point has moved beyond mReuseDistance.
+-        /// @note Such changes may necessitate a revalidation of cached mRenderingNodes elsewhere depending
+-        /// on the parameters that affect the creation of mRenderingNode.
+-        bool hasChanged() const { return mChanged; }
+-        void setChanged(bool changed) { mChanged = changed; }
++        /// @return Have any nodes changed since the last frame
++        bool hasChanged() const;
++        void markUnchanged() { mChanged = false; }
+ 
+-        bool hasViewPoint() const { return mHasViewPoint; }
++        bool hasViewPoint() const;
+ 
+         void setViewPoint(const osg::Vec3f& viewPoint);
+-        const osg::Vec3f& getViewPoint() const { return mViewPoint; }
++        const osg::Vec3f& getViewPoint() const;
+ 
+         void setActiveGrid(const osg::Vec4i &grid) { if (grid != mActiveGrid) {mActiveGrid = grid;mEntries.clear();mNumEntries=0;} }
+         const osg::Vec4i &getActiveGrid() const { return mActiveGrid;}
+@@ -67,7 +66,7 @@ namespace Terrain
+         void setWorldUpdateRevision(int updateRevision) { mWorldUpdateRevision = updateRevision; }
+ 
+     private:
+-        std::vector<ViewDataEntry> mEntries;
++        std::vector<Entry> mEntries;
+         unsigned int mNumEntries;
+         double mLastUsageTimeStamp;
+         bool mChanged;
