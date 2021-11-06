@@ -383,45 +383,6 @@ index 5f9739ea90380cbdec6d9cf03c7ee6304ed9a40b..d80e697fd8db069f64c42cd6ba65db31
      };
  
      class ReinstateRemovedStateVisitor : public osg::NodeVisitor
-diff --git a/docs/source/reference/modding/settings/shaders.rst b/docs/source/reference/modding/settings/shaders.rst
-index 03b7805de6aa2a20335a8c38e8be1f44aaf20fe2..b9d8cfe1b97a23b556b12dc9a443a5ea381c4f6f 100644
---- a/docs/source/reference/modding/settings/shaders.rst
-+++ b/docs/source/reference/modding/settings/shaders.rst
-@@ -241,7 +241,7 @@ lighting` is on.
- This setting has no effect if :ref:`lighting method` is 'legacy'.
- 
- minimum interior brightness
--------------------------
-+---------------------------
- 
- :Type:		float
- :Range:		0.0-1.0
-@@ -260,7 +260,7 @@ aforementioned changes in visuals.
- This setting has no effect if :ref:`lighting method` is 'legacy'.
- 
- antialias alpha test
-----------------------------------------
-+--------------------
- 
- :Type:		boolean
- :Range:		True/False
-@@ -269,3 +269,16 @@ antialias alpha test
- Convert the alpha test (cutout/punchthrough alpha) to alpha-to-coverage when :ref:`antialiasing` is on.
- This allows MSAA to work with alpha-tested meshes, producing better-looking edges without pixelation.
- When MSAA is off, this setting will have no visible effect, but might have a performance cost.
-+
-+soft particles
-+--------------
-+
-+:Type:		boolean
-+:Range:		True/False
-+:Default:	False
-+
-+Enables soft particles for particle effects. This technique softens the
-+intersection between individual particles and other opaque geometry by blending
-+between them. Note, this relies on overriding specific properties of particle
-+systems that potentially differ from the source content, this setting may change
-+the look of some particle systems.
 diff --git a/files/settings-default.cfg b/files/settings-default.cfg
 index 27a9544ea670ca3bc1e7210830e2c7ff4487cf79..90e9323db74fc0fe7b1d436e09855679cad2d063 100644
 --- a/files/settings-default.cfg
@@ -512,24 +473,3 @@ index 0000000000000000000000000000000000000000..fa8b4de4c118c7d0c14f5d92a7352f02
 +
 +    return shift * pow(clamp(delta/falloff, 0.0, 1.0), contrast);
 +}
-diff --git a/files/ui/advancedpage.ui b/files/ui/advancedpage.ui
-index 7964399319b899f2b170f9abea296ccd4a3bffbe..0e80f027007f14bc3fd5e99c7cc520b1f2935934 100644
---- a/files/ui/advancedpage.ui
-+++ b/files/ui/advancedpage.ui
-@@ -444,6 +444,16 @@
-                 </property>
-                </widget>
-               </item>
-+              <item row="3" column="0">
-+               <widget class="QCheckBox" name="softParticlesCheckBox">
-+                <property name="toolTip">
-+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enables soft particles for particle effects. This technique softens the intersection between individual particles and other opaque geometry by blending between them.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-+                </property>
-+                <property name="text">
-+                 <string>Soft Particles</string>
-+                </property>
-+               </widget>
-+              </item>
-              </layout>
-             </widget>
-            </item>
