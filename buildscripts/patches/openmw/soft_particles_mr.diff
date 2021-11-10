@@ -22,3 +22,14 @@ index 7405098a031fea692f118918b35b57877431b84e..0c048828588590843cf70f06f21372d6
              mOpaqueDepthTex->setName("opaqueTexMap");
          }
  
+diff --git a/files/shaders/softparticles.glsl b/files/shaders/softparticles.glsl
+index fa8b4de4c118c7d0c14f5d92a7352f022d9306bd..0116efdcadf8c30a2a3ca2cc6919a83b022e111b 100644
+--- a/files/shaders/softparticles.glsl
++++ b/files/shaders/softparticles.glsl
+@@ -1,6 +1,6 @@
+ uniform float near;
+ uniform float far;
+-uniform sampler2D opaqueDepthTex;
++uniform highp sampler2D opaqueDepthTex;
+ uniform vec2 screenRes;
+ uniform float particleSize;
