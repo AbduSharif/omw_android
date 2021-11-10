@@ -1,0 +1,529 @@
+diff --git a/apps/openmw/CMakeLists.txt b/apps/openmw/CMakeLists.txt
+index f22204eb8c8..7aa2928da55 100644
+--- a/apps/openmw/CMakeLists.txt
++++ b/apps/openmw/CMakeLists.txt
+@@ -74,7 +74,7 @@ add_openmw_dir (mwworld
+     actionequip timestamp actionalchemy cellstore actionapply actioneat
+     store esmstore fallback actionrepair actionsoulgem livecellref actiondoor
+     contentloader esmloader actiontrap cellreflist cellref weather projectilemanager
+-    cellpreloader datetimemanager
++    cellpreloader datetimemanager groundcoverstore
+     )
+ 
+ add_openmw_dir (mwphysics
+diff --git a/apps/openmw/mwrender/groundcover.cpp b/apps/openmw/mwrender/groundcover.cpp
+index 3f4e592688f..8561d7788ee 100644
+--- a/apps/openmw/mwrender/groundcover.cpp
++++ b/apps/openmw/mwrender/groundcover.cpp
+@@ -12,25 +12,10 @@
+ #include <components/terrain/quadtreenode.hpp>
+ #include <components/shader/shadermanager.hpp>
+ 
+-#include "apps/openmw/mwworld/esmstore.hpp"
+-#include "apps/openmw/mwbase/environment.hpp"
+-#include "apps/openmw/mwbase/world.hpp"
+-
+ #include "vismask.hpp"
+ 
+ namespace MWRender
+ {
+-    std::string getGroundcoverModel(int type, const std::string& id, const MWWorld::ESMStore& store)
+-    {
+-        switch (type)
+-        {
+-          case ESM::REC_STAT:
+-            return store.get<ESM::Static>().searchStatic(id)->mModel;
+-          default:
+-            return std::string();
+-        }
+-    }
+-
+     class InstancingVisitor : public osg::NodeVisitor
+     {
+     public:
+@@ -83,32 +68,6 @@ namespace MWRender
+         osg::Vec3f mChunkPosition;
+     };
+ 
+-    class DensityCalculator
+-    {
+-    public:
+-        DensityCalculator(float density)
+-            : mDensity(density)
+-        {
+-        }
+-
+-        bool isInstanceEnabled()
+-        {
+-            if (mDensity >= 1.f) return true;
+-
+-            mCurrentGroundcover += mDensity;
+-            if (mCurrentGroundcover < 1.f) return false;
+-
+-            mCurrentGroundcover -= 1.f;
+-
+-            return true;
+-        }
+-        void reset() { mCurrentGroundcover = 0.f; }
+-
+-    private:
+-        float mCurrentGroundcover = 0.f;
+-        float mDensity = 0.f;
+-    };
+-
+     class ViewDistanceCallback : public SceneUtil::NodeCallback<ViewDistanceCallback>
+     {
+     public:
+@@ -155,11 +114,11 @@ namespace MWRender
+         }
+     }
+ 
+-    Groundcover::Groundcover(Resource::SceneManager* sceneManager, float density, float viewDistance)
++    Groundcover::Groundcover(Resource::SceneManager* sceneManager, MWWorld::GroundcoverStore* groundcoverStore, float viewDistance)
+          : GenericResourceManager<GroundcoverChunkId>(nullptr)
+          , mSceneManager(sceneManager)
+-         , mDensity(density)
+          , mStateset(new osg::StateSet)
++         , mGroundcoverStore(groundcoverStore)
+     {
+          setViewDistance(viewDistance);
+          // MGE uses default alpha settings for groundcover, so we can not rely on alpha properties
+@@ -174,49 +133,55 @@ namespace MWRender
+          mProgramTemplate = mSceneManager->getShaderManager().getProgramTemplate() ? Shader::ShaderManager::cloneProgram(mSceneManager->getShaderManager().getProgramTemplate()) : osg::ref_ptr<osg::Program>(new osg::Program);
+          mProgramTemplate->addBindAttribLocation("aOffset", 6);
+          mProgramTemplate->addBindAttribLocation("aRotation", 7);
++
++         float density = std::clamp(Settings::Manager::getFloat("density", "Groundcover"), 0.f, 1.f);
++         mDensityDivisor = density == 0.f ? 0 : static_cast<int>(1.f / density);
+     }
+ 
+     void Groundcover::collectInstances(InstanceMap& instances, float size, const osg::Vec2f& center)
+     {
+-        const MWWorld::ESMStore& store = MWBase::Environment::get().getWorld()->getStore();
++        if (mDensityDivisor == 0) return;
++
+         osg::Vec2f minBound = (center - osg::Vec2f(size/2.f, size/2.f));
+         osg::Vec2f maxBound = (center + osg::Vec2f(size/2.f, size/2.f));
+-        DensityCalculator calculator(mDensity);
+         std::vector<ESM::ESMReader> esm;
+         osg::Vec2i startCell = osg::Vec2i(std::floor(center.x() - size/2.f), std::floor(center.y() - size/2.f));
+         for (int cellX = startCell.x(); cellX < startCell.x() + size; ++cellX)
+         {
+             for (int cellY = startCell.y(); cellY < startCell.y() + size; ++cellY)
+             {
+-                const ESM::Cell* cell = store.get<ESM::Cell>().searchStatic(cellX, cellY);
+-                if (!cell) continue;
++                ESM::Cell cell;
++                mGroundcoverStore->initCell(cell, cellX, cellY);
++                if (cell.mContextList.empty()) continue;
+ 
+-                calculator.reset();
+-                for (size_t i=0; i<cell->mContextList.size(); ++i)
++                std::map<ESM::RefNum, ESM::CellRef> refs;
++                for (size_t i=0; i<cell.mContextList.size(); ++i)
+                 {
+-                    unsigned int index = cell->mContextList[i].index;
++                    unsigned int index = cell.mContextList[i].index;
+                     if (esm.size() <= index)
+                         esm.resize(index+1);
+-                    cell->restore(esm[index], i);
++                    cell.restore(esm[index], i);
+                     ESM::CellRef ref;
+                     ref.mRefNum.unset();
+                     bool deleted = false;
+-                    while(cell->getNextRef(esm[index], ref, deleted))
+-                    {
+-                        if (deleted) continue;
+-                        if (!ref.mRefNum.fromGroundcoverFile()) continue;
+ 
+-                        if (!calculator.isInstanceEnabled()) continue;
+-                        if (!isInChunkBorders(ref, minBound, maxBound)) continue;
++                    const std::string& fileName = esm[index].getName();
++                    while(cell.getNextRef(esm[index], ref, deleted))
++                    {
++                        if (deleted) { refs.erase(ref.mRefNum); continue; }
++                        if (!isInChunkBorders(ref, minBound, maxBound)) { refs.erase(ref.mRefNum); continue; }
++                        if (ref.mRefNum.mIndex % mDensityDivisor != 0)  { refs.erase(ref.mRefNum); continue; }
+ 
+-                        Misc::StringUtils::lowerCaseInPlace(ref.mRefID);
+-                        int type = store.findStatic(ref.mRefID);
+-                        std::string model = getGroundcoverModel(type, ref.mRefID, store);
+-                        if (model.empty()) continue;
+-                        model = "meshes/" + model;
++                        refs[ref.mRefNum] = std::move(ref);
++                    }
++                }
+ 
++                for (auto& pair : refs)
++                {
++                    ESM::CellRef& ref = pair.second;
++                    const std::string& model = mGroundcoverStore->getGroundcoverModel(ref.mRefID);
++                    if (!model.empty())
+                         instances[model].emplace_back(std::move(ref));
+-                    }
+                 }
+             }
+         }
+diff --git a/apps/openmw/mwrender/groundcover.hpp b/apps/openmw/mwrender/groundcover.hpp
+index cd73e46eb07..27b018ef620 100644
+--- a/apps/openmw/mwrender/groundcover.hpp
++++ b/apps/openmw/mwrender/groundcover.hpp
+@@ -6,13 +6,15 @@
+ #include <components/esm/loadcell.hpp>
+ #include <osg/Program>
+ 
++#include "../mwworld/groundcoverstore.hpp"
++
+ namespace MWRender
+ {
+     typedef std::tuple<osg::Vec2f, float> GroundcoverChunkId; // Center, Size
+     class Groundcover : public Resource::GenericResourceManager<GroundcoverChunkId>, public Terrain::QuadTreeWorld::ChunkManager
+     {
+     public:
+-        Groundcover(Resource::SceneManager* sceneManager, float density, float viewDistance);
++        Groundcover(Resource::SceneManager* sceneManager, MWWorld::GroundcoverStore* groundcoverStore, float viewDistance);
+         ~Groundcover() = default;
+ 
+         osg::ref_ptr<osg::Node> getChunk(float size, const osg::Vec2f& center, unsigned char lod, unsigned int lodFlags, bool activeGrid, const osg::Vec3f& viewPoint, bool compile) override;
+@@ -32,9 +34,10 @@ namespace MWRender
+ 
+     private:
+         Resource::SceneManager* mSceneManager;
+-        float mDensity;
+         osg::ref_ptr<osg::StateSet> mStateset;
++        MWWorld::GroundcoverStore* mGroundcoverStore;
+         osg::ref_ptr<osg::Program> mProgramTemplate;
++        int mDensityDivisor;
+ 
+         typedef std::map<std::string, std::vector<GroundcoverEntry>> InstanceMap;
+         osg::ref_ptr<osg::Node> createChunk(InstanceMap& instances, const osg::Vec2f& center);
+diff --git a/apps/openmw/mwrender/objectpaging.cpp b/apps/openmw/mwrender/objectpaging.cpp
+index 4e21d334758..1b50e834c2e 100644
+--- a/apps/openmw/mwrender/objectpaging.cpp
++++ b/apps/openmw/mwrender/objectpaging.cpp
+@@ -431,7 +431,6 @@ namespace MWRender
+                             int type = store.findStatic(ref.mRefID);
+                             if (!typeFilter(type,size>=2)) continue;
+                             if (deleted) { refs.erase(ref.mRefNum); continue; }
+-                            if (ref.mRefNum.fromGroundcoverFile()) continue;
+                             refs[ref.mRefNum] = std::move(ref);
+                         }
+                     }
+diff --git a/apps/openmw/mwrender/renderingmanager.cpp b/apps/openmw/mwrender/renderingmanager.cpp
+index 19972b094ae..e095f2b4a37 100644
+--- a/apps/openmw/mwrender/renderingmanager.cpp
++++ b/apps/openmw/mwrender/renderingmanager.cpp
+@@ -283,7 +283,7 @@ namespace MWRender
+ 
+     RenderingManager::RenderingManager(osgViewer::Viewer* viewer, osg::ref_ptr<osg::Group> rootNode,
+                                        Resource::ResourceSystem* resourceSystem, SceneUtil::WorkQueue* workQueue,
+-                                       const std::string& resourcePath, DetourNavigator::Navigator& navigator)
++                                       const std::string& resourcePath, DetourNavigator::Navigator& navigator, MWWorld::GroundcoverStore* groundcoverStore)
+         : mViewer(viewer)
+         , mRootNode(rootNode)
+         , mResourceSystem(resourceSystem)
+@@ -436,10 +436,7 @@ namespace MWRender
+ 
+         if (groundcover)
+         {
+-            float density = Settings::Manager::getFloat("density", "Groundcover");
+-            density = std::clamp(density, 0.f, 1.f);
+-
+-            mGroundcover.reset(new Groundcover(mResourceSystem->getSceneManager(), density, groundcoverDistance));
++            mGroundcover.reset(new Groundcover(mResourceSystem->getSceneManager(), groundcoverStore, groundcoverDistance));
+             static_cast<Terrain::QuadTreeWorld*>(mTerrain.get())->addChunkManager(mGroundcover.get());
+             mResourceSystem->addResourceManager(mGroundcover.get());
+         }
+diff --git a/apps/openmw/mwrender/renderingmanager.hpp b/apps/openmw/mwrender/renderingmanager.hpp
+index b8d5d955c8c..74799cc003f 100644
+--- a/apps/openmw/mwrender/renderingmanager.hpp
++++ b/apps/openmw/mwrender/renderingmanager.hpp
+@@ -9,6 +9,8 @@
+ 
+ #include <osgUtil/IncrementalCompileOperation>
+ 
++#include "../mwworld/groundcoverstore.hpp"
++
+ #include "objects.hpp"
+ 
+ #include "renderinginterface.hpp"
+@@ -95,7 +97,7 @@ namespace MWRender
+     public:
+         RenderingManager(osgViewer::Viewer* viewer, osg::ref_ptr<osg::Group> rootNode,
+                          Resource::ResourceSystem* resourceSystem, SceneUtil::WorkQueue* workQueue,
+-                         const std::string& resourcePath, DetourNavigator::Navigator& navigator);
++                         const std::string& resourcePath, DetourNavigator::Navigator& navigator, MWWorld::GroundcoverStore* groundcoverStore);
+         ~RenderingManager();
+ 
+         osgUtil::IncrementalCompileOperation* getIncrementalCompileOperation();
+diff --git a/apps/openmw/mwworld/cellstore.cpp b/apps/openmw/mwworld/cellstore.cpp
+index b2ac5115093..0448d0e28a1 100644
+--- a/apps/openmw/mwworld/cellstore.cpp
++++ b/apps/openmw/mwworld/cellstore.cpp
+@@ -741,11 +741,7 @@ namespace MWWorld
+             case ESM::REC_NPC_: mNpcs.load(ref, deleted, store); break;
+             case ESM::REC_PROB: mProbes.load(ref, deleted, store); break;
+             case ESM::REC_REPA: mRepairs.load(ref, deleted, store); break;
+-            case ESM::REC_STAT:
+-            {
+-                if (ref.mRefNum.fromGroundcoverFile()) return;
+-                mStatics.load(ref, deleted, store); break;
+-            }
++            case ESM::REC_STAT: mStatics.load(ref, deleted, store); break;
+             case ESM::REC_WEAP: mWeapons.load(ref, deleted, store); break;
+             case ESM::REC_BODY: mBodyParts.load(ref, deleted, store); break;
+ 
+diff --git a/apps/openmw/mwworld/groundcoverstore.cpp b/apps/openmw/mwworld/groundcoverstore.cpp
+new file mode 100644
+index 00000000000..d4cfe739478
+--- /dev/null
++++ b/apps/openmw/mwworld/groundcoverstore.cpp
+@@ -0,0 +1,54 @@
++#include "groundcoverstore.hpp"
++
++#include <components/esmloader/load.hpp>
++#include <components/misc/stringops.hpp>
++
++namespace MWWorld
++{
++    GroundcoverStore::GroundcoverStore(const Store<ESM::Static>& statics, const Files::Collections& fileCollections, const std::vector<std::string>& groundcoverFiles, ToUTF8::Utf8Encoder* encoder)
++    {
++        EsmLoader::Query query;
++        query.mLoadStatics = true;
++        query.mLoadCells = true;
++
++        std::vector<ESM::ESMReader> readers(groundcoverFiles.size());
++        const EsmLoader::EsmData content = EsmLoader::loadEsmData(query, groundcoverFiles, fileCollections, readers, encoder);
++
++        for (const ESM::Static& stat : statics)
++        {
++            std::string id = Misc::StringUtils::lowerCase(stat.mId);
++            mMeshCache[id] = "meshes\\" + Misc::StringUtils::lowerCase(stat.mModel);
++        }
++
++        for (const ESM::Static& stat : content.mStatics)
++        {
++            std::string id = Misc::StringUtils::lowerCase(stat.mId);
++            mMeshCache[id] = "meshes\\" + Misc::StringUtils::lowerCase(stat.mModel);
++        }
++
++        for (const ESM::Cell& cell : content.mCells)
++        {
++            if (!cell.isExterior()) continue;
++            auto cellIndex = std::make_pair(cell.getCellId().mIndex.mX, cell.getCellId().mIndex.mY);
++            mCellContexts[cellIndex] = std::move(cell.mContextList);
++        }
++    }
++
++    std::string GroundcoverStore::getGroundcoverModel(const std::string& id) const
++    {
++        std::string idLower = Misc::StringUtils::lowerCase(id);
++        auto search = mMeshCache.find(idLower);
++        if (search == mMeshCache.end()) return std::string();
++
++        return search->second;
++    }
++
++    void GroundcoverStore::initCell(ESM::Cell& cell, int cellX, int cellY)
++    {
++        cell.blank();
++
++        auto searchCell = mCellContexts.find(std::make_pair(cellX, cellY));
++        if (searchCell != mCellContexts.end())
++            cell.mContextList = searchCell->second;
++    }
++}
+diff --git a/apps/openmw/mwworld/groundcoverstore.hpp b/apps/openmw/mwworld/groundcoverstore.hpp
+new file mode 100644
+index 00000000000..0f16cebf841
+--- /dev/null
++++ b/apps/openmw/mwworld/groundcoverstore.hpp
+@@ -0,0 +1,30 @@
++#ifndef GAME_MWWORLD_GROUNDCOVER_STORE_H
++#define GAME_MWWORLD_GROUNDCOVER_STORE_H
++
++#include <vector>
++#include <string>
++#include <map>
++
++#include <components/esm/esmreader.hpp>
++#include <components/esmloader/esmdata.hpp>
++#include <components/files/collections.hpp>
++
++#include "esmstore.hpp"
++
++namespace MWWorld
++{
++    class GroundcoverStore
++    {
++        private:
++            std::map<std::string, std::string> mMeshCache;
++            std::map<std::pair<int, int>, std::vector<ESM::ESM_Context>> mCellContexts;
++
++        public:
++            GroundcoverStore(const Store<ESM::Static>& statics, const Files::Collections& fileCollections, const std::vector<std::string>& groundcoverFiles, ToUTF8::Utf8Encoder* encoder);
++
++            std::string getGroundcoverModel(const std::string& id) const;
++            void initCell(ESM::Cell& cell, int cellX, int cellY);
++    };
++}
++
++#endif
+diff --git a/apps/openmw/mwworld/worldimp.cpp b/apps/openmw/mwworld/worldimp.cpp
+index ed963b8b28e..416b6b08bb3 100644
+--- a/apps/openmw/mwworld/worldimp.cpp
++++ b/apps/openmw/mwworld/worldimp.cpp
+@@ -152,7 +152,7 @@ namespace MWWorld
+       mLevitationEnabled(true), mGoToJail(false), mDaysInPrison(0),
+       mPlayerTraveling(false), mPlayerInJail(false), mSpellPreloadTimer(0.f)
+     {
+-        mEsm.resize(contentFiles.size() + groundcoverFiles.size());
++        mEsm.resize(contentFiles.size());
+         Loading::Listener* listener = MWBase::Environment::get().getWindowManager()->getLoadingScreen();
+         listener->loadingOn();
+ 
+@@ -168,7 +168,8 @@ namespace MWWorld
+         OMWScriptsLoader omwScriptsLoader(*listener, mStore);
+         gameContentLoader.addLoader(".omwscripts", &omwScriptsLoader);
+ 
+-        loadContentFiles(fileCollections, contentFiles, groundcoverFiles, gameContentLoader);
++        loadContentFiles(fileCollections, contentFiles, gameContentLoader);
++        loadGroundcoverFiles(fileCollections, groundcoverFiles, encoder);
+ 
+         listener->loadingOff();
+ 
+@@ -202,7 +203,7 @@ namespace MWWorld
+             mNavigator = DetourNavigator::makeNavigatorStub();
+         }
+ 
+-        mRendering.reset(new MWRender::RenderingManager(viewer, rootNode, resourceSystem, workQueue, resourcePath, *mNavigator));
++        mRendering.reset(new MWRender::RenderingManager(viewer, rootNode, resourceSystem, workQueue, resourcePath, *mNavigator, mGroundcoverStore.get()));
+         mProjectileManager.reset(new ProjectileManager(mRendering->getLightRoot(), resourceSystem, mRendering.get(), mPhysics.get()));
+         mRendering->preloadCommonAssets();
+ 
+@@ -2959,8 +2960,7 @@ namespace MWWorld
+         return mScriptsEnabled;
+     }
+ 
+-    void World::loadContentFiles(const Files::Collections& fileCollections,
+-        const std::vector<std::string>& content, const std::vector<std::string>& groundcover, ContentLoader& contentLoader)
++    void World::loadContentFiles(const Files::Collections& fileCollections, const std::vector<std::string>& content, ContentLoader& contentLoader)
+     {
+         int idx = 0;
+         for (const std::string &file : content)
+@@ -2978,24 +2978,15 @@ namespace MWWorld
+             }
+             idx++;
+         }
++    }
+ 
+-        ESM::GroundcoverIndex = idx;
++    void World::loadGroundcoverFiles(const Files::Collections& fileCollections, const std::vector<std::string>& groundcoverFiles, ToUTF8::Utf8Encoder* encoder)
++    {
++        if (!Settings::Manager::getBool("enabled", "Groundcover")) return;
+ 
+-        for (const std::string &file : groundcover)
+-        {
+-            boost::filesystem::path filename(file);
+-            const Files::MultiDirCollection& col = fileCollections.getCollection(filename.extension().string());
+-            if (col.doesExist(file))
+-            {
+-                contentLoader.load(col.getPath(file), idx);
+-            }
+-            else
+-            {
+-                std::string message = "Failed loading " + file + ": the groundcover file does not exist";
+-                throw std::runtime_error(message);
+-            }
+-            idx++;
+-        }
++        Log(Debug::Info) << "Loading groundcover:";
++
++        mGroundcoverStore.reset(new GroundcoverStore(mStore.get<ESM::Static>(), fileCollections, groundcoverFiles, encoder));
+     }
+ 
+     bool World::startSpellCast(const Ptr &actor)
+diff --git a/apps/openmw/mwworld/worldimp.hpp b/apps/openmw/mwworld/worldimp.hpp
+index afad359cfd2..3413b0c87d9 100644
+--- a/apps/openmw/mwworld/worldimp.hpp
++++ b/apps/openmw/mwworld/worldimp.hpp
+@@ -15,6 +15,7 @@
+ #include "timestamp.hpp"
+ #include "globals.hpp"
+ #include "contentloader.hpp"
++#include "groundcoverstore.hpp"
+ 
+ namespace osg
+ {
+@@ -95,6 +96,7 @@ namespace MWWorld
+             std::unique_ptr<MWWorld::WeatherManager> mWeatherManager;
+             std::unique_ptr<MWWorld::DateTimeManager> mCurrentDate;
+             std::shared_ptr<ProjectileManager> mProjectileManager;
++            std::shared_ptr<GroundcoverStore> mGroundcoverStore;
+ 
+             bool mSky;
+             bool mGodMode;
+@@ -169,8 +171,9 @@ namespace MWWorld
+              * @param content - Container which holds content file names
+              * @param contentLoader -
+              */
+-            void loadContentFiles(const Files::Collections& fileCollections,
+-                const std::vector<std::string>& content, const std::vector<std::string>& groundcover, ContentLoader& contentLoader);
++            void loadContentFiles(const Files::Collections& fileCollections, const std::vector<std::string>& content, ContentLoader& contentLoader);
++
++            void loadGroundcoverFiles(const Files::Collections& fileCollections, const std::vector<std::string>& groundcoverFiles, ToUTF8::Utf8Encoder* encoder);
+ 
+             float feetToGameUnits(float feet);
+             float getActivationDistancePlusTelekinesis();
+diff --git a/components/esm/cellref.cpp b/components/esm/cellref.cpp
+index 71264598713..002a885d927 100644
+--- a/components/esm/cellref.cpp
++++ b/components/esm/cellref.cpp
+@@ -5,11 +5,6 @@
+ #include "esmreader.hpp"
+ #include "esmwriter.hpp"
+ 
+-namespace ESM
+-{
+-    int GroundcoverIndex = std::numeric_limits<int>::max();
+-}
+-
+ void ESM::RefNum::load (ESMReader& esm, bool wide, const std::string& tag)
+ {
+     if (wide)
+diff --git a/components/esm/cellref.hpp b/components/esm/cellref.hpp
+index f6eff24cbfb..0013329ccc9 100644
+--- a/components/esm/cellref.hpp
++++ b/components/esm/cellref.hpp
+@@ -12,7 +12,6 @@ namespace ESM
+     class ESMReader;
+ 
+     const int UnbreakableLock = std::numeric_limits<int>::max();
+-    extern int GroundcoverIndex;
+ 
+     struct RefNum
+     {
+@@ -27,10 +26,6 @@ namespace ESM
+ 
+         inline bool isSet() const { return mIndex != 0 || mContentFile != -1; }
+         inline void unset() { *this = {0, -1}; }
+-
+-        // Note: this method should not be used for objects with invalid RefNum
+-        // (for example, for objects from disabled plugins in savegames).
+-        inline bool fromGroundcoverFile() const { return mContentFile >= GroundcoverIndex; }
+     };
+ 
+     /* Cell reference. This represents ONE object (of many) inside the
+diff --git a/components/esmloader/load.cpp b/components/esmloader/load.cpp
+index 9879f332742..673c272e59f 100644
+--- a/components/esmloader/load.cpp
++++ b/components/esmloader/load.cpp
+@@ -215,6 +215,8 @@ namespace EsmLoader
+                 reader.setEncoder(encoder);
+                 reader.setIndex(static_cast<int>(i));
+                 reader.open(collection.getPath(file).string());
++                if (query.mLoadCells)
++                    reader.resolveParentFileIndices(readers);
+ 
+                 loadEsm(query, readers[i], result);
+             }
