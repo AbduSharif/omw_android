@@ -53,14 +53,3 @@ index d9d4a6dc3..dd29aa304 100644
 +
 +    gl_FragData[0].xyz = pow(gl_FragData[0].xyz, vec3(1.0/@gamma));
  }
-diff --git a/files/shaders/water_fragment.glsl b/files/shaders/water_fragment.glsl
-index 24c93d11a..dc241b093 100644
---- a/files/shaders/water_fragment.glsl
-+++ b/files/shaders/water_fragment.glsl
-@@ -275,4 +275,6 @@ void main(void)
-     gl_FragData[0].xyz = mix(gl_FragData[0].xyz,  gl_Fog.color.xyz,  fogValue);
- 
-     applyShadowDebugOverlay();
-+
-+    gl_FragData[0].xyz = pow(gl_FragData[0].xyz, vec3(1.0/@gamma));
- }
