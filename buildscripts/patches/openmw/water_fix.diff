@@ -17,5 +17,6 @@ index eaf52c118924e365f9b9d9ac0b859b4f1392ff86..088eb1717104a7a0fcc8eaa8bee18fc6
      applyShadowDebugOverlay();
 +    
 +    gl_FragData[0].xyz = pow(gl_FragData[0].xyz, vec3(1.0/@gamma));
-+   
++
++    
  }
