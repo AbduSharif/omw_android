@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-18.04
 
     env:
-      CMAKE_VERSION: 3.18.4
+      CMAKE_VERSION: 3.19
 
     steps:
     - uses: actions/checkout@v2
