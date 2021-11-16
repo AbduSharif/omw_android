@@ -53,11 +53,11 @@ set(LUAJIT_VERSION 2.1.0-beta3)
 set(LUAJIT_HASH SHA256=1ad2e34b111c802f9d0cdf019e986909123237a28c746b21295b63c9e785d9c3)
 
 # https://www.sqlite.org/download.html
-#set(SQLITE_VERSION 3360000)
-#set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
+set(SQLITE_VERSION 3360000)
+set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 29847655f6621816f13fa67aaea4937805a46df6)
+set(OPENMW_VERSION 37c27ce072014194559326c5235bd676eea5f64f)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -407,18 +407,18 @@ ExternalProject_Add(luajit
 	COMMAND bash -c "rm ${prefix}/lib/libluajit*.so*"
 )
 
-#ExternalProject_Add(sqlite
-#	URL https://www.sqlite.org/2021/sqlite-autoconf-${SQLITE_VERSION}.tar.gz
-#	URL_HASH ${SQLITE_HASH}
-#	DOWNLOAD_DIR ${download_dir}
+ExternalProject_Add(sqlite
+	URL https://www.sqlite.org/2021/sqlite-autoconf-${SQLITE_VERSION}.tar.gz
+	URL_HASH ${SQLITE_HASH}
+	DOWNLOAD_DIR ${download_dir}
 
-#	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
-#	${COMMON_AUTOCONF_FLAGS}
+	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
+	${COMMON_AUTOCONF_FLAGS}
 
-#	BUILD_COMMAND ${wrapper_command} $(MAKE)
+	BUILD_COMMAND ${wrapper_command} $(MAKE)
 
-#	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
-#)
+	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
+)
 
 set(OSG_COMMON
 	-DOPENGL_PROFILE="GL1"
@@ -526,7 +526,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit
+	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite
 
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
