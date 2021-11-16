@@ -80,6 +80,7 @@ set(COMMON_CMAKE_ARGS
 	-DANDROID_PLATFORM=${android_platform}
 	-DANDROID_STL=c++_shared
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
+	-DANDROID_LD=deprecated
 	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
@@ -94,6 +95,7 @@ set(COMMON_NDK_BUILD_FLAGS
 	APP_BUILD_SCRIPT=<SOURCE_DIR>/Android.mk
 	APP_PLATFORM=${android_platform}
 	APP_ABI=${app_abi}
+	APP_LD=deprecated
 	LOCAL_LDFLAGS=$ENV{LDFLAGS}
 	-j4
 )
@@ -420,11 +422,72 @@ ExternalProject_Add(sqlite
 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
 )
 
+ExternalProject_Add(zlib
+		URL https://github.com/madler/zlib/archive/refs/tags/v1.2.11.tar.gz
+		URL_HASH SHA256=629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff
+		DOWNLOAD_DIR ${download_dir}
+
+		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
+		${COMMON_CMAKE_ARGS}
+
+		BUILD_COMMAND ${wrapper_command} $(MAKE)
+		INSTALL_COMMAND ${wrapper_command} $(MAKE) install
+)
+
+ExternalProject_Add(libxml
+		DEPENDS zlib
+
+		URL https://github.com/GNOME/libxml2/archive/refs/tags/v2.9.12.tar.gz
+		URL_HASH SHA256=8a4ddd706419c210b30b8978a51388937fd9362c34fc9a3d69e4fcc6f8055ee0
+		DOWNLOAD_DIR ${download_dir}
+
+		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
+		${COMMON_CMAKE_ARGS}
+		-DBUILD_SHARED_LIBS=OFF
+		-DLIBXML2_WITH_CATALOG=OFF
+		-DLIBXML2_WITH_ICONV=OFF
+		-DLIBXML2_WITH_LZMA=OFF
+		-DLIBXML2_WITH_PROGRAMS=OFF
+		-DLIBXML2_WITH_PYTHON=OFF
+		-DLIBXML2_WITH_TESTS=OFF
+		-DLIBXML2_WITH_ZLIB=ON
+
+		BUILD_COMMAND ${wrapper_command} $(MAKE)
+
+		INSTALL_COMMAND ${wrapper_command} $(MAKE) install
+)
+
+set(LIBCOLLADA_PATCH patch -d <SOURCE_DIR> -p0 -t -N < ${CMAKE_SOURCE_DIR}/patches/libcollada-minizip-fix.patch)
+
+ExternalProject_Add(libcollada
+		DEPENDS libxml boost
+
+		URL https://github.com/rdiankov/collada-dom/archive/v2.5.0.tar.gz
+		URL_HASH SHA256=3be672407a7aef60b64ce4b39704b32816b0b28f61ebffd4fbd02c8012901e0d
+		DOWNLOAD_DIR ${download_dir}
+
+		PATCH_COMMAND ${LIBCOLLADA_PATCH}
+
+		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
+		${COMMON_CMAKE_ARGS}
+		-DBoost_USE_STATIC_LIBS=ON
+		-DBoost_USE_STATIC_RUNTIME=ON
+		-DBoost_NO_SYSTEM_PATHS=ON
+		-DBoost_INCLUDE_DIR=${prefix}/include
+		-DHAVE_STRTOQ=0
+		-DUSE_FILE32API=1
+
+		BUILD_COMMAND ${wrapper_command} $(MAKE)
+
+		INSTALL_COMMAND ${wrapper_command} $(MAKE) install
+)
+
 set(OSG_COMMON
 	-DOPENGL_PROFILE="GL1"
 	-DDYNAMIC_OPENTHREADS=OFF
 	-DDYNAMIC_OPENSCENEGRAPH=OFF
 	-DBUILD_OSG_PLUGIN_OSG=ON
+	-DBUILD_OSG_PLUGIN_DAE=ON
 	-DBUILD_OSG_PLUGIN_DDS=ON
 	-DBUILD_OSG_PLUGIN_TGA=ON
 	-DBUILD_OSG_PLUGIN_BMP=ON
@@ -463,11 +526,12 @@ set(OSG_PATCH
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/0001-Replace-Atomic-impl-with-std-atomic.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/0002-BufferObject-make-numClients-atomic.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/0004-IncrementalCompileOperation-wrap-some-stuff-in-atomi.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/0005-CullSettings-make-inheritanceMask-atomic-to-silence-.patch
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/0005-CullSettings-make-inheritanceMask-atomic-to-silence-.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/dae_collada.patch
 )
 
 ExternalProject_Add(osg
-	DEPENDS libjpeg-turbo libpng gl4es freetype2
+	DEPENDS libjpeg-turbo libpng gl4es freetype2 zlib libcollada
 
 #	URL https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-${OSG_VERSION}.tar.gz
 	URL https://github.com/AbduSharif/osg/archive/${OSG_VERSION}.tar.gz
@@ -495,7 +559,7 @@ set(OPENMW_COMMON
 	-DBUILD_MWINIIMPORTER=0
 	-DBUILD_ESSIMPORTER=0
 #        -DBUILD_SIMPLIFIEDMESHTOOL=0
-        -DOPENMW_USE_SYSTEM_SQLITE3=OFF
+#        -DOPENMW_USE_SYSTEM_SQLITE3=OFF
 	-DBUILD_OPENCS=0
 	-DBUILD_WIZARD=0
 	-DBUILD_MYGUI_PLUGIN=0
