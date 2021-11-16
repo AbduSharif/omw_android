@@ -41,7 +41,7 @@ set(GL4ES_VERSION 53dda00af40f01eac1999aa8b71a0fe52a44cf51)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://github.com/openscenegraph/OpenSceneGraph/releases
-set(OSG_VERSION bbe61c3bc510a4f5bb4aea21cce506519c2d24e6)
+set(OSG_VERSION 8358845c179122d4341321d9304e7c60b6365a9b)
 #set(OSG_HASH SHA256=aea196550f02974d6d09291c5d83b51ca6a03b3767e234a8c0e21322927d1e12)
 
 # https://github.com/lz4/lz4/releases
@@ -531,11 +531,11 @@ set(OSG_PATCH
 )
 
 ExternalProject_Add(osg
-	DEPENDS libjpeg-turbo libpng gl4es freetype2 zlib libcollada
+	DEPENDS libjpeg-turbo libpng gl4es freetype2 libcollada zlib
 
 #	URL https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-${OSG_VERSION}.tar.gz
-#	URL https://github.com/AbduSharif/osg/archive/${OSG_VERSION}.tar.gz
-	URL https://github.com/OpenMW/osg/archive/${OSG_VERSION}.tar.gz
+	URL https://github.com/AbduSharif/osg/archive/${OSG_VERSION}.tar.gz
+#	URL https://github.com/OpenMW/osg/archive/${OSG_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/OpenSceneGraph-${OSG_VERSION}.tar.gz
 	URL_HASH ${OSG_HASH}
 	DOWNLOAD_DIR ${download_dir}
