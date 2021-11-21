@@ -1,0 +1,175 @@
+diff --git a/components/sceneutil/mwshadowtechnique.cpp b/components/sceneutil/mwshadowtechnique.cpp
+index daf6bb80abcbb13c14608aaa1bbdaa4e04aa71a7..d5a4fdb10983bfed2b572e8a45f40c24f93ca92e 100644
+--- a/components/sceneutil/mwshadowtechnique.cpp
++++ b/components/sceneutil/mwshadowtechnique.cpp
+@@ -28,6 +28,7 @@
+ #include <sstream>
+ 
+ #include "shadowsbin.hpp"
++#include <components/debug/debuglog.hpp>
+ 
+ namespace {
+ 
+@@ -550,7 +551,7 @@ MWShadowTechnique::ShadowData::ShadowData(MWShadowTechnique::ViewDependentData*
+     else
+     {
+         _texture->setInternalFormat(GL_DEPTH_COMPONENT);
+-        _texture->setShadowComparison(true);
++        // _texture->setShadowComparison(true);
+         _texture->setShadowTextureMode(osg::Texture2D::LUMINANCE);
+     }
+ 
+@@ -1427,6 +1428,15 @@ void MWShadowTechnique::cull(osgUtil::CullVisitor& cv)
+                 {
+                     vdsmCallback->getProjectionMatrix()->set(camera->getProjectionMatrix());
+                 }
++
++                for (auto& uniform : _uniforms[cv.getTraversalNumber() % 2])
++                {
++                    if (uniform->getName() == "validRegionMatrix" + std::to_string(sm_i))
++                    {
++                        uniform->set((osg::Matrixf)(camera->getViewMatrix() * camera->getProjectionMatrix()));
++                        break;
++                    }
++                }
+             }
+ 
+             // 4.4 compute main scene graph TexGen + uniform settings + setup state
+@@ -1634,7 +1644,7 @@ void MWShadowTechnique::createShaders()
+         _fallbackShadowMapTexture->setWrap(osg::Texture2D::WRAP_T,osg::Texture2D::REPEAT);
+         _fallbackShadowMapTexture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::NEAREST);
+         _fallbackShadowMapTexture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::NEAREST);
+-        _fallbackShadowMapTexture->setShadowComparison(true);
++        // _fallbackShadowMapTexture->setShadowComparison(true);
+         _fallbackShadowMapTexture->setShadowCompareFunc(osg::Texture::ShadowCompareFunc::ALWAYS);
+ 
+     }
+diff --git a/files/shaders/shadows_fragment.glsl b/files/shaders/shadows_fragment.glsl
+index 61437099152174552a5e86ea17e614f3c0ed3dd7..4974c05bff1c7b41733a0037ce28e6404af498ab 100644
+--- a/files/shaders/shadows_fragment.glsl
++++ b/files/shaders/shadows_fragment.glsl
+@@ -4,7 +4,8 @@
+     uniform float maximumShadowMapDistance;
+     uniform float shadowFadeStart;
+     @foreach shadow_texture_unit_index @shadow_texture_unit_list
+-        uniform sampler2DShadow shadowTexture@shadow_texture_unit_index;
++        // uniform sampler2DShadow shadowTexture@shadow_texture_unit_index;
++        uniform highp sampler2D shadowTexture@shadow_texture_unit_index;
+         varying vec4 shadowSpaceCoords@shadow_texture_unit_index;
+ 
+ #if @perspectiveShadowMaps
+@@ -27,13 +28,13 @@ float unshadowedLightRatio(float distance)
+         @foreach shadow_texture_unit_index @shadow_texture_unit_list
+             if (!doneShadows)
+             {
+-                vec3 shadowXYZ = shadowSpaceCoords@shadow_texture_unit_index.xyz / shadowSpaceCoords@shadow_texture_unit_index.w;
++                vec3 shadowXYZ = (shadowRegionCoords@shadow_texture_unit_index.xyz / shadowRegionCoords@shadow_texture_unit_index.w) * 0.5 + 0.5;
+ #if @perspectiveShadowMaps
+-                vec3 shadowRegionXYZ = shadowRegionCoords@shadow_texture_unit_index.xyz / shadowRegionCoords@shadow_texture_unit_index.w;
++                vec3 shadowRegionXYZ = shadowXYZ;
+ #endif
+                 if (all(lessThan(shadowXYZ.xy, vec2(1.0, 1.0))) && all(greaterThan(shadowXYZ.xy, vec2(0.0, 0.0))))
+                 {
+-                    shadowing = min(shadow2DProj(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
++                    shadowing = min(texture2D(shadowTexture@shadow_texture_unit_index, shadowRegionXYZ.xy).r, shadowing);
+ 
+                     
+                     doneShadows = all(lessThan(shadowXYZ, vec3(0.95, 0.95, 1.0))) && all(greaterThan(shadowXYZ, vec3(0.05, 0.05, 0.0)));
+@@ -45,7 +46,7 @@ float unshadowedLightRatio(float distance)
+         @endforeach
+     #else
+         @foreach shadow_texture_unit_index @shadow_texture_unit_list
+-            shadowing = min(shadow2DProj(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
++            shadowing = min(texture2D(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
+         @endforeach
+     #endif
+ #if @limitShadowMapDistance
+diff --git a/files/shaders/shadows_vertex.glsl b/files/shaders/shadows_vertex.glsl
+index f96e1a67359a8ae617a269003dcb1e71f02e2826..e3f9094e8cc64c80b038d4e6ec9c3e01d4315ea2 100644
+--- a/files/shaders/shadows_vertex.glsl
++++ b/files/shaders/shadows_vertex.glsl
+@@ -1,5 +1,7 @@
+ #define SHADOWS @shadows_enabled
+ 
++uniform mat4 osg_ViewMatrixInverse;
++
+ #if SHADOWS
+     @foreach shadow_texture_unit_index @shadow_texture_unit_list
+         uniform int shadowTextureUnit@shadow_texture_unit_index;
+@@ -9,6 +11,8 @@
+         uniform mat4 validRegionMatrix@shadow_texture_unit_index;
+         varying vec4 shadowRegionCoords@shadow_texture_unit_index;
+ #endif
++
++        uniform mat4 depthSpaceMatrix@shadow_texture_unit_index;
+     @endforeach
+ 
+     // Enabling this may reduce peter panning. Probably unnecessary.
+@@ -18,36 +22,42 @@
+ void setupShadowCoords(vec4 viewPos, vec3 viewNormal)
+ {
+ #if SHADOWS
++
++    mat4 model = osg_ViewMatrixInverse * gl_ModelViewMatrix;
++
+     // This matrix has the opposite handedness to the others used here, so multiplication must have the vector to the left. Alternatively it could be transposed after construction, but that's extra work for the GPU just to make the code look a tiny bit cleaner.
+     mat4 eyePlaneMat;
+     vec4 shadowOffset;
+     @foreach shadow_texture_unit_index @shadow_texture_unit_list
+-        eyePlaneMat = mat4(gl_EyePlaneS[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneT[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneR[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneQ[shadowTextureUnit@shadow_texture_unit_index]);
++//         eyePlaneMat = mat4(gl_EyePlaneS[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneT[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneR[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneQ[shadowTextureUnit@shadow_texture_unit_index]);
+ 
+-#if @perspectiveShadowMaps
+-        shadowRegionCoords@shadow_texture_unit_index = validRegionMatrix@shadow_texture_unit_index * viewPos;
+-#endif
++// #if @perspectiveShadowMaps
++//         shadowRegionCoords@shadow_texture_unit_index = validRegionMatrix@shadow_texture_unit_index * viewPos;
++// #endif
+         
+-#if @disableNormalOffsetShadows
+-        shadowSpaceCoords@shadow_texture_unit_index = viewPos * eyePlaneMat;
+-#else
+-        shadowOffset = vec4(viewNormal * @shadowNormalOffset, 0.0);
+-
+-        if (onlyNormalOffsetUV)
+-        {
+-            shadowSpaceCoords@shadow_texture_unit_index = viewPos * eyePlaneMat;
+-
+-            vec4 lightSpaceXY = viewPos + shadowOffset;
+-            lightSpaceXY = lightSpaceXY * eyePlaneMat;
+-
+-            shadowSpaceCoords@shadow_texture_unit_index.xy = lightSpaceXY.xy;
+-        }
+-        else
+-        {
+-            vec4 offsetViewPosition = viewPos + shadowOffset;
+-            shadowSpaceCoords@shadow_texture_unit_index = offsetViewPosition * eyePlaneMat;
+-        }
+-#endif
++// #if @disableNormalOffsetShadows
++//         shadowSpaceCoords@shadow_texture_unit_index = viewPos * eyePlaneMat;
++// #else
++//         shadowOffset = vec4(viewNormal * @shadowNormalOffset, 0.0);
++
++//         if (onlyNormalOffsetUV)
++//         {
++//             shadowSpaceCoords@shadow_texture_unit_index = viewPos * eyePlaneMat;
++
++//             vec4 lightSpaceXY = viewPos + shadowOffset;
++//             lightSpaceXY = lightSpaceXY * eyePlaneMat;
++
++//             shadowSpaceCoords@shadow_texture_unit_index.xy = lightSpaceXY.xy;
++//         }
++//         else
++//         {
++//             vec4 offsetViewPosition = viewPos + shadowOffset;
++//             shadowSpaceCoords@shadow_texture_unit_index = offsetViewPosition * eyePlaneMat;
++//         }
++// #endif
++
++    shadowRegionCoords@shadow_texture_unit_index = ((validRegionMatrix@shadow_texture_unit_index * model) * vec4(gl_Vertex.xyz, 1.0));
++
+     @endforeach
+ #endif // SHADOWS
+ }
+\ No newline at end of file
