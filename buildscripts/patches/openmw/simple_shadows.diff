@@ -1,5 +1,5 @@
 diff --git a/components/sceneutil/mwshadowtechnique.cpp b/components/sceneutil/mwshadowtechnique.cpp
-index daf6bb80abcbb13c14608aaa1bbdaa4e04aa71a7..4772a73e8edbe59ece9edc150bf07bc4b5cc2475 100644
+index daf6bb80abcbb13c14608aaa1bbdaa4e04aa71a7..d5a4fdb10983bfed2b572e8a45f40c24f93ca92e 100644
 --- a/components/sceneutil/mwshadowtechnique.cpp
 +++ b/components/sceneutil/mwshadowtechnique.cpp
 @@ -28,6 +28,7 @@
@@ -44,58 +44,8 @@ index daf6bb80abcbb13c14608aaa1bbdaa4e04aa71a7..4772a73e8edbe59ece9edc150bf07bc4
          _fallbackShadowMapTexture->setShadowCompareFunc(osg::Texture::ShadowCompareFunc::ALWAYS);
  
      }
-@@ -1653,7 +1663,7 @@ void MWShadowTechnique::createShaders()
-     osg::ref_ptr<osg::ClipControl> clipcontrol = new osg::ClipControl(osg::ClipControl::LOWER_LEFT, osg::ClipControl::NEGATIVE_ONE_TO_ONE);
-     _shadowCastingStateSet->setAttribute(clipcontrol, osg::StateAttribute::ON|osg::StateAttribute::OVERRIDE);
-     _shadowCastingStateSet->setAttribute(depth, osg::StateAttribute::ON|osg::StateAttribute::OVERRIDE);
--    _shadowCastingStateSet->setMode(GL_DEPTH_CLAMP, osg::StateAttribute::ON);
-+    // _shadowCastingStateSet->setMode(GL_DEPTH_CLAMP, osg::StateAttribute::ON);
- 
-     // TODO: compare performance when alpha testing is handled here versus using a discard in the fragment shader
- }
-diff --git a/files/shaders/shadowcasting_fragment.glsl b/files/shaders/shadowcasting_fragment.glsl
-index 07fad047e11b3c32fc9bae52cc8ec1659fe54068..9b4f0667c764af61d118b5235eb1f61d7449c640 100644
---- a/files/shaders/shadowcasting_fragment.glsl
-+++ b/files/shaders/shadowcasting_fragment.glsl
-@@ -14,6 +14,8 @@ uniform bool alphaTestShadows;
- 
- #include "alpha.glsl"
- 
-+varying float z;
-+
- void main()
- {
-     gl_FragData[0].rgb = vec3(1.0);
-@@ -28,4 +30,6 @@ void main()
-     // This replaces alpha blending, which obviously doesn't work with depth buffers
-     if (alphaTestShadows && gl_FragData[0].a <= 0.5)
-         discard;
-+
-+    gl_FragDepth = clamp(z, 0.0, 1.0);
- }
-diff --git a/files/shaders/shadowcasting_vertex.glsl b/files/shaders/shadowcasting_vertex.glsl
-index e36f21a4dec8c8c09b189a4a6b391cd3f1123833..e4087a42decebaa2be657a78066baff2dd905c71 100644
---- a/files/shaders/shadowcasting_vertex.glsl
-+++ b/files/shaders/shadowcasting_vertex.glsl
-@@ -8,6 +8,8 @@ uniform int colorMode;
- uniform bool useDiffuseMapForShadowAlpha = true;
- uniform bool alphaTestShadows = true;
- 
-+varying float z;
-+
- void main(void)
- {
-     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-@@ -24,4 +26,7 @@ void main(void)
-     else
-         // This is uniform, so if it's too low, we might be able to put the position/clip vertex outside the view frustum and skip the fragment shader and rasteriser
-         alphaPassthrough = gl_FrontMaterial.diffuse.a;
-+
-+    z = gl_Position.z / gl_Position.w * 0.5;
-+    gl_Position.z = 0.0;
- }
 diff --git a/files/shaders/shadows_fragment.glsl b/files/shaders/shadows_fragment.glsl
-index 61437099152174552a5e86ea17e614f3c0ed3dd7..cc58bd977f10e3798796bb1253c8bf7d767ba450 100644
+index 61437099152174552a5e86ea17e614f3c0ed3dd7..4974c05bff1c7b41733a0037ce28e6404af498ab 100644
 --- a/files/shaders/shadows_fragment.glsl
 +++ b/files/shaders/shadows_fragment.glsl
 @@ -4,7 +4,8 @@
@@ -108,47 +58,34 @@ index 61437099152174552a5e86ea17e614f3c0ed3dd7..cc58bd977f10e3798796bb1253c8bf7d
          varying vec4 shadowSpaceCoords@shadow_texture_unit_index;
  
  #if @perspectiveShadowMaps
-@@ -22,32 +23,13 @@ float unshadowedLightRatio(float distance)
-     if (fade == 1.0)
-         return shadowing;
- #endif
--    #if @shadowMapsOverlap
--        bool doneShadows = false;
--        @foreach shadow_texture_unit_index @shadow_texture_unit_list
--            if (!doneShadows)
--            {
+@@ -27,13 +28,13 @@ float unshadowedLightRatio(float distance)
+         @foreach shadow_texture_unit_index @shadow_texture_unit_list
+             if (!doneShadows)
+             {
 -                vec3 shadowXYZ = shadowSpaceCoords@shadow_texture_unit_index.xyz / shadowSpaceCoords@shadow_texture_unit_index.w;
--#if @perspectiveShadowMaps
++                vec3 shadowXYZ = (shadowRegionCoords@shadow_texture_unit_index.xyz / shadowRegionCoords@shadow_texture_unit_index.w) * 0.5 + 0.5;
+ #if @perspectiveShadowMaps
 -                vec3 shadowRegionXYZ = shadowRegionCoords@shadow_texture_unit_index.xyz / shadowRegionCoords@shadow_texture_unit_index.w;
--#endif
--                if (all(lessThan(shadowXYZ.xy, vec2(1.0, 1.0))) && all(greaterThan(shadowXYZ.xy, vec2(0.0, 0.0))))
--                {
--                    shadowing = min(shadow2DProj(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
-+    @foreach shadow_texture_unit_index @shadow_texture_unit_list
-+    {
-+        vec3 shadowXYZ = (shadowRegionCoords@shadow_texture_unit_index.xyz / shadowRegionCoords@shadow_texture_unit_index.w) * 0.5 + 0.5;
-+        shadowing = min(texture2D(shadowTexture@shadow_texture_unit_index, shadowXYZ.xy).r, shadowing);
-+    }
-+    @endforeach
- 
--                    
--                    doneShadows = all(lessThan(shadowXYZ, vec3(0.95, 0.95, 1.0))) && all(greaterThan(shadowXYZ, vec3(0.05, 0.05, 0.0)));
--#if @perspectiveShadowMaps
--                    doneShadows = doneShadows && all(lessThan(shadowRegionXYZ, vec3(1.0, 1.0, 1.0))) && all(greaterThan(shadowRegionXYZ.xy, vec2(-1.0, -1.0)));
--#endif
--                }
--            }
--        @endforeach
--    #else
--        @foreach shadow_texture_unit_index @shadow_texture_unit_list
--            shadowing = min(shadow2DProj(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
--        @endforeach
--    #endif
- #if @limitShadowMapDistance
-     shadowing = mix(shadowing, 1.0, fade);
++                vec3 shadowRegionXYZ = shadowXYZ;
  #endif
+                 if (all(lessThan(shadowXYZ.xy, vec2(1.0, 1.0))) && all(greaterThan(shadowXYZ.xy, vec2(0.0, 0.0))))
+                 {
+-                    shadowing = min(shadow2DProj(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
++                    shadowing = min(texture2D(shadowTexture@shadow_texture_unit_index, shadowRegionXYZ.xy).r, shadowing);
+ 
+                     
+                     doneShadows = all(lessThan(shadowXYZ, vec3(0.95, 0.95, 1.0))) && all(greaterThan(shadowXYZ, vec3(0.05, 0.05, 0.0)));
+@@ -45,7 +46,7 @@ float unshadowedLightRatio(float distance)
+         @endforeach
+     #else
+         @foreach shadow_texture_unit_index @shadow_texture_unit_list
+-            shadowing = min(shadow2DProj(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
++            shadowing = min(texture2D(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
+         @endforeach
+     #endif
+ #if @limitShadowMapDistance
 diff --git a/files/shaders/shadows_vertex.glsl b/files/shaders/shadows_vertex.glsl
-index f96e1a67359a8ae617a269003dcb1e71f02e2826..880dc6008745dec57343e57f48dd7ce6f3e0a2e5 100644
+index f96e1a67359a8ae617a269003dcb1e71f02e2826..e3f9094e8cc64c80b038d4e6ec9c3e01d4315ea2 100644
 --- a/files/shaders/shadows_vertex.glsl
 +++ b/files/shaders/shadows_vertex.glsl
 @@ -1,5 +1,7 @@
@@ -159,7 +96,16 @@ index f96e1a67359a8ae617a269003dcb1e71f02e2826..880dc6008745dec57343e57f48dd7ce6
  #if SHADOWS
      @foreach shadow_texture_unit_index @shadow_texture_unit_list
          uniform int shadowTextureUnit@shadow_texture_unit_index;
-@@ -18,36 +20,41 @@
+@@ -9,6 +11,8 @@
+         uniform mat4 validRegionMatrix@shadow_texture_unit_index;
+         varying vec4 shadowRegionCoords@shadow_texture_unit_index;
+ #endif
++
++        uniform mat4 depthSpaceMatrix@shadow_texture_unit_index;
+     @endforeach
+ 
+     // Enabling this may reduce peter panning. Probably unnecessary.
+@@ -18,36 +22,42 @@
  void setupShadowCoords(vec4 viewPos, vec3 viewNormal)
  {
  #if SHADOWS
@@ -220,7 +166,8 @@ index f96e1a67359a8ae617a269003dcb1e71f02e2826..880dc6008745dec57343e57f48dd7ce6
 +//             shadowSpaceCoords@shadow_texture_unit_index = offsetViewPosition * eyePlaneMat;
 +//         }
 +// #endif
-+    shadowRegionCoords@shadow_texture_unit_index = ((validRegionMatrix@shadow_texture_unit_index * model) * vec4(gl_Vertex.xyz, 1.0)) ;
++
++    shadowRegionCoords@shadow_texture_unit_index = ((validRegionMatrix@shadow_texture_unit_index * model) * vec4(gl_Vertex.xyz, 1.0));
 +
      @endforeach
  #endif // SHADOWS
