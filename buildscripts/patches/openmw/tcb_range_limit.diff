@@ -1,5 +1,5 @@
 diff --git a/apps/openmw/mwrender/bulletdebugdraw.cpp b/apps/openmw/mwrender/bulletdebugdraw.cpp
-index 207b0ee504..943b9fe4e8 100644
+index b008ebc6d92c1f565eccf1018c234e669f88b49d..7e979c0fec2008e93a684dde359f083dee181aab 100644
 --- a/apps/openmw/mwrender/bulletdebugdraw.cpp
 +++ b/apps/openmw/mwrender/bulletdebugdraw.cpp
 @@ -1,6 +1,7 @@
@@ -10,16 +10,16 @@ index 207b0ee504..943b9fe4e8 100644
  
  #include <osg/Geometry>
  #include <osg/Group>
-@@ -14,6 +15,8 @@
+@@ -15,6 +16,8 @@
  #include "bulletdebugdraw.hpp"
  #include "vismask.hpp"
  
 +#include "../mwmechanics/actorutil.hpp"
 +
- namespace MWRender
- {
+ #include <components/resource/resourcesystem.hpp>
+ #include <components/resource/scenemanager.hpp>
  
-@@ -79,6 +82,35 @@ void DebugDrawer::step()
+@@ -92,6 +95,35 @@ void DebugDrawer::step()
          mVertices->clear();
          mColors->clear();
          mShapesRoot->removeChildren(0, mShapesRoot->getNumChildren());
