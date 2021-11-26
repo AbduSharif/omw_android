@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.2.0)
 
 # https://github.com/libjpeg-turbo/libjpeg-turbo/releases
-set(LIBJPEG_TURBO_VERSION 2.1.2)
-#set(LIBJPEG_TURBO_HASH SHA256=b24890e2bb46e12e72a79f7e965f409f4e16466d00e1dd15d93d73ee6b592523)
+set(LIBJPEG_TURBO_VERSION 1.5.3)
+set(LIBJPEG_TURBO_HASH SHA256=b24890e2bb46e12e72a79f7e965f409f4e16466d00e1dd15d93d73ee6b592523)
 
 # http://www.libpng.org/pub/png/libpng.html
 set(LIBPNG_VERSION 1.6.37)
@@ -139,11 +139,10 @@ ExternalProject_Add(libjpeg-turbo
 	URL_HASH ${LIBJPEG_TURBO_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
-	CONFIGURE_COMMAND ${wrapper_command}
-	--enable-static
-	--disable-shared
-	--prefix=${prefix}
+	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
+	${COMMON_AUTOCONF_FLAGS}
 	${libjpeg_turbo_flags}
+
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE) PROGRAMS=
 
