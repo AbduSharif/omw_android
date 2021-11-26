@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.2.0)
 
 # https://github.com/libjpeg-turbo/libjpeg-turbo/releases
-set(LIBJPEG_TURBO_VERSION 1.5.3)
-set(LIBJPEG_TURBO_HASH SHA256=b24890e2bb46e12e72a79f7e965f409f4e16466d00e1dd15d93d73ee6b592523)
+set(LIBJPEG_TURBO_VERSION 2.1.2)
+#set(LIBJPEG_TURBO_HASH SHA256=b24890e2bb46e12e72a79f7e965f409f4e16466d00e1dd15d93d73ee6b592523)
 
 # http://www.libpng.org/pub/png/libpng.html
 set(LIBPNG_VERSION 1.6.37)
@@ -17,16 +17,16 @@ set(OPENAL_VERSION 1.21.1)
 set(OPENAL_HASH SHA256=8ac17e4e3b32c1af3d5508acfffb838640669b4274606b7892aa796ca9d7467f)
 
 # http://www.boost.org/users/download/
-set(BOOST_VERSION 1.69.0)
-set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648b04406)
+set(BOOST_VERSION 1.77.0)
+#set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648b04406)
 
 # https://www.ffmpeg.org/download.html
-set(FFMPEG_VERSION 4.4)
-set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
+set(FFMPEG_VERSION 4.4.1)
+#set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://www.libsdl.org/download-2.0.php
-set(SDL2_VERSION 2.0.12)
-set(SDL2_HASH SHA256=349268f695c02efbc9b9148a70b85e58cefbbf704abd3e91be654db7f1e2c863)
+set(SDL2_VERSION 2.0.16)
+#set(SDL2_HASH SHA256=349268f695c02efbc9b9148a70b85e58cefbbf704abd3e91be654db7f1e2c863)
 
 # https://github.com/bulletphysics/bullet3/releases
 set(BULLET_VERSION 3.17)
@@ -535,7 +535,6 @@ ExternalProject_Add(osg
 	DEPENDS libjpeg-turbo zlib libpng gl4es freetype2 libcollada
 
 #	URL https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-${OSG_VERSION}.tar.gz
-#	URL https://github.com/AbduSharif/osg/archive/${OSG_VERSION}.tar.gz
 	URL https://github.com/openmw/osg/archive/${OSG_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/OpenSceneGraph-${OSG_VERSION}.tar.gz
 	URL_HASH ${OSG_HASH}
