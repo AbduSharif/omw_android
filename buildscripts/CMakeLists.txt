@@ -337,6 +337,7 @@ ExternalProject_Add(gl4es
 
 	BUILD_COMMAND ${wrapper_command} ndk-build
 	${COMMON_NDK_BUILD_FLAGS}
+	LOCAL_LCFLAGS += -include  include/gl4esinit.h
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
 	COMMAND cp libs/${app_abi}/libGL.so ${prefix}/lib/
@@ -574,7 +575,7 @@ set(OPENMW_COMMON
 	-DGL4ES_INCLUDE_DIR=${prefix}/include/GL4ES
 	-DGL4ES_INCLUDE_DIR=${prefix}/
 #	-DOPENMW_LTO_BUILD=1
-#	-DOPENMW_GL4ES_MANUAL_INIT=ON
+	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENGL_ES=OFF
@@ -598,7 +599,7 @@ set(OPENMW_PATCH
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/soft_particles_mr.diff &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/water_fix.diff &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gl4es_manual_init.diff &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gl4es_manual_init.diff &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp
 )
 
