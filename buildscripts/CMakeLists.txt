@@ -37,7 +37,7 @@ set(MYGUI_VERSION 3.4.0)
 set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION 424088b037402104e31d5509045c4d814e10ff55)
+set(GL4ES_VERSION 80c02fa798b8baee479eb52bef5cfc6fcd0d5709)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://github.com/openscenegraph/OpenSceneGraph/releases
@@ -567,6 +567,12 @@ set(OPENMW_COMMON
 	-DBUILD_OPENCS=0
 	-DBUILD_WIZARD=0
 	-DBUILD_MYGUI_PLUGIN=0
+	-DGL4ES_INCLUDE_DIR=${prefix}/lib/include/GL4ES/
+	-DGL4ES_INCLUDE_DIR=${prefix}/lib/GL4ES/include/
+	-DGL4ES_INCLUDE_DIR=${prefix}/lib/include/
+	-DGL4ES_INCLUDE_DIR=${prefix}/include/
+	-DGL4ES_INCLUDE_DIR=${prefix}/include/GL4ES
+	-DGL4ES_INCLUDE_DIR=${prefix}/
 #	-DOPENMW_LTO_BUILD=1
 #	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
