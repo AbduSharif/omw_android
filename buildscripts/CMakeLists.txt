@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 246912f73af89a8cac0c921dbc729aa38c0f7362)
+set(OPENMW_VERSION a9008d224aaabdb9b239425d9db6e14340a37b33)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -337,7 +337,6 @@ ExternalProject_Add(gl4es
 
 	BUILD_COMMAND ${wrapper_command} ndk-build
 	${COMMON_NDK_BUILD_FLAGS}
-	LOCAL_LCFLAGS += -include  include/gl4esinit.h
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
 	COMMAND cp libs/${app_abi}/libGL.so ${prefix}/lib/
@@ -575,7 +574,7 @@ set(OPENMW_COMMON
 	-DGL4ES_INCLUDE_DIR=${prefix}/include/GL4ES
 	-DGL4ES_INCLUDE_DIR=${prefix}/
 #	-DOPENMW_LTO_BUILD=1
-	-DOPENMW_GL4ES_MANUAL_INIT=ON
+#	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENGL_ES=OFF
