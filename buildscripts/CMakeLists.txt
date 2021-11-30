@@ -567,12 +567,6 @@ set(OPENMW_COMMON
 	-DBUILD_OPENCS=0
 	-DBUILD_WIZARD=0
 	-DBUILD_MYGUI_PLUGIN=0
-	-DGL4ES_INCLUDE_DIR=${prefix}/lib/include/GL4ES/
-	-DGL4ES_INCLUDE_DIR=${prefix}/lib/GL4ES/include/
-	-DGL4ES_INCLUDE_DIR=${prefix}/lib/include/
-	-DGL4ES_INCLUDE_DIR=${prefix}/include/
-	-DGL4ES_INCLUDE_DIR=${prefix}/include/GL4ES
-	-DGL4ES_INCLUDE_DIR=${prefix}/
 #	-DOPENMW_LTO_BUILD=1
 #	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
