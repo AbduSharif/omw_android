@@ -1,3 +1,7 @@
+#ifndef stderr
+int stderr = 0; // Hack: fix linker error
+#endif
+
 #include "SDL_main.h"
 #include "engine.hpp"
 #include "mwbase/windowmanager.hpp"
