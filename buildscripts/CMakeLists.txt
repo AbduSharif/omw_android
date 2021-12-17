@@ -25,7 +25,7 @@ set(FFMPEG_VERSION 4.4)
 set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://www.libsdl.org/download-2.0.php
-set(SDL2_VERSION 2.0.18)
+set(SDL2_VERSION 44c84c0d8e1701b9a0d0e3688f31b3a79163a81a)
 #set(SDL2_HASH SHA256=349268f695c02efbc9b9148a70b85e58cefbbf704abd3e91be654db7f1e2c863)
 
 # https://github.com/bulletphysics/bullet3/releases
@@ -279,8 +279,8 @@ ExternalProject_Add(ffmpeg
 )
 
 ExternalProject_Add(sdl2
-	URL https://www.libsdl.org/release/SDL2-${SDL2_VERSION}.tar.gz
-	https://github.com/xyzz/openmw-deps/releases/download/v0/SDL2-${SDL2_VERSION}.tar.gz
+	URL https://github.com/libsdl-org/SDL/archive/${SDL2_VERSION}.tar.gz
+	https://github.com/xyzz/openmw-deps/releases/download/v0/${SDL2_VERSION}.tar.gz
 	URL_HASH ${SDL2_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
