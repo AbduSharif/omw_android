@@ -34,7 +34,7 @@ set(BULLET_HASH SHA256=baa642c906576d4d98d041d0acb80d85dd6eff6e3c16a009b1abf1ccd
 
 # https://github.com/MyGUI/mygui/releases
 set(MYGUI_VERSION 3.4.1)
-set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
+#set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
 
 # https://github.com/ptitSeb/gl4es/releases
 set(GL4ES_VERSION 80c02fa798b8baee479eb52bef5cfc6fcd0d5709)
