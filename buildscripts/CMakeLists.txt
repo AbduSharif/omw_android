@@ -37,7 +37,7 @@ set(MYGUI_VERSION 3.4.1)
 #set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION 6c73d36ae0781bc4e81cbdb0000006bdae7e4a87)
+set(GL4ES_VERSION 52f115d757bab6e1add488aea573d277e0acdbe8)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://github.com/openscenegraph/OpenSceneGraph/releases
@@ -319,14 +319,14 @@ ExternalProject_Add(bullet
 )
 
 ExternalProject_Add(gl4es
-	URL https://github.com/ptitSeb/gl4es/archive/${GL4ES_VERSION}.tar.gz
-#	URL https://github.com/AbduSharif/gl4es/archive/${GL4ES_VERSION}.tar.gz
+#	URL https://github.com/ptitSeb/gl4es/archive/${GL4ES_VERSION}.tar.gz
+	URL https://github.com/AbduSharif/gl4es/archive/${GL4ES_VERSION}.tar.gz
 #	URL https://github.com/AbduSharif/VGPU/archive/${GL4ES_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/${GL4ES_VERSION}.gz
 	URL_HASH ${GL4ES_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
-	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/all-in-one.patch
+#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/all-in-one.patch
 #	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/shared-library.patch
 #	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/gamma.patch
 #	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/keyword-usage.patch
