@@ -25,8 +25,8 @@ set(FFMPEG_VERSION 4.4)
 set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://www.libsdl.org/download-2.0.php
-set(SDL2_VERSION 44c84c0d8e1701b9a0d0e3688f31b3a79163a81a)
-#set(SDL2_HASH SHA256=349268f695c02efbc9b9148a70b85e58cefbbf704abd3e91be654db7f1e2c863)
+set(SDL2_VERSION 2.0.12)
+set(SDL2_HASH SHA256=349268f695c02efbc9b9148a70b85e58cefbbf704abd3e91be654db7f1e2c863)
 
 # https://github.com/bulletphysics/bullet3/releases
 set(BULLET_VERSION 3.17)
@@ -279,12 +279,12 @@ ExternalProject_Add(ffmpeg
 )
 
 ExternalProject_Add(sdl2
-	URL https://github.com/libsdl-org/SDL/archive/${SDL2_VERSION}.tar.gz
-	https://github.com/xyzz/openmw-deps/releases/download/v0/${SDL2_VERSION}.tar.gz
+	URL https://www.libsdl.org/release/SDL2-${SDL2_VERSION}.tar.gz
+	https://github.com/xyzz/openmw-deps/releases/download/v0/SDL2-${SDL2_VERSION}.tar.gz
 	URL_HASH ${SDL2_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
-#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/sdl2-android-120hz-gyroscope.patch
+	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/sdl2-android-120hz-gyroscope.patch
 
 	CONFIGURE_COMMAND ""
 
@@ -293,6 +293,7 @@ ExternalProject_Add(sdl2
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
 	COMMAND cp libs/${app_abi}/libSDL2.so ${prefix}/lib/
+	COMMAND cp libs/${app_abi}/libhidapi.so ${prefix}/lib/
 	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
 )
 
@@ -590,7 +591,7 @@ set(OPENMW_PATCH
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma2.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0001-loadingscreen-disable-for-now.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0009-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0009-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0010-android-fix-context-being-lost-on-app-minimize.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0014-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0012-components-misc-stringops-use-boost-format-instead-o.patch &&
