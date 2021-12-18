@@ -1,0 +1,126 @@
+diff --git a/src/gl/fpe.h b/src/gl/fpe.h
+index 723f9328..268ce28a 100644
+--- a/src/gl/fpe.h
++++ b/src/gl/fpe.h
+@@ -188,6 +188,7 @@ typedef struct fpe_state_s {
+     unsigned int fragment_prg_enable:1;  // if fragment program is enabled
+     uint16_t     vertex_prg_id;          // Id of vertex program currently binded (0 most of the time), 16bits is more than enough...
+     uint16_t     fragment_prg_id;        // Id of fragment program currently binded (0 most of the time)
++    int16_t gamma;
+ } fpe_state_t;
+ #pragma pack()
+ 
+diff --git a/src/gl/fpe_shader.c b/src/gl/fpe_shader.c
+index 1f57dc8c..15444eae 100644
+--- a/src/gl/fpe_shader.c
++++ b/src/gl/fpe_shader.c
+@@ -1380,6 +1380,11 @@ const char* const* fpe_FragmentShader(shaderconv_need_t* need, fpe_state_t *stat
+         #endif
+     }
+ 
++    if (state->gamma) {
++        sprintf(buff, "fColor.rgb = pow(fColor.rgb, vec3(1.0 / %.3f));\n", state->gamma / 100.0);
++        ShadAppend(buff);
++    }
++
+     //done
+     ShadAppend("gl_FragColor = fColor;\n");
+     ShadAppend("}");
+diff --git a/src/gl/light.c b/src/gl/light.c
+index 00527649..5f8ac7d5 100644
+--- a/src/gl/light.c
++++ b/src/gl/light.c
+@@ -77,6 +77,10 @@ void APIENTRY_GL4ES gl4es_glLightModelfv(GLenum pname, const GLfloat* params) {
+             return;
+         } else gl4es_flush();
+     switch (pname) {
++        case 0x4242:
++            if (glstate->fpe_state)
++                glstate->fpe_state->gamma = params[0] * 100;
++            return;
+         case GL_LIGHT_MODEL_AMBIENT:
+             if(memcmp(glstate->light.ambient, params, 4*sizeof(GLfloat))==0) {
+                 noerrorShim();
+diff --git a/src/gl/hint.c b/src/gl/hint.c
+index feef2e30..680e49da 100644
+--- a/src/gl/hint.c
++++ b/src/gl/hint.c
+@@ -11,6 +11,12 @@ void pandora_set_gamma();
+ #endif
+ 
+ void APIENTRY_GL4ES gl4es_glHint(GLenum pname, GLenum mode) {
++
++//save precomipled shader archive
++if(pname == 41231){
++    fpe_writePSA();
++    return;
++}
+     
+     FLUSH_BEGINEND;
+ 
+@@ -132,4 +138,4 @@ void APIENTRY_GL4ES gl4es_glHint(GLenum pname, GLenum mode) {
+             gles_glHint(pname, mode);
+     }
+ }
+-AliasExport(void,glHint,,(GLenum pname, GLenum mode));
+\ No newline at end of file
++AliasExport(void,glHint,,(GLenum pname, GLenum mode));
+diff --git a/src/gl/init.c b/src/gl/init.c
+index 1d07f267..e2a08f81 100644
+--- a/src/gl/init.c
++++ b/src/gl/init.c
+@@ -668,6 +668,7 @@ void initialize_gl4es() {
+         env(LIBGL_NOPSA, globals4es.nopsa, "Don't use PrecompiledShaderArchive");
+         if(globals4es.nopsa==0) {
+             cwd[0]='\0';
++/*
+             // TODO: What to do on ANDROID and EMSCRIPTEN?
+ #ifdef __linux__
+             const char* home = GetEnvVar("HOME");
+@@ -678,8 +679,12 @@ void initialize_gl4es() {
+ #elif defined AMIGAOS4
+             strcpy(cwd, "PROGDIR:");
+ #endif
++*/
++            strcpy(cwd, "/storage/emulated/0/omw_nightly/");
++
+             if(strlen(cwd)) {
+                 strcat(cwd, ".gl4es.psa");
++                SHUT_LOGD("Shader archive file: %s\n", cwd);
+                 fpe_InitPSA(cwd);
+                 fpe_readPSA();
+             }
+diff --git a/src/glx/hardext.c b/src/glx/hardext.c
+index 6b8212ad..307c290b 100644
+--- a/src/glx/hardext.c
++++ b/src/glx/hardext.c
+@@ -357,7 +357,7 @@ void GetHardwareExtensions(int notest)
+         gles_glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &hardext.maxvattrib);
+         SHUT_LOGD("Max vertex attrib: %d\n", hardext.maxvattrib);
+         S("GL_OES_standard_derivatives ", derivatives, 1);
+-        S("GL_OES_get_program ", prgbinary, 1);
++        S("GL_OES_get_program_binary ", prgbinary, 1);
+         if(hardext.prgbinary) {
+             gles_glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS_OES, &hardext.prgbin_n);
+             SHUT_LOGD("Number of supported Program Binary Format: %d\n", hardext.prgbin_n);
+diff --git a/src/gl/shader_hacks.c b/src/gl/shader_hacks.c
+index 35b39497..55d235ce 100644
+--- a/src/gl/shader_hacks.c
++++ b/src/gl/shader_hacks.c
+@@ -540,6 +540,7 @@ static char* ShaderHacks_2(char* shader, char* Tmp, int* tmpsize)
+ 
+ char* ShaderHacks(char* shader)
+ {
++/*
+     char* Tmp = shader;
+     int tmpsize = strlen(Tmp)+10;
+     // specific hacks
+@@ -558,4 +559,6 @@ char* ShaderHacks(char* shader)
+         }
+     }
+     return Tmp;
+-}
+\ No newline at end of file
++*/
++    return shader;
++}
