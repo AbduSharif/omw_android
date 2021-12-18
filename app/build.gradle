@@ -48,6 +48,12 @@ android {
         sourceCompatibility 1.8
     }
 
+    buildFeatures {
+        dataBinding {
+            enabled true
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
