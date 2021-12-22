@@ -305,6 +305,7 @@ ExternalProject_Add(gl4es
 )
 
 ExternalProject_Add(sdl2
+	DEPENDS gl4es
 
 	URL https://www.libsdl.org/release/SDL2-${SDL2_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/SDL2-${SDL2_VERSION}.tar.gz
@@ -317,6 +318,9 @@ ExternalProject_Add(sdl2
 
 	BUILD_COMMAND ${wrapper_command} ndk-build
 	${COMMON_NDK_BUILD_FLAGS}
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
 	COMMAND cp libs/${app_abi}/libSDL2.so ${prefix}/lib/
