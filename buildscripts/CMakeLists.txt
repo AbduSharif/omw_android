@@ -24,6 +24,10 @@ set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648
 set(FFMPEG_VERSION 4.4)
 set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
+# https://github.com/ptitSeb/gl4es/releases
+set(GL4ES_VERSION 52f115d757bab6e1add488aea573d277e0acdbe8)
+#set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
+
 # https://www.libsdl.org/download-2.0.php
 set(SDL2_VERSION 2.0.12)
 set(SDL2_HASH SHA256=349268f695c02efbc9b9148a70b85e58cefbbf704abd3e91be654db7f1e2c863)
@@ -35,10 +39,6 @@ set(BULLET_HASH SHA256=baa642c906576d4d98d041d0acb80d85dd6eff6e3c16a009b1abf1ccd
 # https://github.com/MyGUI/mygui/releases
 set(MYGUI_VERSION 3.4.1)
 #set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
-
-# https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION 52f115d757bab6e1add488aea573d277e0acdbe8)
-#set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://github.com/openscenegraph/OpenSceneGraph/releases
 set(OSG_VERSION bbe61c3bc510a4f5bb4aea21cce506519c2d24e6)
@@ -321,7 +321,6 @@ ExternalProject_Add(sdl2
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
-	-DSDL_OPENGL=ON
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
 	COMMAND cp libs/${app_abi}/libSDL2.so ${prefix}/lib/
