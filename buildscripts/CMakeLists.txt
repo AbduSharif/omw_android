@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 46564f08adfa71dd17b6387b867c3f5752d3cccc)
+set(OPENMW_VERSION bf019bf28023b30635dd3abb2aac273d2218bf2c)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -278,7 +278,35 @@ ExternalProject_Add(ffmpeg
 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
 )
 
+ExternalProject_Add(gl4es
+#	URL https://github.com/ptitSeb/gl4es/archive/${GL4ES_VERSION}.tar.gz
+	URL https://github.com/AbduSharif/gl4es/archive/${GL4ES_VERSION}.tar.gz
+#	URL https://github.com/AbduSharif/VGPU/archive/${GL4ES_VERSION}.tar.gz
+	https://github.com/xyzz/openmw-deps/releases/download/v0/${GL4ES_VERSION}.gz
+	URL_HASH ${GL4ES_HASH}
+	DOWNLOAD_DIR ${download_dir}
+
+#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/all-in-one.patch
+#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/shared-library.patch
+#	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/gamma.patch
+#	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/keyword-usage.patch
+#	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/psa.patch
+#	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/disable-shader-hacks.patch
+
+	CONFIGURE_COMMAND ""
+
+	BUILD_COMMAND ${wrapper_command} ndk-build
+	${COMMON_NDK_BUILD_FLAGS}
+
+	INSTALL_COMMAND mkdir -p ${prefix}/lib/
+	COMMAND cp libs/${app_abi}/libGL.so ${prefix}/lib/
+	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/include/gl4es/
+	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
+)
+
 ExternalProject_Add(sdl2
+	DEPENDS gl4es
+
 	URL https://www.libsdl.org/release/SDL2-${SDL2_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/SDL2-${SDL2_VERSION}.tar.gz
 	URL_HASH ${SDL2_HASH}
@@ -290,6 +318,10 @@ ExternalProject_Add(sdl2
 
 	BUILD_COMMAND ${wrapper_command} ndk-build
 	${COMMON_NDK_BUILD_FLAGS}
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+	-DSDL_OPENGL=ON
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
 	COMMAND cp libs/${app_abi}/libSDL2.so ${prefix}/lib/
@@ -319,34 +351,8 @@ ExternalProject_Add(bullet
 	INSTALL_COMMAND $(MAKE) install
 )
 
-ExternalProject_Add(gl4es
-#	URL https://github.com/ptitSeb/gl4es/archive/${GL4ES_VERSION}.tar.gz
-	URL https://github.com/AbduSharif/gl4es/archive/${GL4ES_VERSION}.tar.gz
-#	URL https://github.com/AbduSharif/VGPU/archive/${GL4ES_VERSION}.tar.gz
-	https://github.com/xyzz/openmw-deps/releases/download/v0/${GL4ES_VERSION}.gz
-	URL_HASH ${GL4ES_HASH}
-	DOWNLOAD_DIR ${download_dir}
-
-#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/all-in-one.patch
-#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/shared-library.patch
-#	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/gamma.patch
-#	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/keyword-usage.patch
-#	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/psa.patch
-#	COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/gl4es/disable-shader-hacks.patch
-
-	CONFIGURE_COMMAND ""
-
-	BUILD_COMMAND ${wrapper_command} ndk-build
-	${COMMON_NDK_BUILD_FLAGS}
-
-	INSTALL_COMMAND mkdir -p ${prefix}/lib/
-	COMMAND cp libs/${app_abi}/libGL.so ${prefix}/lib/
-	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/include/gl4es/
-	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
-)
-
 ExternalProject_Add(mygui
-	DEPENDS freetype2
+	DEPENDS freetype2 gl4es
 
 	URL https://github.com/MyGUI/mygui/archive/MyGUI${MYGUI_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/MyGUI${MYGUI_VERSION}.tar.gz
@@ -357,6 +363,9 @@ ExternalProject_Add(mygui
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DMYGUI_RENDERSYSTEM=4
 	-DMYGUI_BUILD_DEMOS=OFF
 	-DMYGUI_BUILD_TOOLS=OFF
@@ -502,6 +511,9 @@ set(OSG_COMMON
 	-DJPEG_INCLUDE_DIR=${prefix}/include/
 	-DPNG_INCLUDE_DIR=${prefix}/include/
 	-DFREETYPE_DIR=${prefix}
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DOSG_CPP_EXCEPTIONS_AVAILABLE=TRUE
 	-DOSG_GL1_AVAILABLE=ON
 	-DOSG_GL2_AVAILABLE=OFF
