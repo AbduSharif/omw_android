@@ -347,7 +347,7 @@ ExternalProject_Add(bullet
 )
 
 ExternalProject_Add(mygui
-	DEPENDS freetype2 gl4es
+	DEPENDS freetype2
 
 	URL https://github.com/MyGUI/mygui/archive/MyGUI${MYGUI_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/MyGUI${MYGUI_VERSION}.tar.gz
@@ -358,9 +358,9 @@ ExternalProject_Add(mygui
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DMYGUI_RENDERSYSTEM=4
 	-DMYGUI_BUILD_DEMOS=OFF
 	-DMYGUI_BUILD_TOOLS=OFF
@@ -531,8 +531,8 @@ set(OSG_COMMON
 )
 
 set(OSG_PATCH
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/psa.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/disable-polygon-offset.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/psa.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/disable-polygon-offset.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/remove-lib-prefix-from-plugins.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/remove-zlib-dependency.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/fix-freetype-include-dirs.patch &&
@@ -583,9 +583,9 @@ set(OPENMW_COMMON
  	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
  	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 #	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
@@ -595,26 +595,26 @@ set(OPENMW_COMMON
 )
 
 set(OPENMW_PATCH
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma2.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma2.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0001-loadingscreen-disable-for-now.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0009-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0010-android-fix-context-being-lost-on-app-minimize.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0014-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0012-components-misc-stringops-use-boost-format-instead-o.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/fix-build.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/psa.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb2.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/tcb_range_limit.diff &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/soft_particles_mr.diff &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/water_fix.diff &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/psa.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb2.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/tcb_range_limit.diff &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/soft_particles_mr.diff &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/water_fix.diff &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite
+	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite
 
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/glassmancody.info/openmw/-/archive/${OPENMW_VERSION}.tar.gz
