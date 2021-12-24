@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION bf019bf28023b30635dd3abb2aac273d2218bf2c)
+set(OPENMW_VERSION 826553f2beedbcaab26bf225a9452b4d6a0dca21)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -305,7 +305,6 @@ ExternalProject_Add(gl4es
 )
 
 ExternalProject_Add(sdl2
-	DEPENDS gl4es
 
 	URL https://www.libsdl.org/release/SDL2-${SDL2_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/SDL2-${SDL2_VERSION}.tar.gz
@@ -318,9 +317,6 @@ ExternalProject_Add(sdl2
 
 	BUILD_COMMAND ${wrapper_command} ndk-build
 	${COMMON_NDK_BUILD_FLAGS}
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
 	COMMAND cp libs/${app_abi}/libSDL2.so ${prefix}/lib/
@@ -529,9 +525,9 @@ set(OSG_COMMON
 	-DBUILD_OSG_PLUGINS_BY_DEFAULT=OFF
 	-DBUILD_OSG_DEPRECATED_SERIALIZERS=OFF
 	-DOSG_WINDOWING_SYSTEM_NONE=ON
-	-DOSG_USE_FLOAT_MATRIX=OFF
-	-DOSG_USE_FLOAT_PLANE=OFF
-	-DOSG_USE_FLOAT_QUAT=OFF
+#	-DOSG_USE_FLOAT_MATRIX=OFF
+#	-DOSG_USE_FLOAT_PLANE=OFF
+#	-DOSG_USE_FLOAT_QUAT=OFF
 )
 
 set(OSG_PATCH
