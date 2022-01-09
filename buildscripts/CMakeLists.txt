@@ -25,7 +25,7 @@ set(FFMPEG_VERSION 4.4)
 set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION 3738b4880b0059bde37fd762a0b68a3dd33eb6c5)
+set(GL4ES_VERSION 7aa7098d3d09b2efda143550104cc07a98390487)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://www.libsdl.org/download-2.0.php
@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 49d2daee6a3562dc2e11c54541897c16e0cae6cd)
+set(OPENMW_VERSION 99e4cbf51397b749f73b748418616aea48da09ef)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -606,9 +606,9 @@ set(OPENMW_PATCH
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb2.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/tcb_range_limit.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/soft_particles_mr.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/water_fix.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/soft_particles_mr.diff &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/water_fix.diff &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp
 )
 
