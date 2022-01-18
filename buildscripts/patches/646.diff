@@ -1,903 +1,174 @@
-diff --git a/apps/openmw/engine.cpp b/apps/openmw/engine.cpp
-index d7c315323da490713cbc7772a2d1d7b77517aaa2..a4f755dd05e282defe004d1ae27669d184120465 100644
---- a/apps/openmw/engine.cpp
-+++ b/apps/openmw/engine.cpp
-@@ -662,6 +662,7 @@ void OMW::Engine::prepareEngine (Settings::Manager & settings)
-         Settings::Manager::getString("texture mipmap", "General"),
-         Settings::Manager::getInt("anisotropy", "General")
-     );
-+    mResourceSystem->getSceneManager()->setCachePath(mCfgMgr.getCachePath().string());
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 419727c87dedeccff21c5fd36e5e5864d329b84f..33a20a0a9c7f9be1a68dd4392fa4a82f21589818 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -123,6 +123,7 @@
+     Feature #6288: Preserve the "blocked" record flag for referenceable objects.
+     Feature #6380: Commas are treated as whitespace in vanilla
+     Feature #6419: Topics shouldn't be greyed out if they can produce another topic reference
++    Feature #6541: Gloss-mapping
+     Task #6201: Remove the "Note: No relevant classes found. No output generated" warnings
+     Task #6264: Remove the old classes in animation.cpp
  
-     int numThreads = Settings::Manager::getInt("preload num threads", "Cells");
-     if (numThreads <= 0)
-diff --git a/apps/openmw/mwrender/objectpaging.cpp b/apps/openmw/mwrender/objectpaging.cpp
-index 7386c0069050e614cc192d9404f14ea0cd62bee0..30a001dddd46e8cc6a7a957b2cc296d96d5730cd 100644
---- a/apps/openmw/mwrender/objectpaging.cpp
-+++ b/apps/openmw/mwrender/objectpaging.cpp
-@@ -80,7 +80,7 @@ namespace MWRender
-             return obj->asNode();
-         else
-         {
--            osg::ref_ptr<osg::Node> node = createChunk(size, center, activeGrid, viewPoint, compile);
-+            osg::ref_ptr<osg::Node> node = createChunk(size, center, lod, activeGrid, viewPoint, compile);
-             mCache->addEntryToObjectCache(id, node.get());
-             return node;
-         }
-@@ -363,7 +363,7 @@ namespace MWRender
-         mMinSizeCostMultiplier = Settings::Manager::getFloat("object paging min size cost multiplier", "Terrain");
-     }
+diff --git a/components/nifosg/nifloader.cpp b/components/nifosg/nifloader.cpp
+index 43af68fc9004a23c44d2e7e795c9800b0e06ca85..0b143ed643ec39f37ae9053c9688f166c4fe9aae 100644
+--- a/components/nifosg/nifloader.cpp
++++ b/components/nifosg/nifloader.cpp
+@@ -1131,18 +1131,18 @@ namespace NifOsg
  
--    osg::ref_ptr<osg::Node> ObjectPaging::createChunk(float size, const osg::Vec2f& center, bool activeGrid, const osg::Vec3f& viewPoint, bool compile)
-+    osg::ref_ptr<osg::Node> ObjectPaging::createChunk(float size, const osg::Vec2f& center, unsigned char lod, bool activeGrid, const osg::Vec3f& viewPoint, bool compile)
-     {
-         osg::Vec2i startCell = osg::Vec2i(std::floor(center.x() - size/2.f), std::floor(center.y() - size/2.f));
- 
-@@ -455,15 +455,6 @@ namespace MWRender
-                     continue;
-             }
- 
--            float dSqr = (viewPoint - pos).length2();
--            if (!activeGrid)
--            {
--                std::lock_guard<std::mutex> lock(mSizeCacheMutex);
--                SizeCache::iterator found = mSizeCache.find(pair.first);
--                if (found != mSizeCache.end() && found->second < dSqr*minSize*minSize)
+             const auto& uvlist = data->uvlist;
+             int textureStage = 0;
+-            for (const unsigned int uvSet : boundTextures)
++            for (std::vector<unsigned int>::const_iterator it = boundTextures.begin(); it != boundTextures.end(); ++it, ++textureStage)
+             {
++                unsigned int uvSet = *it;
+                 if (uvSet >= uvlist.size())
+                 {
+                     Log(Debug::Verbose) << "Out of bounds UV set " << uvSet << " on shape \"" << name << "\" in " << mFilename;
+-                    if (!uvlist.empty())
+-                        geometry->setTexCoordArray(textureStage, new osg::Vec2Array(uvlist[0].size(), uvlist[0].data()), osg::Array::BIND_PER_VERTEX);
 -                    continue;
--            }
--
-             if (ref.mRefID == "prisonmarker" || ref.mRefID == "divinemarker" || ref.mRefID == "templemarker" || ref.mRefID == "northmarker")
-                 continue; // marker objects that have a hardcoded function in the game logic, should be hidden from the player
- 
-@@ -484,7 +475,12 @@ namespace MWRender
++                    if (uvlist.empty())
++                        continue;
++                    uvSet = 0;
                  }
+ 
+                 geometry->setTexCoordArray(textureStage, new osg::Vec2Array(uvlist[uvSet].size(), uvlist[uvSet].data()), osg::Array::BIND_PER_VERTEX);
+-                textureStage++;
              }
- 
--            osg::ref_ptr<const osg::Node> cnode = mSceneManager->getTemplate(model, false);
-+            float dSqr = (viewPoint - pos).length2();
-+            float radius2 = mSceneManager->getRadius2(model, false) * ref.mScale * ref.mScale;
-+            if (radius2 < dSqr * minSize * minSize && !activeGrid)
-+                continue;
-+
-+            osg::ref_ptr<const osg::Node> cnode = mSceneManager->getTemplate(model, false, lod);
- 
-             if (activeGrid)
-             {
-@@ -500,14 +496,6 @@ namespace MWRender
-                     continue;
-             }
- 
--            float radius2 = cnode->getBound().radius2() * ref.mScale*ref.mScale;
--            if (radius2 < dSqr*minSize*minSize && !activeGrid)
--            {
--                std::lock_guard<std::mutex> lock(mSizeCacheMutex);
--                mSizeCache[pair.first] = radius2;
--                continue;
--            }
--
-             auto emplaced = nodes.emplace(cnode, InstanceList());
-             if (emplaced.second)
-             {
-diff --git a/apps/openmw/mwrender/objectpaging.hpp b/apps/openmw/mwrender/objectpaging.hpp
-index 65f53d530c9f00cfcd862497cd1e1eb0d7147f78..ecba5d0690651bf3af6d3a983a0f18c8439dd231 100644
---- a/apps/openmw/mwrender/objectpaging.hpp
-+++ b/apps/openmw/mwrender/objectpaging.hpp
-@@ -29,7 +29,7 @@ namespace MWRender
- 
-         osg::ref_ptr<osg::Node> getChunk(float size, const osg::Vec2f& center, unsigned char lod, unsigned int lodFlags, bool activeGrid, const osg::Vec3f& viewPoint, bool compile) override;
- 
--        osg::ref_ptr<osg::Node> createChunk(float size, const osg::Vec2f& center, bool activeGrid, const osg::Vec3f& viewPoint, bool compile);
-+        osg::ref_ptr<osg::Node> createChunk(float size, const osg::Vec2f& center, unsigned char lod, bool activeGrid, const osg::Vec3f& viewPoint, bool compile);
- 
-         unsigned int getNodeMask() override;
- 
-@@ -71,10 +71,6 @@ namespace MWRender
- 
-         const RefTracker& getRefTracker() const { return mRefTracker; }
-         RefTracker& getWritableRefTracker() { return mRefTrackerLocked ? mRefTrackerNew : mRefTracker; }
--
--        std::mutex mSizeCacheMutex;
--        typedef std::map<ESM::RefNum, float> SizeCache;
--        SizeCache mSizeCache;
-     };
- 
-     class RefnumMarker : public osg::Object
-diff --git a/components/files/configurationmanager.cpp b/components/files/configurationmanager.cpp
-index 92d35a6b65314e26615f614226986d46c18ca6e9..d768c10974351da1e2ae30e60e7811665d252e15 100644
---- a/components/files/configurationmanager.cpp
-+++ b/components/files/configurationmanager.cpp
-@@ -31,6 +31,7 @@ ConfigurationManager::ConfigurationManager(bool silent)
- 
-     boost::filesystem::create_directories(mFixedPath.getUserConfigPath());
-     boost::filesystem::create_directories(mFixedPath.getUserDataPath());
-+    boost::filesystem::create_directories(mFixedPath.getCachePath());
- 
-     mLogPath = mFixedPath.getUserConfigPath();
- 
-diff --git a/components/files/linuxpath.cpp b/components/files/linuxpath.cpp
-index c3dead2962864f7f7496c7e326778048edc1adbb..13205bad8371b194680b58293543407f1508214b 100644
---- a/components/files/linuxpath.cpp
-+++ b/components/files/linuxpath.cpp
-@@ -68,7 +68,7 @@ boost::filesystem::path LinuxPath::getUserDataPath() const
- 
- boost::filesystem::path LinuxPath::getCachePath() const
- {
--    return getEnv("XDG_CACHE_HOME", getUserHome() / ".cache") / mName;
-+    return getUserDataPath() / "cache";
- }
- 
- boost::filesystem::path LinuxPath::getGlobalConfigPath() const
-diff --git a/components/resource/scenemanager.cpp b/components/resource/scenemanager.cpp
-index 66d48f9715f5bde7287a8ac9fa8809427374e857..5a8e8ee8876abd961fb53b504dedc4eaec74a6a4 100644
---- a/components/resource/scenemanager.cpp
-+++ b/components/resource/scenemanager.cpp
-@@ -8,6 +8,7 @@
- #include <osgParticle/ParticleSystem>
- 
- #include <osgUtil/IncrementalCompileOperation>
-+#include <osgUtil/Simplifier>
- 
- #include <osgDB/SharedStateManager>
- #include <osgDB/Registry>
-@@ -19,13 +20,18 @@
- 
- #include <components/misc/stringops.hpp>
- 
-+#include <components/vfs/archive.hpp>
- #include <components/vfs/manager.hpp>
- 
- #include <components/sceneutil/clone.hpp>
- #include <components/sceneutil/util.hpp>
- #include <components/sceneutil/controller.hpp>
- #include <components/sceneutil/optimizer.hpp>
-+#include <components/sceneutil/serialize.hpp>
- #include <components/sceneutil/visitor.hpp>
-+#include <components/sceneutil/workqueue.hpp>
-+
-+#include <components/settings/settings.hpp>
- 
- #include <components/shader/shadervisitor.hpp>
- #include <components/shader/shadermanager.hpp>
-@@ -35,6 +41,9 @@
- #include "objectcache.hpp"
- #include "multiobjectcache.hpp"
- 
-+#include <boost/filesystem.hpp>
-+#include <boost/lexical_cast.hpp>
-+
- namespace
- {
- 
-@@ -217,6 +226,62 @@ namespace Resource
-     };
- 
- 
-+    void RadiusCache::addElement(const std::string& name, std::time_t lastModified, float radius)
-+    {
-+        mData[{name, lastModified}] = { std::time(nullptr), radius };
-+    }
-+
-+    std::optional<RadiusCache::Data> RadiusCache::getData(const std::string& name, std::time_t lastModified) const
-+    {
-+        auto it = mData.find({ name, lastModified });
-+        if (it != mData.end())
-+            return it->second;
-+        return {};
-+    }
-+
-+    void RadiusCache::read(const std::string& path)
-+    {
-+        mPath = path;
-+        if (!boost::filesystem::exists(mPath))
-+            return;
-+
-+        boost::filesystem::ifstream file(mPath);
-+
-+        std::string line;
-+        while (getline(file, line))
-+        {
-+            std::string sourceFile = line;
-+
-+            if (!getline(file, line))
-+                break;
-+            std::time_t lastModified = boost::lexical_cast<std::time_t>(line);
-+
-+            if (!getline(file, line))
-+                break;
-+            std::time_t lastAccessed = boost::lexical_cast<std::time_t>(line);
-+
-+            if (!getline(file, line))
-+                break;
-+            float radius2 = boost::lexical_cast<float>(line);
-+
-+            mData[{sourceFile, lastModified}] = { lastAccessed, radius2 };
-+        }
-+    }
-+
-+    void RadiusCache::write() const
-+    {
-+        auto now = std::time(nullptr);
-+        boost::filesystem::ofstream radiusCacheFile(mPath + ".temp");
-+        for (const auto& [key, data] : mData) {
-+            auto diff = std::difftime(now, data.mLastAccessed);
-+            constexpr double month = 30 * 24 * 60 * 60;
-+            if (diff > month)
-+                continue;
-+            radiusCacheFile << key.first << '\n' << key.second << '\n' << data.mLastAccessed << '\n' << data.mMeshRadius2 << '\n';
-+        }
-+        radiusCacheFile.close();
-+        boost::filesystem::rename(mPath + ".temp", mPath);
-+    }
- 
-     SceneManager::SceneManager(const VFS::Manager *vfs, Resource::ImageManager* imageManager, Resource::NifFileManager* nifFileManager)
-         : ResourceManager(vfs)
-@@ -235,6 +300,7 @@ namespace Resource
-         , mMaxAnisotropy(1)
-         , mUnRefImageDataAfterApply(false)
-         , mParticleSystemMask(~0u)
-+        , mWorkQueue(new SceneUtil::WorkQueue)
-     {
-     }
- 
-@@ -310,7 +376,9 @@ namespace Resource
- 
-     SceneManager::~SceneManager()
-     {
--        // this has to be defined in the .cpp file as we can't delete incomplete types
-+        mRadiusCache.write();
-+        for (auto& item : mWorkItems)
-+            item->waitTillDone();
-     }
- 
-     Shader::ShaderManager &SceneManager::getShaderManager()
-@@ -323,6 +391,12 @@ namespace Resource
-         mShaderManager->setShaderPath(path);
-     }
- 
-+    void SceneManager::setCachePath(const std::string& path)
-+    {
-+        mCachePath = path;
-+        mRadiusCache.read(path + "/radiusCache.txt");
-+    }
-+
-     bool SceneManager::checkLoaded(const std::string &name, double timeStamp)
-     {
-         std::string normalized = name;
-@@ -363,6 +437,7 @@ namespace Resource
-             return NifOsg::Loader::load(nifFileManager->get(normalizedFilename), imageManager);
-         else
-         {
-+            SceneUtil::registerSerializers();
-             osgDB::ReaderWriter* reader = osgDB::Registry::instance()->getReaderWriterForExtension(ext);
-             if (!reader)
-             {
-@@ -492,59 +567,59 @@ namespace Resource
-         return options;
-     }
- 
--    osg::ref_ptr<const osg::Node> SceneManager::getTemplate(const std::string &name, bool compile)
-+    std::pair<std::vector<float>, std::vector<float>> getSimplificationOtpions()
-     {
--        std::string normalized = name;
--        mVFS->normalizeFilename(normalized);
-+        std::istringstream inputFactors(Settings::Manager::getString("object paging simplify factor", "Terrain"));
-+        std::vector<float> factors((std::istream_iterator<float>(inputFactors)), (std::istream_iterator<float>()));
- 
--        osg::ref_ptr<osg::Object> obj = mCache->getRefFromObjectCache(normalized);
--        if (obj)
--            return osg::ref_ptr<const osg::Node>(static_cast<osg::Node*>(obj.get()));
--        else
--        {
--            osg::ref_ptr<osg::Node> loaded;
--            try
--            {
--                Files::IStreamPtr file = mVFS->get(normalized);
--
--                loaded = load(file, normalized, mImageManager, mNifFileManager);
--            }
--            catch (std::exception& e)
--            {
--                static const char * const sMeshTypes[] = { "nif", "osg", "osgt", "osgb", "osgx", "osg2", "dae" };
--
--                for (unsigned int i=0; i<sizeof(sMeshTypes)/sizeof(sMeshTypes[0]); ++i)
--                {
--                    normalized = "meshes/marker_error." + std::string(sMeshTypes[i]);
--                    if (mVFS->exists(normalized))
--                    {
--                        Log(Debug::Error) << "Failed to load '" << name << "': " << e.what() << ", using marker_error." << sMeshTypes[i] << " instead";
--                        Files::IStreamPtr file = mVFS->get(normalized);
--                        loaded = load(file, normalized, mImageManager, mNifFileManager);
--                        break;
--                    }
--                }
--
--                if (!loaded)
--                    throw;
--            }
-+        std::istringstream inputErrors(Settings::Manager::getString("object paging simplify error", "Terrain"));
-+        std::vector<float> errors((std::istream_iterator<float>(inputErrors)), (std::istream_iterator<float>()));
-+        if (factors.size() != errors.size()) {
-+            throw std::runtime_error("The object paging simplify factor and errors must have the same number of elements");
-+        }
-+        if (factors.empty()) {
-+            throw std::runtime_error("The object paging simplify factor and errors must have at least one element");
-+        }
-+        return { factors, errors };
-+    }
- 
--            // set filtering settings
--            SetFilterSettingsVisitor setFilterSettingsVisitor(mMinFilter, mMagFilter, mMaxAnisotropy);
--            loaded->accept(setFilterSettingsVisitor);
--            SetFilterSettingsControllerVisitor setFilterSettingsControllerVisitor(mMinFilter, mMagFilter, mMaxAnisotropy);
--            loaded->accept(setFilterSettingsControllerVisitor);
-+    class Simplifer : public osgUtil::Simplifier
-+    {
-+    public:
-+        Simplifer(double sampleRatio = 1.0, double maximumError = FLT_MAX, double maximumLength = 0.0) :
-+            osgUtil::Simplifier(sampleRatio, maximumError, maximumLength)
-+        {
-+            _triStrip = true;
-+            _smoothing = false;
-+        }
-+    };
- 
--            osg::ref_ptr<Shader::ShaderVisitor> shaderVisitor (createShaderVisitor());
--            loaded->accept(*shaderVisitor);
-+    class CreateSimplifiedTemplateWorkItem : public SceneUtil::WorkItem
-+    {
-+    public:
-+        CreateSimplifiedTemplateWorkItem(
-+            const std::string& name,
-+            osg::ref_ptr<osg::Node> loaded,
-+            float sampleRatio,
-+            float maximumError,
-+            const VFS::Manager* vfs,
-+            const std::string& cachePath
-+        ) :
-+            mName(name)
-+            , mLoaded(loaded)
-+            , mSampleRatio(sampleRatio)
-+            , mMaximumError(maximumError)
-+            , mVFS(vfs)
-+            , mCachePath(cachePath)
-+        {
-+        }
- 
--            // share state
--            // do this before optimizing so the optimizer will be able to combine nodes more aggressively
--            // note, because StateSets will be shared at this point, StateSets can not be modified inside the optimizer
--            mSharedStateMutex.lock();
--            mSharedStateManager->share(loaded.get());
--            mSharedStateMutex.unlock();
-+        void doWork() override
-+        {
-+            std::string normalized = mName;
-+            mVFS->normalizeFilename(normalized);
- 
-+            auto simplifiedName = mVFS->getSimplifiedName(normalized, mSampleRatio, mMaximumError);
-             if (canOptimize(normalized))
-             {
-                 SceneUtil::Optimizer optimizer;
-@@ -552,17 +627,48 @@ namespace Resource
- 
-                 static const unsigned int options = getOptimizationOptions();
- 
--                optimizer.optimize(loaded, options);
-+                optimizer.optimize(mLoaded, options);
-+                mLoaded->getOrCreateStateSet()->setMode(GL_CULL_FACE, osg::StateAttribute::ON);
-+                Simplifer simplifier(mSampleRatio, mMaximumError);
-+                mLoaded->accept(simplifier);
-             }
- 
--            if (compile && mIncrementalCompileOperation)
--                mIncrementalCompileOperation->add(loaded);
--            else
--                loaded->getBound();
-+            //serialize the simplified model
-+            SceneUtil::registerSerializers();
-+            osgDB::ReaderWriter* rw = osgDB::Registry::instance()->getReaderWriterForExtension("osgb");
-+            if (!rw)
-+                throw std::runtime_error("can not find readerwriter for binary");
- 
--            mCache->addEntryToObjectCache(normalized, loaded);
--            return loaded;
-+            {
-+                boost::filesystem::ofstream stream(mCachePath + "/" + simplifiedName + ".temp", std::ios::binary);
-+                osg::ref_ptr<osgDB::Options> options = new osgDB::Options;
-+                options->setPluginStringData("WriteImageHint", "UseExternal");
-+                rw->writeNode(*mLoaded, stream, options);
-+            }
-+            boost::filesystem::rename(mCachePath + "/" + simplifiedName + ".temp", mCachePath + "/" + simplifiedName);
          }
-+
-+    private:
-+        std::string mName;
-+        osg::ref_ptr<osg::Node> mLoaded;
-+        float mSampleRatio;
-+        float mMaximumError;
-+        const VFS::Manager* mVFS;
-+        std::string mCachePath;
-+    };
-+
-+    osg::ref_ptr<const osg::Node> SceneManager::getTemplate(const std::string &name, bool compile, unsigned char lod)
-+    {
-+        static bool mSimplifyObjects = Settings::Manager::getBool("object paging simplify objects", "Terrain");
-+
-+        if (lod == 0)
-+            return getOriginalTemplate(name, compile);
-+
-+        //if we are not allowed to use automatic simplification, we load the non simplified one
-+        if (!mSimplifyObjects)
-+            return getOriginalTemplate(name, compile);
-+
-+        return getSimplifiedTemplate(name, compile, lod);
+ 
+@@ -1495,14 +1495,8 @@ namespace NifOsg
+                         case Nif::NiTexturingProperty::BumpTexture:
+                         case Nif::NiTexturingProperty::DetailTexture:
+                         case Nif::NiTexturingProperty::DecalTexture:
+-                            break;
+                         case Nif::NiTexturingProperty::GlossTexture:
+-                        {
+-                            // Not used by the vanilla engine. MCP (Morrowind Code Patch) adds an option to use Gloss maps:
+-                            // "- Gloss map fix. Morrowind removed gloss map entries from model files after loading them. This stops Morrowind from removing them."
+-                            // Log(Debug::Info) << "NiTexturingProperty::GlossTexture in " << mFilename << " not currently used.";
+-                            continue;
+-                        }
++                            break;
+                         default:
+                         {
+                             Log(Debug::Info) << "Unhandled texture stage " << i << " on shape \"" << nodeName << "\" in " << mFilename;
+@@ -1594,6 +1588,12 @@ namespace NifOsg
+                         stateset->addUniform(new osg::Uniform("bumpMapMatrix", bumpMapMatrix));
+                         stateset->addUniform(new osg::Uniform("envMapLumaBias", texprop->envMapLumaBias));
+                     }
++                    else if (i == Nif::NiTexturingProperty::GlossTexture)
++                    {
++                        // A gloss map is an environment map mask.
++                        // Gloss maps are only implemented in the object shaders as well.
++                        stateset->setTextureMode(texUnit, GL_TEXTURE_2D, osg::StateAttribute::OFF);
++                    }
+                     else if (i == Nif::NiTexturingProperty::DecalTexture)
+                     {
+                         // This is only an inaccurate imitation of the original implementation,
+@@ -1637,6 +1637,9 @@ namespace NifOsg
+                     case Nif::NiTexturingProperty::DecalTexture:
+                         texture2d->setName("decalMap");
+                         break;
++                    case Nif::NiTexturingProperty::GlossTexture:
++                        texture2d->setName("glossMap");
++                        break;
+                     default:
+                         break;
+                     }
+diff --git a/components/shader/shadervisitor.cpp b/components/shader/shadervisitor.cpp
+index 107665369c21666374806b1e736664505696d4c1..d8bbeeadc2997a805e3fc61158ede1fe82331fd9 100644
+--- a/components/shader/shadervisitor.cpp
++++ b/components/shader/shadervisitor.cpp
+@@ -244,7 +244,7 @@ namespace Shader
+         addedState->setName("addedState");
      }
  
-     osg::ref_ptr<osg::Node> SceneManager::cacheInstance(const std::string &name)
-@@ -772,6 +878,168 @@ namespace Resource
-         stats->setAttribute(frameNumber, "Node Instance", mInstanceCache->getCacheSize());
-     }
- 
-+    float SceneManager::getRadius2(const std::string& name, bool compile)
-+    {
-+         std::string normalized = name;
-+         mVFS->normalizeFilename(normalized);
-+
-+        auto itFile = mVFS->getIndex().find(normalized);
-+        if (itFile == mVFS->getIndex().end())
-+            return 0.0;
-+
-+        const auto& data = mRadiusCache.getData(normalized, itFile->second->getLastModified());
-+        if (!data)
-+        {
-+            auto radius = getTemplate(name, compile)->getBound().radius2();
-+            mRadiusCache.addElement(normalized, itFile->second->getLastModified() , radius);
-+            return radius;
-+        }
-+        return data->mMeshRadius2;
-+    }
-+
-+    osg::ref_ptr<osg::Node> SceneManager::loadOriginalTemplateFromFile(const std::string& name, bool compile)
-+    {
-+        std::string normalized = name;
-+        mVFS->normalizeFilename(normalized);
-+
-+        osg::ref_ptr<osg::Node> loaded;
-+        try
-+        {
-+            Files::IStreamPtr file = mVFS->get(normalized);
-+
-+            loaded = load(file, normalized, mImageManager, mNifFileManager);
-+        }
-+        catch (std::exception& e)
-+        {
-+            static const char* const sMeshTypes[] = { "nif", "osg", "osgt", "osgb", "osgx", "osg2", "dae" };
-+
-+            for (unsigned int i = 0; i < sizeof(sMeshTypes) / sizeof(sMeshTypes[0]); ++i)
-+            {
-+                normalized = "meshes/marker_error." + std::string(sMeshTypes[i]);
-+                if (mVFS->exists(normalized))
-+                {
-+                    Log(Debug::Error) << "Failed to load '" << name << "': " << e.what() << ", using marker_error." << sMeshTypes[i] << " instead";
-+                    Files::IStreamPtr file = mVFS->get(normalized);
-+                    loaded = load(file, normalized, mImageManager, mNifFileManager);
-+                    break;
-+                }
-+            }
-+
-+            if (!loaded)
-+                throw;
-+        }
-+        return loaded;
-+    }
-+
-+    osg::ref_ptr<osg::Node> SceneManager::loadOriginalTemplate(const std::string& name, bool compile)
-+    {
-+        std::string normalized = name;
-+        mVFS->normalizeFilename(normalized);
-+
-+        osg::ref_ptr<osg::Node> loaded = loadOriginalTemplateFromFile(name, compile);
-+
-+        // set filtering settings
-+        SetFilterSettingsVisitor setFilterSettingsVisitor(mMinFilter, mMagFilter, mMaxAnisotropy);
-+        loaded->accept(setFilterSettingsVisitor);
-+        SetFilterSettingsControllerVisitor setFilterSettingsControllerVisitor(mMinFilter, mMagFilter, mMaxAnisotropy);
-+        loaded->accept(setFilterSettingsControllerVisitor);
-+
-+        osg::ref_ptr<Shader::ShaderVisitor> shaderVisitor(createShaderVisitor());
-+        loaded->accept(*shaderVisitor);
-+
-+        // share state
-+        // do this before optimizing so the optimizer will be able to combine nodes more aggressively
-+        // note, because StateSets will be shared at this point, StateSets can not be modified inside the optimizer
-+        mSharedStateMutex.lock();
-+        mSharedStateManager->share(loaded.get());
-+        mSharedStateMutex.unlock();
-+
-+        if (canOptimize(normalized))
-+        {
-+            SceneUtil::Optimizer optimizer;
-+            optimizer.setIsOperationPermissibleForObjectCallback(new CanOptimizeCallback);
-+
-+            static const unsigned int options = getOptimizationOptions();
-+
-+            optimizer.optimize(loaded, options);
-+        }
-+
-+        if (compile && mIncrementalCompileOperation)
-+            mIncrementalCompileOperation->add(loaded);
-+        else
-+            loaded->getBound();
-+
-+        return loaded;
-+    }
-+
-+    osg::ref_ptr<osg::Node> SceneManager::loadSimplifiedTemplate(const std::string& simplifiedName, bool compile)
-+    {
-+        //we look if we already have the simplied object in the cache
-+        osg::ref_ptr<osg::Object> obj = mCache->getRefFromObjectCache(simplifiedName);
-+        if (obj)
-+            return static_cast<osg::Node*>(obj.get());
-+
-+        //we do not find it in the cache, we will have to load it from file
-+        if (mVFS->exists(simplifiedName))
-+            return getOriginalTemplate(simplifiedName, compile);
-+
-+        return nullptr;
-+    }
-+
-+    osg::ref_ptr<osg::Node> SceneManager::getOriginalTemplate(const std::string& name, bool compile)
-+    {
-+        std::string normalized = name;
-+        mVFS->normalizeFilename(normalized);
-+
-+        osg::ref_ptr<osg::Object> obj = mCache->getRefFromObjectCache(normalized);
-+        if (obj)
-+            return static_cast<osg::Node*>(obj.get());
-+        else
-+        {
-+            auto loaded = loadOriginalTemplate(name, compile);
-+            mCache->addEntryToObjectCache(normalized, loaded);
-+            return loaded;
-+        }
-+    }
-+
-+    osg::ref_ptr<osg::Node> SceneManager::getSimplifiedTemplate(const std::string& name, bool compile, unsigned char lod)
-+    {
-+        static const auto simplifyOptions = getSimplificationOtpions();
-+        if (lod >= simplifyOptions.first.size())
-+            lod = simplifyOptions.first.size() - 1;
-+
-+        std::string normalized = name;
-+        mVFS->normalizeFilename(normalized);
-+        auto simplifiedName = mVFS->getSimplifiedName(normalized, simplifyOptions.first[lod], simplifyOptions.second[lod]);
-+
-+        osg::ref_ptr<osg::Node> loaded = loadSimplifiedTemplate(simplifiedName, compile);
-+        if (loaded)
-+            return loaded;
-+
-+        //we do not find it in the VFS, we will generate one 'on the fly'
-+        loaded = loadOriginalTemplateFromFile(name, compile);
-+
-+        //we check that the simplification was not already scheduled
-+        if (mItems.find(simplifiedName) != mItems.end())
-+            return loaded;
-+
-+        mItems.insert(simplifiedName);
-+
-+        //schedule its simplification
-+        auto item = new CreateSimplifiedTemplateWorkItem(
-+            name,
-+            loaded,
-+            simplifyOptions.first[lod],
-+            simplifyOptions.second[lod],
-+            mVFS,
-+            mCachePath);
-+        mWorkItems.push_back(item);
-+        mWorkQueue->addWorkItem(item);
-+
-+        mCache->addEntryToObjectCache(simplifiedName, loaded);
-+        return loaded;
-+    }
-+ 
-     Shader::ShaderVisitor *SceneManager::createShaderVisitor(const std::string& shaderPrefix, bool translucentFramebuffer)
+-    const char* defaultTextures[] = { "diffuseMap", "normalMap", "emissiveMap", "darkMap", "detailMap", "envMap", "specularMap", "decalMap", "bumpMap" };
++    const char* defaultTextures[] = { "diffuseMap", "normalMap", "emissiveMap", "darkMap", "detailMap", "envMap", "specularMap", "decalMap", "bumpMap", "glossMap" };
+     bool isTextureNameRecognized(const std::string& name)
      {
-         Shader::ShaderVisitor* shaderVisitor = new Shader::ShaderVisitor(*mShaderManager.get(), *mImageManager, shaderPrefix);
-diff --git a/components/resource/scenemanager.hpp b/components/resource/scenemanager.hpp
-index bf69a8c4bec197f580438223ddb69a1ccef59d00..d94c31a5ce5d5005ef64c286c586b0b38219558e 100644
---- a/components/resource/scenemanager.hpp
-+++ b/components/resource/scenemanager.hpp
-@@ -1,10 +1,12 @@
- #ifndef OPENMW_COMPONENTS_RESOURCE_SCENEMANAGER_H
- #define OPENMW_COMPONENTS_RESOURCE_SCENEMANAGER_H
+         for (unsigned int i=0; i<sizeof(defaultTextures)/sizeof(defaultTextures[0]); ++i)
+@@ -325,6 +325,14 @@ namespace Shader
+                             {
+                                 mRequirements.back().mShaderRequired = true;
+                             }
++                            else if (texName == "glossMap")
++                            {
++                                mRequirements.back().mShaderRequired = true;
++                                if (!writableStateSet)
++                                    writableStateSet = getWritableStateSet(node);
++                                // As well as gloss maps
++                                writableStateSet->setTextureMode(unit, GL_TEXTURE_2D, osg::StateAttribute::ON);
++                            }
+                         }
+                         else
+                             Log(Debug::Error) << "ShaderVisitor encountered unknown texture " << texture;
+diff --git a/files/shaders/objects_fragment.glsl b/files/shaders/objects_fragment.glsl
+index 9b60e7c6a49b2c82c6b4b3287a37344cad053cb2..85950c7468ce1a873d0b9dec3fb67bd46b68b879 100644
+--- a/files/shaders/objects_fragment.glsl
++++ b/files/shaders/objects_fragment.glsl
+@@ -58,6 +58,11 @@ uniform vec2 envMapLumaBias;
+ uniform mat2 bumpMapMatrix;
+ #endif
  
-+#include <ctime>
- #include <string>
- #include <map>
- #include <memory>
- #include <mutex>
-+#include <optional>
- 
- #include <osg/ref_ptr>
- #include <osg/Node>
-@@ -35,6 +37,12 @@ namespace Shader
-     class ShaderVisitor;
- }
- 
-+namespace SceneUtil
-+{
-+    class WorkItem;
-+    class WorkQueue;
-+}
++#if @glossMap
++uniform sampler2D glossMap;
++varying vec2 glossMapUV;
++#endif
 +
- namespace Resource
- {
-     class TemplateRef : public osg::Object
-@@ -65,6 +73,30 @@ namespace Resource
+ uniform bool simpleWater;
  
-     class MultiObjectCache;
+ varying float euclideanDepth;
+@@ -168,8 +173,14 @@ void main()
+     envLuma = clamp(bumpTex.b * envMapLumaBias.x + envMapLumaBias.y, 0.0, 1.0);
+ #endif
  
-+    class RadiusCache
-+    {
-+    public:
-+        struct Data
-+        {
-+            std::time_t mLastAccessed;
-+            float mMeshRadius2;
-+        };
++    vec3 envEffect = texture2D(envMap, envTexCoordGen).xyz * envMapColor.xyz * envLuma;
 +
-+        void addElement(const std::string& name, std::time_t lastModified, float radius);
++#if @glossMap
++    envEffect *= texture2D(glossMap, glossMapUV).xyz;
++#endif
 +
-+        std::optional<Data> getData(const std::string& name, std::time_t lastModified) const;
+ #if @preLightEnv
+-    gl_FragData[0].xyz += texture2D(envMap, envTexCoordGen).xyz * envMapColor.xyz * envLuma;
++    gl_FragData[0].xyz += envEffect;
+ #endif
+ 
+ #endif
+@@ -189,7 +200,7 @@ void main()
+     gl_FragData[0].xyz *= lighting;
+ 
+ #if @envMap && !@preLightEnv
+-    gl_FragData[0].xyz += texture2D(envMap, envTexCoordGen).xyz * envMapColor.xyz * envLuma;
++    gl_FragData[0].xyz += envEffect;
+ #endif
+ 
+ #if @emissiveMap
+diff --git a/files/shaders/objects_vertex.glsl b/files/shaders/objects_vertex.glsl
+index 969fe5903e5a3fa0f6923ee1f08f8330d7982e8c..77c7fef39164f5c732a69fd13cd501f63f9bf097 100644
+--- a/files/shaders/objects_vertex.glsl
++++ b/files/shaders/objects_vertex.glsl
+@@ -47,6 +47,10 @@ varying vec2 bumpMapUV;
+ varying vec2 specularMapUV;
+ #endif
+ 
++#if @glossMap
++varying vec2 glossMapUV;
++#endif
 +
-+        void read(const std::string& path);
+ varying float euclideanDepth;
+ varying float linearDepth;
+ 
+@@ -120,6 +124,10 @@ void main(void)
+     specularMapUV = (gl_TextureMatrix[@specularMapUV] * gl_MultiTexCoord@specularMapUV).xy;
+ #endif
+ 
++#if @glossMap
++    glossMapUV = (gl_TextureMatrix[@glossMapUV] * gl_MultiTexCoord@glossMapUV).xy;
++#endif
 +
-+        void write() const;
-+
-+    private:
-+        std::string mPath;
-+        using KeyT = std::pair<std::string, std::time_t>;
-+        std::map<KeyT, Data>  mData;
-+    };
-+
-+
-     /// @brief Handles loading and caching of scenes, e.g. .nif files or .osg files
-     /// @note Some methods of the scene manager can be used from any thread, see the methods documentation for more details.
-     class SceneManager : public ResourceManager
-@@ -109,6 +141,8 @@ namespace Resource
- 
-         void setShaderPath(const std::string& path);
- 
-+        void setCachePath(const std::string& path);
-+
-         /// Check if a given scene is loaded and if so, update its usage timestamp to prevent it from being unloaded
-         bool checkLoaded(const std::string& name, double referenceTime);
- 
-@@ -116,7 +150,7 @@ namespace Resource
-         /// @note If the given filename does not exist or fails to load, an error marker mesh will be used instead.
-         ///  If even the error marker mesh can not be found, an exception is thrown.
-         /// @note Thread safe.
--        osg::ref_ptr<const osg::Node> getTemplate(const std::string& name, bool compile=true);
-+        osg::ref_ptr<const osg::Node> getTemplate(const std::string& name, bool compile=true, unsigned char lod=0);
- 
-         /// Create an instance of the given scene template and cache it for later use, so that future calls to getInstance() can simply
-         /// return this cached object instead of creating a new one.
-@@ -178,8 +212,15 @@ namespace Resource
- 
-         void reportStats(unsigned int frameNumber, osg::Stats* stats) const override;
- 
-+        float getRadius2(const std::string& name, bool compile);
-+
-     private:
- 
-+        osg::ref_ptr<osg::Node> loadOriginalTemplateFromFile(const std::string& name, bool compile);
-+        osg::ref_ptr<osg::Node> loadOriginalTemplate(const std::string& name, bool compile);
-+        osg::ref_ptr<osg::Node> getOriginalTemplate(const std::string& name, bool compile);
-+        osg::ref_ptr<osg::Node> loadSimplifiedTemplate(const std::string& name, bool compile);
-+        osg::ref_ptr<osg::Node> getSimplifiedTemplate(const std::string& name, bool compile, unsigned char lod);
-         Shader::ShaderVisitor* createShaderVisitor(const std::string& shaderPrefix = "objects", bool translucentFramebuffer = false);
- 
-         std::unique_ptr<Shader::ShaderManager> mShaderManager;
-@@ -209,6 +250,11 @@ namespace Resource
-         osg::ref_ptr<osgUtil::IncrementalCompileOperation> mIncrementalCompileOperation;
- 
-         unsigned int mParticleSystemMask;
-+        RadiusCache mRadiusCache;
-+        std::set<std::string> mItems;
-+        osg::ref_ptr<SceneUtil::WorkQueue> mWorkQueue;
-+        std::list<osg::ref_ptr<SceneUtil::WorkItem>> mWorkItems;
-+        std::string mCachePath;
- 
-         SceneManager(const SceneManager&);
-         void operator = (const SceneManager&);
-diff --git a/components/sceneutil/serialize.cpp b/components/sceneutil/serialize.cpp
-index 7e176be3dd27ae64b08315567e69c54a2167e066..8f1245353f20fb1efb6496a3cedffb650d952d92 100644
---- a/components/sceneutil/serialize.cpp
-+++ b/components/sceneutil/serialize.cpp
-@@ -113,10 +113,6 @@ void registerSerializers()
-         mgr->addWrapper(new CameraRelativeTransformSerializer);
-         mgr->addWrapper(new MatrixTransformSerializer);
- 
--        // Don't serialize Geometry data as we are more interested in the overall structure rather than tons of vertex data that would make the file large and hard to read.
--        mgr->removeWrapper(mgr->findWrapper("osg::Geometry"));
--        mgr->addWrapper(new GeometrySerializer);
--
-         // ignore the below for now to avoid warning spam
-         const char* ignore[] = {
-             "MWRender::PtrHolder",
-diff --git a/components/vfs/archive.hpp b/components/vfs/archive.hpp
-index 971ac15b39777726e0f97c6b53aaa531f6354fe6..21bd05000ce96294f8d32fab6a068b7b26322e77 100644
---- a/components/vfs/archive.hpp
-+++ b/components/vfs/archive.hpp
-@@ -1,6 +1,7 @@
- #ifndef OPENMW_COMPONENTS_RESOURCE_ARCHIVE_H
- #define OPENMW_COMPONENTS_RESOURCE_ARCHIVE_H
- 
-+#include <ctime>
- #include <map>
- 
- #include <components/files/constrainedfilestream.hpp>
-@@ -14,6 +15,8 @@ namespace VFS
-         virtual ~File() {}
- 
-         virtual Files::IStreamPtr open() = 0;
-+
-+        virtual std::time_t getLastModified() = 0;
-     };
- 
-     class Archive
-diff --git a/components/vfs/bsaarchive.cpp b/components/vfs/bsaarchive.cpp
-index e6d779aabc5c6f366b7130a19e943f0e5c39155a..3401e09acbf28832f46d9c251b82097fa5810f48 100644
---- a/components/vfs/bsaarchive.cpp
-+++ b/components/vfs/bsaarchive.cpp
-@@ -1,5 +1,6 @@
- #include "bsaarchive.hpp"
- #include <components/bsa/compressedbsafile.hpp>
-+#include <boost/filesystem.hpp>
- #include <memory>
- 
- namespace VFS
-@@ -70,4 +71,11 @@ Files::IStreamPtr BsaArchiveFile::open()
-     return mFile->getFile(mInfo);
- }
- 
-+std::time_t BsaArchiveFile::getLastModified()
-+{
-+    if(mLastModified == -1)
-+        mLastModified = boost::filesystem::last_write_time(mFile->getFilename());
-+    return mLastModified;
-+}
-+
- }
-diff --git a/components/vfs/bsaarchive.hpp b/components/vfs/bsaarchive.hpp
-index c979b5ce7edc3e84c5d78c79cc9a53298c91bbc6..67f163da8c9ea6910719f338e45d19f8ac6f55d9 100644
---- a/components/vfs/bsaarchive.hpp
-+++ b/components/vfs/bsaarchive.hpp
-@@ -14,8 +14,13 @@ namespace VFS
- 
-         Files::IStreamPtr open() override;
- 
-+        std::time_t getLastModified() override;
-+
-         const Bsa::BSAFile::FileStruct* mInfo;
-         Bsa::BSAFile* mFile;
-+
-+    private:
-+        std::time_t mLastModified = -1;
-     };
- 
-     class BsaArchive : public Archive
-diff --git a/components/vfs/filesystemarchive.cpp b/components/vfs/filesystemarchive.cpp
-index 17f3891ec673c1af0bb766af8bc37d1ff82933ef..75b8586482339627481994cc4f10bfcfb855a74d 100644
---- a/components/vfs/filesystemarchive.cpp
-+++ b/components/vfs/filesystemarchive.cpp
-@@ -55,12 +55,8 @@ namespace VFS
- 
-     bool FileSystemArchive::contains(const std::string& file, char (*normalize_function)(char)) const
-     {
--        for (const auto& it : mIndex)
--        {
--            if(it.first == file)
--                return true;
--        }
--        return false;
-+        auto it = mIndex.find(file);
-+        return it != mIndex.end();
-     }
- 
-     std::string FileSystemArchive::getDescription() const
-@@ -80,4 +76,10 @@ namespace VFS
-         return Files::openConstrainedFileStream(mPath.c_str());
-     }
- 
-+    std::time_t FileSystemArchiveFile::getLastModified()
-+    {
-+        if (mLastModified == -1)
-+            mLastModified = boost::filesystem::last_write_time(mPath);
-+        return mLastModified;
-+    }
- }
-diff --git a/components/vfs/filesystemarchive.hpp b/components/vfs/filesystemarchive.hpp
-index 70463d32f222ff83435c26d2cb5408d54c3271f4..613055c5082d27afb274ee79ba48ac3873517f02 100644
---- a/components/vfs/filesystemarchive.hpp
-+++ b/components/vfs/filesystemarchive.hpp
-@@ -13,9 +13,11 @@ namespace VFS
- 
-         Files::IStreamPtr open() override;
- 
-+        std::time_t getLastModified() override;
-+
-     private:
-         std::string mPath;
--
-+        std::time_t mLastModified = -1;
-     };
- 
-     class FileSystemArchive : public Archive
-diff --git a/components/vfs/manager.cpp b/components/vfs/manager.cpp
-index 045fe3cf5c255ebb06dd45f1ac875824f9666d38..28a32cbe0ebb810ece9cb7629537c42784164f90 100644
---- a/components/vfs/manager.cpp
-+++ b/components/vfs/manager.cpp
-@@ -78,6 +78,16 @@ namespace VFS
-         return found->second->open();
-     }
- 
-+    std::string Manager::getSimplifiedName(std::string normalizedName, float factor, float error) const
-+    {
-+        std::map<std::string, File*>::const_iterator found = mIndex.find(normalizedName);
-+        if (found == mIndex.end())
-+            throw std::runtime_error("Resource '" + normalizedName + "' not found");
-+        std::replace(normalizedName.begin(), normalizedName.end(), '/', '_');   //to avoid subdirectories
-+        normalizedName += "_" + std::to_string(factor) + "_" + std::to_string(error) + "_" + std::to_string(found->second->getLastModified()) + "_dist.osgb";
-+        return normalizedName;
-+    }
-+
-     bool Manager::exists(const std::string &name) const
-     {
-         std::string normalized = name;
-diff --git a/components/vfs/manager.hpp b/components/vfs/manager.hpp
-index 5a09a995eb5b880600fc97151068573720475ba8..34973cbd65911e75a808a93b62a3af30d65a864a 100644
---- a/components/vfs/manager.hpp
-+++ b/components/vfs/manager.hpp
-@@ -58,7 +58,10 @@ namespace VFS
-         /// @note May be called from any thread once the index has been built.
-         Files::IStreamPtr getNormalized(const std::string& normalizedName) const;
- 
-+        std::string getSimplifiedName(std::string normalized, float factor, float error) const;
-+
-         std::string getArchive(const std::string& name) const;
-+
-     private:
-         bool mStrict;
- 
-diff --git a/files/openmw.cfg.local b/files/openmw.cfg.local
-index 76f829379bcb30f9126ff2f8f79e7ed1e126bbcd..03857df36fd82cb72ff160dac926bde6201138ab 100644
---- a/files/openmw.cfg.local
-+++ b/files/openmw.cfg.local
-@@ -5,6 +5,7 @@
- data="?global?data"
- data=./data
- data-local="?userdata?data"
-+data="?userdata?cache"
- resources=./resources
- script-blacklist=Museum
- script-blacklist=MockChangeScript
-diff --git a/files/settings-default.cfg b/files/settings-default.cfg
-index d439c46351da74afa8ec821bbba82de279107f25..99c4830c5596511ac1ae492703fc37acd7cb9f62 100644
---- a/files/settings-default.cfg
-+++ b/files/settings-default.cfg
-@@ -156,6 +156,15 @@ object paging min size cost multiplier = 25
- # Assign a random color to merged batches.
- object paging debug batches = false
- 
-+# Use automatic simplification of distant objects.
-+object paging simplify objects = false
-+
-+# simplification factor for automatic simplified distant objects
-+object paging simplify factor = 1.0 0.1 0.1 0.001 0.001 0.001 0.001
-+
-+# number of errors allowed during automatic simpllfication of distant objects
-+object paging simplify error = 0.0 4.0 4.0 256.0 256.0 256.0 256.0
-+
- [Fog]
- 
- # If true, use extended fog parameters for distant terrain not controlled by
+     passColor = gl_Color;
+     passViewPos = viewPos.xyz;
+     passNormal = gl_Normal.xyz;
