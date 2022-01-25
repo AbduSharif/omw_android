@@ -25,7 +25,7 @@ set(FFMPEG_VERSION 4.4)
 set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION 3738b4880b0059bde37fd762a0b68a3dd33eb6c5)
+set(GL4ES_VERSION a8cc3316b81656040d2d9dd91d41e037df2df166)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://www.libsdl.org/download-2.0.php
@@ -37,7 +37,7 @@ set(BULLET_VERSION 3.17)
 set(BULLET_HASH SHA256=baa642c906576d4d98d041d0acb80d85dd6eff6e3c16a009b1abf1ccd2bc0a61)
 
 # https://github.com/MyGUI/mygui/releases
-set(MYGUI_VERSION 3.4.0)
+set(MYGUI_VERSION 3.4.1)
 #set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
 
 # https://github.com/openscenegraph/OpenSceneGraph/releases
@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 3b9a51b8ac314d0a331464b97e0dd4f0d04b0053)
+set(OPENMW_VERSION 39c7325db7e13da7d5cda73fd67c28f8d1266a36)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -353,14 +353,14 @@ ExternalProject_Add(mygui
 	URL_HASH ${MYGUI_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
-	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/mygui-dont-set-debug-postfix.patch
+#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/mygui-dont-set-debug-postfix.patch
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
-	-DMYGUI_RENDERSYSTEM=ON
+	-DMYGUI_RENDERSYSTEM=4
 	-DMYGUI_BUILD_DEMOS=OFF
 	-DMYGUI_BUILD_TOOLS=OFF
 	-DMYGUI_BUILD_PLUGINS=OFF
@@ -610,7 +610,7 @@ set(OPENMW_PATCH
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/water_fix.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/646.diff &&
-	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp
+#	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp
 )
 
 ExternalProject_Add(openmw
