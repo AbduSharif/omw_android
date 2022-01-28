@@ -87,6 +87,7 @@ class GameActivity : SDLActivity() {
         if (graphicsLibrary != "gles1") {
             try {
                 Os.setenv("OPENMW_GLES_VERSION", "2", true)
+                Os.setenv("LIBGL_ES", "2", true)
             } catch (e: ErrnoException) {
                 Log.e("OpenMW", "Failed setting environment variables.")
                 e.printStackTrace()
