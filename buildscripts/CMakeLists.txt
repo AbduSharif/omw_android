@@ -297,6 +297,8 @@ ExternalProject_Add(gl4es
 
 	BUILD_COMMAND ${wrapper_command} ndk-build
 	${COMMON_NDK_BUILD_FLAGS}
+	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
+ 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
 	COMMAND cp libs/${app_abi}/libGL.so ${prefix}/lib/
