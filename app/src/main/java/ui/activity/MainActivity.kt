@@ -323,6 +323,8 @@ class MainActivity : AppCompatActivity() {
         File(Constants.USER_CONFIG).mkdirs()
         if (!File(Constants.USER_OPENMW_CFG).exists())
             File(Constants.USER_OPENMW_CFG).writeText("# This is the user openmw.cfg. Feel free to modify it as you wish.\n")
+            File(Constants.USER_OPENMW_CFG).writeText("user-data=?userdata?")
+            File(Constants.USER_OPENMW_CFG).writeText("config=?userconfig?")
 
         // set version stamp
         File(Constants.VERSION_STAMP).writeText(BuildConfig.VERSION_CODE.toString())
