@@ -42,10 +42,10 @@ index 012ab8f59..84b6d60b2 100644
      settings.saveUser(settingspath);
  
 diff --git a/components/debug/debugging.cpp b/components/debug/debugging.cpp
-index dfed077e3..75fca4e3c 100644
+index c84bb39d3d12ba38223e2c3471b32fd74101d62f..e84624e2c94036ae3b3e13f7398dac59810f87da 100644
 --- a/components/debug/debugging.cpp
 +++ b/components/debug/debugging.cpp
-@@ -8,6 +8,8 @@
+@@ -13,6 +13,8 @@
  #   include <windows.h>
  #endif
  
@@ -54,23 +54,22 @@ index dfed077e3..75fca4e3c 100644
  namespace Debug
  {
  #ifdef _WIN32
-@@ -86,6 +88,8 @@ namespace Debug
-     }
+@@ -172,6 +174,8 @@ void setupLogging(const std::string& logDir, const std::string& appName, std::io
+ #endif
  }
  
 +extern osg::ref_ptr<osgViewer::Viewer> g_viewer;
 +
- int wrapApplication(int (*innerApplication)(int argc, char *argv[]), int argc, char *argv[], const std::string& appName)
+ int wrapApplication(int (*innerApplication)(int argc, char *argv[]), int argc, char *argv[],
+                     const std::string& appName, bool autoSetupLogging)
  {
- #if defined _WIN32
-@@ -139,6 +143,7 @@ int wrapApplication(int (*innerApplication)(int argc, char *argv[]), int argc, c
+@@ -209,7 +213,8 @@ int wrapApplication(int (*innerApplication)(int argc, char *argv[]), int argc, c
+         ret = innerApplication(argc, argv);
      }
-     catch (std::exception& e)
-     {
-+        g_viewer.release();
+     catch (const std::exception& e)
+-    {
++    {    	
++        g_viewer.release();    	
  #if (defined(__APPLE__) || defined(__linux) || defined(__unix) || defined(__posix))
          if (!isatty(fileno(stdin)))
  #endif
--- 
-2.28.0
-
