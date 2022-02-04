@@ -1,19 +1,9 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Ilya Zhuravlev <whatever@xyz.is>
-Date: Sun, 28 Apr 2019 18:16:37 -0400
-Subject: [PATCH] android: fix context being lost on app minimize
-
----
- apps/openmw/engine.cpp         | 8 ++++++++
- components/debug/debugging.cpp | 5 +++++
- 2 files changed, 13 insertions(+)
-
 diff --git a/apps/openmw/engine.cpp b/apps/openmw/engine.cpp
-index 012ab8f59..84b6d60b2 100644
+index cd32cb3b0d50257ce35349b46ebab5f298864717..da41ca37e403f664351f5a30338351aed2ce7198 100644
 --- a/apps/openmw/engine.cpp
 +++ b/apps/openmw/engine.cpp
-@@ -482,6 +482,9 @@ std::string OMW::Engine::loadSettings (Settings::Manager & settings)
-     return settingspath;
+@@ -518,6 +518,9 @@ void OMW::Engine::setSkipMenu (bool skipMenu, bool newGame)
+     mNewGame = newGame;
  }
  
 +// To share the viewer with Android interfaces
@@ -22,25 +12,25 @@ index 012ab8f59..84b6d60b2 100644
  void OMW::Engine::createWindow(Settings::Manager& settings)
  {
      int screen = settings.getInt("screen", "Video");
-@@ -599,6 +602,9 @@ void OMW::Engine::createWindow(Settings::Manager& settings)
+@@ -643,6 +646,9 @@ void OMW::Engine::createWindow(Settings::Manager& settings)
      mViewer->realize();
  
      mViewer->getEventQueue()->getCurrentEventState()->setWindowRectangle(0, 0, graphicsWindow->getTraits()->width, graphicsWindow->getTraits()->height);
 +
 +    // To share the viewer with Android interfaces
-+    g_viewer = mViewer;
++    g_viewer = mViewer;    
  }
  
  void OMW::Engine::setWindowIcon()
-@@ -942,6 +948,8 @@ void OMW::Engine::go()
-         mEnvironment.limitFrameRate(frameTimer.time_s());
-     }
+@@ -1076,6 +1082,8 @@ void OMW::Engine::go()
+ 
+     luaWorker.join();
  
 +    g_viewer.release();
-+
++    
      // Save user settings
      settings.saveUser(settingspath);
- 
+     mLuaManager->savePermanentStorage(mCfgMgr.getUserConfigPath().string());
 diff --git a/components/debug/debugging.cpp b/components/debug/debugging.cpp
 index c84bb39d3d12ba38223e2c3471b32fd74101d62f..e84624e2c94036ae3b3e13f7398dac59810f87da 100644
 --- a/components/debug/debugging.cpp
