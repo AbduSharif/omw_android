@@ -323,8 +323,6 @@ class MainActivity : AppCompatActivity() {
         File(Constants.USER_CONFIG).mkdirs()
         if (!File(Constants.USER_OPENMW_CFG).exists())
             File(Constants.USER_OPENMW_CFG).writeText("# This is the user openmw.cfg. Feel free to modify it as you wish.\n")
-            File(Constants.USER_OPENMW_CFG).writeText("user-data=?userdata?")
-            File(Constants.USER_OPENMW_CFG).writeText("config=?userconfig?")
 
         // set version stamp
         File(Constants.VERSION_STAMP).writeText(BuildConfig.VERSION_CODE.toString())
@@ -430,7 +428,8 @@ class MainActivity : AppCompatActivity() {
                 // openmw.cfg: data, resources
                 file.Writer.write(Constants.OPENMW_CFG, "resources", Constants.RESOURCES)
                 file.Writer.write(Constants.OPENMW_CFG, "data", "\"" + inst.findDataFiles() + "\"")
-
+                file.Writer.write(Constants.OPENMW_CFG, "user-data=?userdata?")
+                file.Writer.write(Constants.OPENMW_CFG, "config=?userconfig?")
                 file.Writer.write(Constants.OPENMW_CFG, "encoding", prefs!!.getString("pref_encoding", GameInstaller.DEFAULT_CHARSET_PREF)!!)
 
                 configureDefaultsBin(mapOf(
