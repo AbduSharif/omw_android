@@ -1,7 +1,7 @@
 #!/bin/bash
 
 NDK_VERSION="r23"
-NDK_HASH="ac3a0421e76f71dd330d0cd55f9d99b9ac864c4c034fc67e0d671d022d4e806b"
+NDK_HASH=ab9dbab873fff677deb2cfd95ea60b9295ebd53b58ec8533e9e1110b2451e540"
 ANDROID_API="21"
 
 # End of configurable options
