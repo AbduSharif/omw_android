@@ -1,13 +1,13 @@
 diff --git a/apps/openmw/mwstate/statemanagerimp.cpp b/apps/openmw/mwstate/statemanagerimp.cpp
-index c8cd53a3310fb69efcfc37029b0420e0ef65a380..d2f7913a12cc0328e1d921a67614ce7385b0ea18 100644
+index c8cd53a3310fb69efcfc37029b0420e0ef65a380..05306fdea072127bde4bd985a78ea88d0cada9a7 100644
 --- a/apps/openmw/mwstate/statemanagerimp.cpp
 +++ b/apps/openmw/mwstate/statemanagerimp.cpp
-@@ -307,6 +307,8 @@ void MWState::StateManager::saveGame (const std::string& description, const Slot
-         Settings::Manager::setString ("character", "Saves",
-             slot->mPath.parent_path().filename().string());
- 
-+        osg::Hint::GL4ES_SavePSA();
-+
-         const auto finish = std::chrono::steady_clock::now();
+@@ -311,6 +311,8 @@ void MWState::StateManager::saveGame (const std::string& description, const Slot
  
          Log(Debug::Info) << '\'' << description << "' is saved in "
+             << std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(finish - start).count() << "ms";
++
++        osg::Hint::GL4ES_SavePSA();            
+     }
+     catch (const std::exception& e)
+     {
