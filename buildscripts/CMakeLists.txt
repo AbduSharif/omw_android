@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 7b8216a0e167219a15a552a001bd75f63373a14a)
+set(OPENMW_VERSION de3092f014b75dcf800113944703b7a3fbfc4be5)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -626,7 +626,8 @@ set(OPENMW_PATCH
 ExternalProject_Add(openmw
 	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite
 
-	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+#	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/glassmancody.info/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/Capostrophic/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL_HASH ${OPENMW_HASH}
