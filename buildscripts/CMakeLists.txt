@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION de3092f014b75dcf800113944703b7a3fbfc4be5)
+set(OPENMW_VERSION 6786cbe0ddd09970483819980d9fd4742469eb04)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
