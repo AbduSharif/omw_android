@@ -531,9 +531,9 @@ set(OSG_COMMON
 	-DOSG_WINDOWING_SYSTEM=None
 	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
-#	-DOSG_USE_FLOAT_MATRIX=ON
-#	-DOSG_USE_FLOAT_PLANE=ON
-#	-DOSG_USE_FLOAT_QUAT=ON
+	-DOSG_USE_FLOAT_MATRIX=ON
+	-DOSG_USE_FLOAT_PLANE=ON
+	-DOSG_USE_FLOAT_QUAT=ON
 #	-DOSG_USE_FLOAT_BOUNDINGSPHERE=OFF
 #	-DOSG_USE_FLOAT_BOUNDINGBOX=OFF
 )
@@ -606,8 +606,8 @@ set(OPENMW_COMMON
 set(OPENMW_PATCH
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma2.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0001-loadingscreen-disable-for-now.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0009-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0001-loadingscreen-disable-for-now.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0009-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0010-android-fix-context-being-lost-on-app-minimize.patch &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0014-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0012-components-misc-stringops-use-boost-format-instead-o.patch &&
