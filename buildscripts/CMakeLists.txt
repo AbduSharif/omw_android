@@ -25,7 +25,7 @@ set(FFMPEG_VERSION 4.4)
 set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION c1f4d71c0c8272ddc99d66fcc14f079acfe13c27)
+set(GL4ES_VERSION 3a2f9110fa2411f29ec6255b6d466a6db8fd960e)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://www.libsdl.org/download-2.0.php
@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 964f288c138867a3e772dc1bee84afe6fb88ae92)
+set(OPENMW_VERSION 3a21915bbda7186512572d650d52ac4fa027ea9f)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
