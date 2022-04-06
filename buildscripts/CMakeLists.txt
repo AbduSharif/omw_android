@@ -41,7 +41,7 @@ set(MYGUI_VERSION 3.4.1)
 #set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
 
 # https://github.com/openscenegraph/OpenSceneGraph/releases
-set(OSG_VERSION ada34a6d38772f684aa70d2eb76549a33edc9a5f)
+set(OSG_VERSION 63558de586fd1fd00c35a32d1decf58d3c297b64)
 #set(OSG_HASH SHA256=aea196550f02974d6d09291c5d83b51ca6a03b3767e234a8c0e21322927d1e12)
 
 # https://github.com/lz4/lz4/releases
@@ -554,7 +554,8 @@ ExternalProject_Add(osg
 	DEPENDS libjpeg-turbo zlib gl4es libpng freetype2 libcollada
 
 #	URL https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-${OSG_VERSION}.tar.gz
-	URL https://github.com/openmw/osg/archive/${OSG_VERSION}.tar.gz
+	URL https://github.com/AbduSharif/OpenSceneGraph/archive/${OSG_VERSION}.tar.gz
+#	URL https://github.com/openmw/osg/archive/${OSG_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/OpenSceneGraph-${OSG_VERSION}.tar.gz
 	URL_HASH ${OSG_HASH}
 	DOWNLOAD_DIR ${download_dir}
