@@ -553,9 +553,9 @@ set(OSG_PATCH
 ExternalProject_Add(osg
 	DEPENDS libjpeg-turbo zlib gl4es libpng freetype2 libcollada
 
-	URL https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-${OSG_VERSION}.tar.gz
+#	URL https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-${OSG_VERSION}.tar.gz
 #	URL https://github.com/AbduSharif/OpenSceneGraph/archive/${OSG_VERSION}.tar.gz
-#	URL https://github.com/openmw/osg/archive/${OSG_VERSION}.tar.gz
+	URL https://github.com/openmw/osg/archive/${OSG_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/OpenSceneGraph-${OSG_VERSION}.tar.gz
 	URL_HASH ${OSG_HASH}
 	DOWNLOAD_DIR ${download_dir}
