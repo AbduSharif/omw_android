@@ -20,10 +20,20 @@ jobs:
       run: |
         sudo apt-get update --fix-missing
         sudo apt-get update
-        sudo apt-get install -y build-essential gcc-multilib python unzip pkg-config p7zip-full libc6-dev libicu-dev libyaml-cpp-dev
+        sudo apt-get install -y build-essential gcc-multilib python unzip pkg-config p7zip-full libc6-dev
         cd /home/runner/
         wget https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-Linux-x86_64.tar.gz
         tar xvf cmake-$CMAKE_VERSION-Linux-x86_64.tar.gz
+
+    - name: Build ICU
+        mkdir -p icu-host-build
+        cd icu-host-build
+        wget https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
+        unzip release-70-1.zip
+        ICU_SOURCE_DIR=./icu-release-70-1/icu4c/source
+        ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras CC="ccache gcc" CXX="ccache g++"
+        make -j $(nproc)
+        cd ..
 
     - name: Build native libraries
       run: |
