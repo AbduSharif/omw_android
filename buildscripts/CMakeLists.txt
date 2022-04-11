@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 1ac7eaa6b0592651bbfead56e21ef4e68a2cbb47)
+set(OPENMW_VERSION fd6899e91d950632ff764c6ebcaff673e242c34a)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -598,10 +598,10 @@ set(OPENMW_COMMON
 	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
-#	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
+	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
 #	-DOPENMW_USE_SYSTEM_ICU=OFF
-#	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/work/omw_android/omw_android/icu-host-build
-#	-DICU_ROOT=/home/runner/work/omw_android/omw_android/icu-host-build
+	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/work/omw_android/omw_android/icu-host-build/
+	-DICU_ROOT=/home/runner/work/omw_android/omw_android/icu-host-build/
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
 )
@@ -622,7 +622,7 @@ set(OPENMW_PATCH
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/soft_particles_mr.diff &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/water_fix.diff &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/ai_travel.diff &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/ai_travel.diff &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp
 )
 
