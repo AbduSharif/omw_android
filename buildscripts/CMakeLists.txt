@@ -599,7 +599,7 @@ set(OPENMW_COMMON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
-#	-DOPENMW_USE_SYSTEM_ICU=OFF
+	-DOPENMW_USE_SYSTEM_ICU=OFF
 	-DOPENMW_ICU_HOST_BUILD_DIR=${prefix}/icu-host-build/
 	-DICU_ROOT=${prefix}/icu-host-build/
 	-DOSG_STATIC=TRUE
