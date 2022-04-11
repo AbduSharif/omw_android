@@ -1,0 +1,273 @@
+diff --git a/apps/openmw/mwbase/world.hpp b/apps/openmw/mwbase/world.hpp
+index 625758d640ff31e3a31d0059565316f1a1469d5a..6479a1a404b4ba1df8143de560ee70eae741618f 100644
+--- a/apps/openmw/mwbase/world.hpp
++++ b/apps/openmw/mwbase/world.hpp
+@@ -10,6 +10,7 @@
+ 
+ #include <components/esm3/cellid.hpp>
+ #include <components/misc/rng.hpp>
++#include <components/misc/span.hpp>
+ 
+ #include <osg/Timer>
+ 
+@@ -658,7 +659,7 @@ namespace MWBase
+             virtual bool hasCollisionWithDoor(const MWWorld::ConstPtr& door, const osg::Vec3f& position, const osg::Vec3f& destination) const = 0;
+ 
+             virtual bool isAreaOccupiedByOtherActor(const osg::Vec3f& position, const float radius,
+-                const MWWorld::ConstPtr& ignore, std::vector<MWWorld::Ptr>* occupyingActors = nullptr) const = 0;
++                const Misc::Span<const MWWorld::ConstPtr>& ignore, std::vector<MWWorld::Ptr>* occupyingActors = nullptr) const = 0;
+ 
+             virtual void reportStats(unsigned int frameNumber, osg::Stats& stats) const = 0;
+ 
+diff --git a/apps/openmw/mwmechanics/aitravel.cpp b/apps/openmw/mwmechanics/aitravel.cpp
+index 919685e93d8ab5dbc74d7336825a024743dc8197..770d2f7ba6aa3555c8943666ef16e43bbfedbd86 100644
+--- a/apps/openmw/mwmechanics/aitravel.cpp
++++ b/apps/openmw/mwmechanics/aitravel.cpp
+@@ -83,7 +83,7 @@ namespace MWMechanics
+         if (mDestinationCheck.update(duration) == Misc::TimerStatus::Elapsed)
+         {
+             std::vector<MWWorld::Ptr> occupyingActors;
+-            if (isAreaOccupiedByOtherActor(actor, targetPos, &occupyingActors))
++            if (isAreaOccupiedByOtherActor(actor, targetPos, true, &occupyingActors))
+             {
+                 const float actorRadius = getActorRadius(actor);
+                 const float distanceToTarget = distance(actorPos, targetPos);
+diff --git a/apps/openmw/mwmechanics/obstacle.cpp b/apps/openmw/mwmechanics/obstacle.cpp
+index 344cc82058b779a9f738f7026c9a19a94a115c32..3d64eae8624f80e94e8723507d4cc9e4d7f33408 100644
+--- a/apps/openmw/mwmechanics/obstacle.cpp
++++ b/apps/openmw/mwmechanics/obstacle.cpp
+@@ -1,5 +1,7 @@
+ #include "obstacle.hpp"
+ 
++#include <array>
++
+ #include <components/sceneutil/positionattitudetransform.hpp>
+ 
+ #include "../mwworld/class.hpp"
+@@ -74,13 +76,19 @@ namespace MWMechanics
+         return MWWorld::Ptr(); // none found
+     }
+ 
+-    bool isAreaOccupiedByOtherActor(const MWWorld::ConstPtr& actor, const osg::Vec3f& destination,
++    bool isAreaOccupiedByOtherActor(const MWWorld::ConstPtr& actor, const osg::Vec3f& destination, bool ignorePlayer,
+         std::vector<MWWorld::Ptr>* occupyingActors)
+     {
+         const auto world = MWBase::Environment::get().getWorld();
+         const osg::Vec3f halfExtents = world->getPathfindingHalfExtents(actor);
+         const auto maxHalfExtent = std::max(halfExtents.x(), std::max(halfExtents.y(), halfExtents.z()));
+-        return world->isAreaOccupiedByOtherActor(destination, 2 * maxHalfExtent, actor, occupyingActors);
++        if (ignorePlayer)
++        {
++            const std::array ignore {actor, world->getPlayerConstPtr()};
++            return world->isAreaOccupiedByOtherActor(destination, 2 * maxHalfExtent, ignore, occupyingActors);
++        }
++        const std::array ignore {actor};
++        return world->isAreaOccupiedByOtherActor(destination, 2 * maxHalfExtent, ignore, occupyingActors);
+     }
+ 
+     ObstacleCheck::ObstacleCheck()
+diff --git a/apps/openmw/mwmechanics/obstacle.hpp b/apps/openmw/mwmechanics/obstacle.hpp
+index 24bd5ed1c14180357de733293ac5acfeb6312f0e..2026f2212978157270fcfdf1069699b350fc57e0 100644
+--- a/apps/openmw/mwmechanics/obstacle.hpp
++++ b/apps/openmw/mwmechanics/obstacle.hpp
+@@ -24,7 +24,7 @@ namespace MWMechanics
+     /** \return Pointer to the door, or empty pointer if none exists **/
+     const MWWorld::Ptr getNearbyDoor(const MWWorld::Ptr& actor, float minDist);
+ 
+-    bool isAreaOccupiedByOtherActor(const MWWorld::ConstPtr& actor, const osg::Vec3f& destination,
++    bool isAreaOccupiedByOtherActor(const MWWorld::ConstPtr& actor, const osg::Vec3f& destination, bool ignorePlayer = false,
+         std::vector<MWWorld::Ptr>* occupyingActors = nullptr);
+ 
+     class ObstacleCheck
+diff --git a/apps/openmw/mwphysics/hasspherecollisioncallback.hpp b/apps/openmw/mwphysics/hasspherecollisioncallback.hpp
+index a01ab96301ed7726fa8841cf41efd5c77d5efb76..2d271a8fba6fc992d4c8b315ee4389113663bfcd 100644
+--- a/apps/openmw/mwphysics/hasspherecollisioncallback.hpp
++++ b/apps/openmw/mwphysics/hasspherecollisioncallback.hpp
+@@ -22,15 +22,15 @@ namespace MWPhysics
+         return nearest.distance(position) < radius;
+     }
+ 
+-    template <class OnCollision>
++    template <class Ignore, class OnCollision>
+     class HasSphereCollisionCallback final : public btBroadphaseAabbCallback
+     {
+     public:
+-        HasSphereCollisionCallback(const btVector3& position, const btScalar radius, btCollisionObject* object,
+-                const int mask, const int group, OnCollision* onCollision)
++        HasSphereCollisionCallback(const btVector3& position, const btScalar radius, const int mask, const int group,
++                                   const Ignore& ignore, OnCollision* onCollision)
+             : mPosition(position),
+               mRadius(radius),
+-              mCollisionObject(object),
++              mIgnore(ignore),
+               mCollisionFilterMask(mask),
+               mCollisionFilterGroup(group),
+               mOnCollision(onCollision)
+@@ -42,7 +42,7 @@ namespace MWPhysics
+             if (mResult && mOnCollision == nullptr)
+                 return false;
+             const auto collisionObject = static_cast<btCollisionObject*>(proxy->m_clientObject);
+-            if (collisionObject == mCollisionObject
++            if (mIgnore(collisionObject)
+                 || !needsCollision(*proxy)
+                 || !testAabbAgainstSphere(proxy->m_aabbMin, proxy->m_aabbMax, mPosition, mRadius))
+                 return true;
+@@ -63,7 +63,7 @@ namespace MWPhysics
+     private:
+         btVector3 mPosition;
+         btScalar mRadius;
+-        btCollisionObject* mCollisionObject;
++        Ignore mIgnore;
+         int mCollisionFilterMask;
+         int mCollisionFilterGroup;
+         OnCollision* mOnCollision;
+diff --git a/apps/openmw/mwphysics/physicssystem.cpp b/apps/openmw/mwphysics/physicssystem.cpp
+index bbd3447b6acf6f0ffa120a1291bf757dc1ff35cd..06c2420df1e00cb279cfd05946caca1bef720382 100644
+--- a/apps/openmw/mwphysics/physicssystem.cpp
++++ b/apps/openmw/mwphysics/physicssystem.cpp
+@@ -2,7 +2,11 @@
+ 
+ #include <LinearMath/btIDebugDraw.h>
+ #include <LinearMath/btVector3.h>
++
+ #include <memory>
++#include <algorithm>
++#include <vector>
++
+ #include <osg/Group>
+ #include <osg/Stats>
+ #include <osg/Timer>
+@@ -884,12 +888,19 @@ namespace MWPhysics
+     }
+ 
+     bool PhysicsSystem::isAreaOccupiedByOtherActor(const osg::Vec3f& position, const float radius,
+-        const MWWorld::ConstPtr& ignore, std::vector<MWWorld::Ptr>* occupyingActors) const
+-    {
+-        btCollisionObject* object = nullptr;
+-        const auto it = mActors.find(ignore.mRef);
+-        if (it != mActors.end())
+-            object = it->second->getCollisionObject();
++        const Misc::Span<const MWWorld::ConstPtr>& ignore, std::vector<MWWorld::Ptr>* occupyingActors) const
++    {
++        std::vector<const btCollisionObject*> ignoredObjects;
++        ignoredObjects.reserve(ignore.size());
++        for (const auto& v : ignore)
++            if (const auto it = mActors.find(v.mRef); it != mActors.end())
++                ignoredObjects.push_back(it->second->getCollisionObject());
++        std::sort(ignoredObjects.begin(), ignoredObjects.end());
++        ignoredObjects.erase(std::unique(ignoredObjects.begin(), ignoredObjects.end()), ignoredObjects.end());
++        const auto ignoreFilter = [&] (const btCollisionObject* v)
++        {
++            return std::binary_search(ignoredObjects.begin(), ignoredObjects.end(), v);
++        };
+         const auto bulletPosition = Misc::Convert::toBullet(position);
+         const auto aabbMin = bulletPosition - btVector3(radius, radius, radius);
+         const auto aabbMax = bulletPosition + btVector3(radius, radius, radius);
+@@ -897,7 +908,7 @@ namespace MWPhysics
+         const int group = 0xff;
+         if (occupyingActors == nullptr)
+         {
+-            HasSphereCollisionCallback callback(bulletPosition, radius, object, mask, group,
++            HasSphereCollisionCallback callback(bulletPosition, radius, mask, group, ignoreFilter,
+                                                 static_cast<void (*)(const btCollisionObject*)>(nullptr));
+             mTaskScheduler->aabbTest(aabbMin, aabbMax, callback);
+             return callback.getResult();
+@@ -907,7 +918,7 @@ namespace MWPhysics
+             if (PtrHolder* holder = static_cast<PtrHolder*>(object->getUserPointer()))
+                 occupyingActors->push_back(holder->getPtr());
+         };
+-        HasSphereCollisionCallback callback(bulletPosition, radius, object, mask, group, &onCollision);
++        HasSphereCollisionCallback callback(bulletPosition, radius, mask, group, ignoreFilter, &onCollision);
+         mTaskScheduler->aabbTest(aabbMin, aabbMax, callback);
+         return callback.getResult();
+     }
+diff --git a/apps/openmw/mwphysics/physicssystem.hpp b/apps/openmw/mwphysics/physicssystem.hpp
+index b165f10761359c7be248592228565d86487aa9d7..4afafede4fb6551643816aa41c05732d05e0518e 100644
+--- a/apps/openmw/mwphysics/physicssystem.hpp
++++ b/apps/openmw/mwphysics/physicssystem.hpp
+@@ -16,6 +16,8 @@
+ #include <osg/ref_ptr>
+ #include <osg/Timer>
+ 
++#include <components/misc/span.hpp>
++
+ #include "../mwworld/ptr.hpp"
+ 
+ #include "collisiontype.hpp"
+@@ -277,7 +279,7 @@ namespace MWPhysics
+             }
+ 
+             bool isAreaOccupiedByOtherActor(const osg::Vec3f& position, const float radius,
+-                const MWWorld::ConstPtr& ignore, std::vector<MWWorld::Ptr>* occupyingActors) const;
++                const Misc::Span<const MWWorld::ConstPtr>& ignore, std::vector<MWWorld::Ptr>* occupyingActors) const;
+ 
+             void reportStats(unsigned int frameNumber, osg::Stats& stats) const;
+             void reportCollision(const btVector3& position, const btVector3& normal);
+diff --git a/apps/openmw/mwworld/worldimp.cpp b/apps/openmw/mwworld/worldimp.cpp
+index 7f652d952095a69ffa8a927529277dd4f2c45b5d..ea2441847f77eb97d60f7ae0a119e003fb5ef714 100644
+--- a/apps/openmw/mwworld/worldimp.cpp
++++ b/apps/openmw/mwworld/worldimp.cpp
+@@ -3997,7 +3997,7 @@ namespace MWWorld
+     }
+ 
+     bool World::isAreaOccupiedByOtherActor(const osg::Vec3f& position, const float radius,
+-        const MWWorld::ConstPtr& ignore, std::vector<MWWorld::Ptr>* occupyingActors) const
++        const Misc::Span<const MWWorld::ConstPtr>& ignore, std::vector<MWWorld::Ptr>* occupyingActors) const
+     {
+         return mPhysics->isAreaOccupiedByOtherActor(position, radius, ignore, occupyingActors);
+     }
+diff --git a/apps/openmw/mwworld/worldimp.hpp b/apps/openmw/mwworld/worldimp.hpp
+index 399b7232de948cbc31280e65d27be2e719c01802..0dd79fb778acf33445204f751dc18de8972f77e0 100644
+--- a/apps/openmw/mwworld/worldimp.hpp
++++ b/apps/openmw/mwworld/worldimp.hpp
+@@ -736,7 +736,7 @@ namespace MWWorld
+             bool hasCollisionWithDoor(const MWWorld::ConstPtr& door, const osg::Vec3f& position, const osg::Vec3f& destination) const override;
+ 
+             bool isAreaOccupiedByOtherActor(const osg::Vec3f& position, const float radius,
+-                const MWWorld::ConstPtr& ignore, std::vector<MWWorld::Ptr>* occupyingActors) const override;
++                const Misc::Span<const MWWorld::ConstPtr>& ignore, std::vector<MWWorld::Ptr>* occupyingActors) const override;
+ 
+             void reportStats(unsigned int frameNumber, osg::Stats& stats) const override;
+ 
+diff --git a/components/misc/span.hpp b/components/misc/span.hpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..83a424a674c8430943208d6a112f922085055edc
+--- /dev/null
++++ b/components/misc/span.hpp
+@@ -0,0 +1,36 @@
++#ifndef OPENMW_COMPONENTS_MISC_SPAN_H
++#define OPENMW_COMPONENTS_MISC_SPAN_H
++
++#include <cstddef>
++
++namespace Misc
++{
++    template <class T>
++    class Span
++    {
++        public:
++            constexpr Span() = default;
++
++            constexpr Span(T* pointer, std::size_t size)
++                : mPointer(pointer)
++                , mSize(size)
++            {}
++
++            template <class Range>
++            constexpr Span(Range& range)
++                : Span(range.data(), range.size())
++            {}
++
++            constexpr T* begin() const { return mPointer; }
++
++            constexpr T* end() const { return mPointer + mSize; }
++
++            constexpr std::size_t size() const { return mSize; }
++
++        private:
++            T* mPointer = nullptr;
++            std::size_t mSize = 0;
++    };
++}
++
++#endif
