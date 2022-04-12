@@ -600,9 +600,9 @@ set(OPENMW_COMMON
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
 #	-DOPENMW_USE_SYSTEM_ICU=OFF
-	-DOPENMW_ICU_HOST_BUILD_DIR=${prefix}/$ARCH/icu-host-build/
-	-DICU_ROOT=${prefix}/$ARCH/icu-host-build/
-	-DICU_LIBRARY=${prefix}/$ARCH/icu-host-build/
+	-DOPENMW_ICU_HOST_BUILD_DIR=${ICU_SOURCE_DIR}/
+	-DICU_ROOT=${ICU_SOURCE_DIR}/
+	-DICU_LIBRARY=${ICU_SOURCE_DIR}/
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
 )
