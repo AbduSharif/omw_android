@@ -131,7 +131,7 @@ NCPU=$(grep -c ^processor /proc/cpuinfo)
 echo "==> Build using $NCPU CPUs"
 mkdir -p build/$ARCH/
 mkdir -p prefix/$ARCH/
-cp ./icu-host-build/ prefix/$ARCH/icu-host-build/
+cp ./icu-release-70-1/icu4c/source/ prefix/$ARCH/icu-host-build/
 
 # symlink lib64 -> lib so we don't get half the libs in one directory half in another
 mkdir -p prefix/$ARCH/lib
