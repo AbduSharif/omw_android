@@ -27,8 +27,8 @@ jobs:
 
     - name: Build ICU 
       run: |
-        mkdir -p icu-host-build
-        cd icu-host-build
+        mkdir -p ./icu-host-build/
+        cd ./icu-host-build/
         wget https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
         unzip release-70-1.zip
         ICU_SOURCE_DIR=./icu-release-70-1/icu4c/source
