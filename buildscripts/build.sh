@@ -138,6 +138,7 @@ unzip release-70-1.zip
 ICU_SOURCE_DIR=./icu-release-70-1/icu4c/source
 ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras
 make -j $(nproc)
+cd ..
 
 # symlink lib64 -> lib so we don't get half the libs in one directory half in another
 mkdir -p prefix/$ARCH/lib
