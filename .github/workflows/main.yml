@@ -32,10 +32,10 @@ jobs:
         wget https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
         unzip release-70-1.zip
         ICU_SOURCE_DIR=./icu-release-70-1/icu4c/source
-        ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras
-        mkdir -p prefix/icu-host-build/
-        cp icu-host-build prefix/icu-host-build/
+        /configure --disable-tests --disable-samples --disable-icuio --disable-extras
         make -j $(nproc)
+        mkdir -p prefix/icu-host-build/
+        cp ${ICU_SOURCE_DIR} prefix/icu-host-build/
         cd ..
 
     - name: Build native libraries
