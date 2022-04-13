@@ -35,7 +35,7 @@ jobs:
         ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras
         make -j $(nproc)
         mkdir -p prefix/icu-host-build/
-        cp -r ./icu-release-70-1/icu4c/source prefix/icu-host-build/
+        cp -r ${ICU_SOURCE_DIR} prefix/icu-host-build/
         cd ..
 
     - name: Build native libraries
