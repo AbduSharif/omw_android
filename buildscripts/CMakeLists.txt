@@ -601,9 +601,9 @@ set(OPENMW_COMMON
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
 #	-DOPENMW_USE_SYSTEM_ICU=OFF
 	-DOPENMW_ICU_HOST_BUILD_DIR=${CI_PROJECT_DIR}/icu-host-build/
-	-DICU_ROOT=${CI_PROJECT_DIR}/icu-host-build/
-	-DICU_LIBRARY=${CI_PROJECT_DIR}/icu-host-build/
-	-DICU_LIBRARIES=${CI_PROJECT_DIR}/icu-host-build/
+	-DICU_ROOT=${CI_PROJECT_DIR}/icu-host-build/icu4c/
+	-DICU_LIBRARY=${CI_PROJECT_DIR}/icu-host-build/icu4c/
+	-DICU_LIBRARIES=${CI_PROJECT_DIR}/icu-host-build/icu4c/
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
 )
