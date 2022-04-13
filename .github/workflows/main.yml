@@ -35,7 +35,6 @@ jobs:
         ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras
         make -j $(nproc)
         mkdir -p prefix/icu-host-build/
-        cp -r /home/runner/work/omw_android/omw_android/icu-host-build/ prefix/icu-host-build/
         cd ..
 
     - name: Build native libraries
