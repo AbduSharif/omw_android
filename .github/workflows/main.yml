@@ -33,9 +33,9 @@ jobs:
         unzip release-70-1.zip
         ICU_SOURCE_DIR=./icu-release-70-1/icu4c/source
         ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras
-        make -j $(nproc)
         mkdir -p prefix/icu-host-build/
         cp icu-host-build prefix/icu-host-build/
+        make -j $(nproc)
         cd ..
 
     - name: Build native libraries
