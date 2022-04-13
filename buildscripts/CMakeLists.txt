@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 2195ed3f6586392d5563235ff7089c3379aac76d)
+set(OPENMW_VERSION d3d9abede46a42778f778a6c76ebfaffb1a6cf93)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -601,7 +601,7 @@ set(OPENMW_COMMON
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
 #	-DOPENMW_USE_SYSTEM_ICU=OFF
 	-DOPENMW_ICU_HOST_BUILD_DIR=/prefix/icu-host-build/icu-host-build/
-	-ICU_ROOT=/prefix/icu-host-build/icu-host-build/
+	-DICU_ROOT=/prefix/icu-host-build/icu-host-build/icu4c/
 	-DICU_LIBRARY=/prefix/icu-host-build/icu-host-build/
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
@@ -630,8 +630,8 @@ set(OPENMW_PATCH
 ExternalProject_Add(openmw
 	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite
 
-	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
-#	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+#	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/glassmancody.info/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/Capostrophic/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL_HASH ${OPENMW_HASH}
