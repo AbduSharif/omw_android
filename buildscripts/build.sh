@@ -129,6 +129,12 @@ echo "==> Download and set up the NDK"
 
 NCPU=$(grep -c ^processor /proc/cpuinfo)
 echo "==> Build using $NCPU CPUs"
+wget https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
+unzip release-70-1.zip
+ICU_SOURCE_DIR=./icu-release-70-1/icu4c/source
+${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras
+make -j $(nproc)
+mkdir -p prefix/$ARCH/icu-host-build/
 mkdir -p build/$ARCH/
 mkdir -p prefix/$ARCH/
 
