@@ -147,7 +147,7 @@ ExternalProject_Add(icu
             --disable-icuio
             --disable-extras
 
-            BUILD_COMMAND make -j ${NPROCS} VERBOSE=1
+            BUILD_COMMAND make -j ${NPROCS}
 
             INSTALL_COMMAND ""
 )
