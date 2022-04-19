@@ -137,11 +137,15 @@ ExternalProject_Add(icu
         URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
 	DOWNLOAD_DIR ${download_dir}
 
-	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure --disable-tests --disable-samples --disable-icuio --disable-extras
+	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
+	--disable-tests
+	--disable-samples
+	--disable-icuio
+	--disable-extras
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE) -j $(nproc)
 
- 	INSTALL_COMMAND ${wrapper_command} $(MAKE)
+ 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
 )
 
 ExternalProject_Add(libjpeg-turbo
