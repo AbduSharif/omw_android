@@ -148,7 +148,7 @@ ExternalProject_Add(icu
             --disable-icuio
             --disable-extras
             --with-cross-build=/home/runner/icu-build/
-            BUILD_COMMAND make -j ${NPROCS}
+            BUILD_COMMAND make -j ${NPROCS} VERBOSE=1
 
             INSTALL_COMMAND ""
 )
