@@ -140,11 +140,11 @@ ExternalProject_Add(icu
 
 	BUILD_IN_SOURCE 1
 
-	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure --disable-tests --disable-samples --disable-icuio --disable-extras
+	CONFIGURE_COMMAND <SOURCE_DIR>/configure --disable-tests --disable-samples --disable-icuio --disable-extras
 
 	BUILD_COMMAND ""
 
-	INSTALL_COMMAND ${wrapper_command} make -j $(nproc)
+	INSTALL_COMMAND make -j $(nproc)
 )
 
 ExternalProject_Add(libjpeg-turbo
