@@ -30,6 +30,7 @@ jobs:
         mkdir -p icu-host-build
         ICU_HOST_DIR=./icu-host-build
         cd ${ICU_HOST_DIR}
+        export ${ICU_HOST_DIR}
         wget https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
         unzip release-70-1.zip
         ICU_SOURCE_DIR=./icu-release-70-1/icu4c/source
