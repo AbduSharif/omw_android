@@ -138,13 +138,14 @@ ExternalProject_Add(icu
 	https://github.com/xyzz/openmw-deps/releases/download/v0/release-70-1.zip
 	DOWNLOAD_DIR ${download_dir}
 
-	COMMAND mkdir -p ${prefix}/icu-host-build/
-        COMMAND ICU_SOURCE_DIR=${prefix}/icu-release-70-1/icu4c/source
-	CONFIGURE_COMMAND ${wrapper_command} ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras
+	CONFIGURE_COMMAND ""
 
 	BUILD_COMMAND ""
 
- 	INSTALL_COMMAND ${wrapper_command} make -j $(nproc)
+	INSTALL_COMMAND mkdir -p ${prefix}/icu-host-build/
+        COMMAND ICU_SOURCE_DIR=${prefix}/icu-release-70-1/icu4c/source
+        COMMAND ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras
+        COMMAND make -j $(nproc)
 )
 
 ExternalProject_Add(libjpeg-turbo
