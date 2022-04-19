@@ -620,7 +620,7 @@ set(OPENMW_COMMON
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
 #	-DOPENMW_USE_SYSTEM_ICU=OFF
 	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-build/
-#	-DICU_ROOT=${ICU_BINARY_DIR}
+	-DICU_ROOT=/home/runner/icu-build/
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
 )
