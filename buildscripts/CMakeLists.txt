@@ -147,7 +147,7 @@ ExternalProject_Add(icu
             --disable-samples
             --disable-icuio
             --disable-extras
-
+            --with-cross-build=no cross dir
             BUILD_COMMAND make -j ${NPROCS}
 
             INSTALL_COMMAND ""
