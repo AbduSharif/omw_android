@@ -144,7 +144,7 @@ ExternalProject_Add(icu
 
 	BUILD_COMMAND ""
 
- 	INSTALL_COMMAND ${wrapper_command} $(MAKE) -j $(nproc)
+ 	INSTALL_COMMAND ${wrapper_command} make -j $(nproc)
 )
 
 ExternalProject_Add(libjpeg-turbo
