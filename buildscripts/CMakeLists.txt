@@ -140,7 +140,7 @@ ExternalProject_Add(icu
 
 	BUILD_IN_SOURCE 1
 
-	CONFIGURE_COMMAND <SOURCE_DIR>/configure --disable-tests --disable-samples --disable-icuio --disable-extras
+	CONFIGURE_COMMAND /configure --disable-tests --disable-samples --disable-icuio --disable-extras
 
 	BUILD_COMMAND ""
 
