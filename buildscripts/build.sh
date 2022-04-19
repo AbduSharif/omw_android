@@ -129,7 +129,6 @@ echo "==> Download and set up the NDK"
 
 NCPU=$(grep -c ^processor /proc/cpuinfo)
 echo "==> Build using $NCPU CPUs"
-./include/setup-icu.sh
 mkdir -p build/$ARCH/
 mkdir -p prefix/$ARCH/
 
