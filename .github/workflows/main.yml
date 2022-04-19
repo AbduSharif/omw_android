@@ -36,7 +36,6 @@ jobs:
         ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras
         make -j $(nproc)
         cd ..
-        export ${ICU_HOST_DIR}
         export ${ICU_SOURCE_DIR}
 
     - name: Build native libraries
