@@ -133,6 +133,26 @@ if (${ARCH} STREQUAL "x86")
 	set(libjpeg_turbo_flags ${libjpeg_turbo_flags} --without-simd)
 endif()
 
+ExternalProject_Add(icu
+            URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
+#            URL_HASH MD5=49d5e2e5bab93ae1a4b56e916150544c
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/icu/
+            BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/icu/
+
+            CONFIGURE_COMMAND <SOURCE_DIR>/icu4c/source/configure
+            --disable-shared
+            --enable-static
+            --disable-tests
+            --disable-samples
+            --disable-icuio
+            --disable-extras
+
+            BUILD_COMMAND make -j ${NPROCS} VERBOSE=1
+
+            INSTALL_COMMAND ""
+        )
+
+
 ExternalProject_Add(libjpeg-turbo
 	URL https://sourceforge.net/projects/libjpeg-turbo/files/${LIBJPEG_TURBO_VERSION}/libjpeg-turbo-${LIBJPEG_TURBO_VERSION}.tar.gz/download
 	https://github.com/xyzz/openmw-deps/releases/download/v0/libjpeg-turbo-${LIBJPEG_TURBO_VERSION}.tar.gz
@@ -601,7 +621,6 @@ set(OPENMW_COMMON
 	-DOPENMW_USE_SYSTEM_ICU=OFF
 #	-DOPENMW_ICU_HOST_BUILD_DIR=${ICU_HOST_DIR}
 #	-DICU_ROOT=${ICU_HOST_DIR}
-#--with-cross-build=no cross dir
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
 )
@@ -627,7 +646,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite
+	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite icu
 
 #	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
