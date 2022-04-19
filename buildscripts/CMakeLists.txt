@@ -133,6 +133,14 @@ if (${ARCH} STREQUAL "x86")
 	set(libjpeg_turbo_flags ${libjpeg_turbo_flags} --without-simd)
 endif()
 
+ExternalProject_Add(icu
+        URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
+	DOWNLOAD_DIR ${download_dir}
+
+	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure --disable-tests --disable-samples --disable-icuio --disable-extras
+	BUILD_COMMAND ${wrapper_command} $(MAKE)
+ 	INSTALL_COMMAND ${wrapper_command} ${Make} -j $(nproc)
+
 ExternalProject_Add(libjpeg-turbo
 	URL https://sourceforge.net/projects/libjpeg-turbo/files/${LIBJPEG_TURBO_VERSION}/libjpeg-turbo-${LIBJPEG_TURBO_VERSION}.tar.gz/download
 	https://github.com/xyzz/openmw-deps/releases/download/v0/libjpeg-turbo-${LIBJPEG_TURBO_VERSION}.tar.gz
@@ -600,12 +608,8 @@ set(OPENMW_COMMON
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
 #	-DOPENMW_USE_SYSTEM_ICU=OFF
-	-DOPENMW_ICU_HOST_BUILD_DIR=${ICU_SOURCE_DIR}
-	-DICU_ROOT=${ICU_SOURCE_DIR}
-#	-DOPENMW_ICU_HOST_BUILD_DIR=${CI_PROJECT_DIR}/icu-host-build/
-#	-DICU_ROOT=${CI_PROJECT_DIR}/icu-host-build/icu4c/
-#	-DICU_LIBRARY=${CI_PROJECT_DIR}/icu-host-build/icu4c/
-#	-DICU_LIBRARIES=${CI_PROJECT_DIR}/icu-host-build/icu4c/
+#	-DOPENMW_ICU_HOST_BUILD_DIR=${ICU_SOURCE_DIR}
+#	-DICU_ROOT=${ICU_SOURCE_DIR}
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
 )
@@ -631,7 +635,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite
+	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite icu
 
 #	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
