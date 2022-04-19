@@ -138,8 +138,11 @@ ExternalProject_Add(icu
 	DOWNLOAD_DIR ${download_dir}
 
 	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure --disable-tests --disable-samples --disable-icuio --disable-extras
+
 	BUILD_COMMAND ${wrapper_command} $(MAKE)
- 	INSTALL_COMMAND ${wrapper_command} ${Make} -j $(nproc)
+
+ 	INSTALL_COMMAND ${wrapper_command} $(MAKE) -j $(nproc)
+)
 
 ExternalProject_Add(libjpeg-turbo
 	URL https://sourceforge.net/projects/libjpeg-turbo/files/${LIBJPEG_TURBO_VERSION}/libjpeg-turbo-${LIBJPEG_TURBO_VERSION}.tar.gz/download
