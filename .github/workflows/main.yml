@@ -8,10 +8,10 @@ jobs:
       matrix:
         arch: [arm64]
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
 
     env:
-      CMAKE_VERSION: 3.18.4
+      CMAKE_VERSION: 3.19.7
 
     steps:
     - uses: actions/checkout@v2
