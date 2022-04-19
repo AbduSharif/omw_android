@@ -148,7 +148,7 @@ ExternalProject_Add(icu
             --disable-icuio
             --disable-extras
             --with-cross-build=/home/runner/icu-build/
-            -LDFLAGS=$ENV{LDFLAGS} -lc -lstdc++
+            -LDFLAGS="$ENV{LDFLAGS} -lc -lstdc++"
             BUILD_COMMAND make -j ${NPROCS}
 
             INSTALL_COMMAND ""
