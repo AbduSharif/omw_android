@@ -133,20 +133,6 @@ if (${ARCH} STREQUAL "x86")
 	set(libjpeg_turbo_flags ${libjpeg_turbo_flags} --without-simd)
 endif()
 
-ExternalProject_Add(icu
-        URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
-	https://github.com/xyzz/openmw-deps/releases/download/v0/release-70-1.zip
-	DOWNLOAD_DIR ${download_dir}
-
-	BUILD_IN_SOURCE 1
-
-	CONFIGURE_COMMAND /configure --disable-tests --disable-samples --disable-icuio --disable-extras
-
-	BUILD_COMMAND ""
-
-	INSTALL_COMMAND make -j $(nproc)
-)
-
 ExternalProject_Add(libjpeg-turbo
 	URL https://sourceforge.net/projects/libjpeg-turbo/files/${LIBJPEG_TURBO_VERSION}/libjpeg-turbo-${LIBJPEG_TURBO_VERSION}.tar.gz/download
 	https://github.com/xyzz/openmw-deps/releases/download/v0/libjpeg-turbo-${LIBJPEG_TURBO_VERSION}.tar.gz
