@@ -139,7 +139,8 @@ ExternalProject_Add(icu
             SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/icu/
             BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/icu/
 
-            CONFIGURE_COMMAND <SOURCE_DIR>/icu4c/source/configure --host=aarch64-linux-android
+            CONFIGURE_COMMAND <SOURCE_DIR>/icu4c/source/configure
+            --host=aarch64-linux-android
             --disable-shared
             --enable-static
             --disable-tests
