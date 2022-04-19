@@ -147,7 +147,7 @@ ExternalProject_Add(icu
             --disable-samples
             --disable-icuio
             --disable-extras
-            --with-cross-build=${ICU_HOST_DIR}
+            --with-cross-build=/home/runner/icu-build/
             BUILD_COMMAND make -j ${NPROCS}
 
             INSTALL_COMMAND ""
@@ -618,8 +618,8 @@ set(OPENMW_COMMON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
-	-DOPENMW_USE_SYSTEM_ICU=OFF
-	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-host-build/
+#	-DOPENMW_USE_SYSTEM_ICU=OFF
+#	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-host-build/
 #	-DICU_ROOT=${ICU_BINARY_DIR}
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
