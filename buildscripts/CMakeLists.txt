@@ -135,17 +135,16 @@ endif()
 
 ExternalProject_Add(icu
         URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
+	https://github.com/xyzz/openmw-deps/releases/download/v0/release-70-1.zip
 	DOWNLOAD_DIR ${download_dir}
 
-	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
-	--disable-tests
-	--disable-samples
-	--disable-icuio
-	--disable-extras
+	COMMAND mkdir -p ${prefix}/icu-host-build/
+        COMMAND ICU_SOURCE_DIR=${prefix}/icu-release-70-1/icu4c/source
+	CONFIGURE_COMMAND ${wrapper_command} ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras
 
-	BUILD_COMMAND ${wrapper_command} $(MAKE) make -j $(nproc)
+	BUILD_COMMAND ""
 
- 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
+ 	INSTALL_COMMAND ${wrapper_command} $(MAKE) -j $(nproc)
 )
 
 ExternalProject_Add(libjpeg-turbo
@@ -157,7 +156,6 @@ ExternalProject_Add(libjpeg-turbo
 	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
 	${COMMON_AUTOCONF_FLAGS}
 	${libjpeg_turbo_flags}
-
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE) PROGRAMS=
 
