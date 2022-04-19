@@ -143,7 +143,7 @@ ExternalProject_Add(icu
 	--disable-icuio
 	--disable-extras
 
-	BUILD_COMMAND ${wrapper_command} $(MAKE) -j $(nproc)
+	BUILD_COMMAND ${wrapper_command} $(MAKE) make -j $(nproc)
 
  	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
 )
