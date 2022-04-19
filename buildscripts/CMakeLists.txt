@@ -147,7 +147,7 @@ ExternalProject_Add(icu
             --disable-samples
             --disable-icuio
             --disable-extras
-            --with-cross-build=/home/runner/icu-host-build/
+            --with-cross-build=${ICU_HOST_DIR}
             BUILD_COMMAND make -j ${NPROCS}
 
             INSTALL_COMMAND ""
