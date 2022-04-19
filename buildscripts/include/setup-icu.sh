@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 mkdir -p ${prefi}/icu-host-build/
 cd ${prefix}/icu-host-build/
 wget https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
