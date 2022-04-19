@@ -27,7 +27,7 @@ jobs:
 
     - name: Build ICU 
       run: |
-        mkdir -p icu-host-build
+        mkdir -p ./icu-host-build/
         ICU_HOST_DIR=./icu-host-build
         cd ${ICU_HOST_DIR}
         export ${ICU_HOST_DIR}
