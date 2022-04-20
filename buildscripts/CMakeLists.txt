@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 5b6899b7f1b03d0ffeb78af560625ef83f85c15d)
+set(OPENMW_VERSION c14796fc57ccfb4324eebd97052090f572b1fb23)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -146,6 +146,32 @@ ExternalProject_Add(libjpeg-turbo
 	BUILD_COMMAND ${wrapper_command} $(MAKE) PROGRAMS=
 
 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install-libLTLIBRARIES install-data-am
+)
+
+ExternalProject_Add(icu
+            URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
+#            URL_HASH MD5=49d5e2e5bab93ae1a4b56e916150544c
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/icu/
+            BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/icu/
+
+            CONFIGURE_COMMAND <SOURCE_DIR>/icu4c/source/configure
+            --host=aarch64-linux-android
+            --disable-shared
+            --enable-static
+            --disable-tests
+            --disable-samples
+            --disable-icuio
+            --disable-extras
+            --with-cross-build=/home/runner/icu-build/
+
+            BUILD_COMMAND make -j ${NPROCS}
+
+            INSTALL_COMMAND ""
+
+set(ICU_INCLUDE_DIRS
+        <SOURCE_DIR>/icu4c/source/common
+        <SOURCE_DIR>/icu4c/source/i18
+    )
 )
 
 ExternalProject_Add(libpng
@@ -597,9 +623,9 @@ set(OPENMW_COMMON
 	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
-#	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
+	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
 #	-DOPENMW_USE_SYSTEM_ICU=OFF
-#	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-build/
+	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-build/
 #	-DICU_ROOT=/home/runner/icu-build/
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
@@ -625,10 +651,10 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite
+	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite icu
 
-	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
-#	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+#	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/glassmancody.info/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/Capostrophic/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL_HASH ${OPENMW_HASH}
