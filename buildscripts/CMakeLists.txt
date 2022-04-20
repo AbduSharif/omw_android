@@ -151,6 +151,11 @@ ExternalProject_Add(icu
             BUILD_COMMAND make -j ${NPROCS}
 
             INSTALL_COMMAND ""
+
+set(ICU_INCLUDE_DIRS
+        <SOURCE_DIR>/icu4c/source/common
+        <SOURCE_DIR>/icu4c/source/i18
+    )
 )
 
 ExternalProject_Add(libjpeg-turbo
@@ -619,8 +624,8 @@ set(OPENMW_COMMON
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
 	-DOPENMW_USE_SYSTEM_ICU=OFF
-#	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-build/
-#	-DICU_ROOT=/home/runner/icu-build/
+	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-build/
+	-DICU_ROOT=/home/runner/icu-build/
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
 )
@@ -647,7 +652,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite
+	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite icu
 
 #	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
