@@ -57,7 +57,7 @@ set(SQLITE_VERSION 3360000)
 set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION b6516605913ade5b69a3db5c5df4ff4161a94406)
+set(OPENMW_VERSION c14796fc57ccfb4324eebd97052090f572b1fb23)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -132,31 +132,6 @@ set(libjpeg_turbo_flags "")
 if (${ARCH} STREQUAL "x86")
 	set(libjpeg_turbo_flags ${libjpeg_turbo_flags} --without-simd)
 endif()
-
-ExternalProject_Add(icu
-            URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
-#            URL_HASH MD5=49d5e2e5bab93ae1a4b56e916150544c
-            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/icu/
-            BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/icu/
-
-            CONFIGURE_COMMAND <SOURCE_DIR>/icu4c/source/configure
-            --host=aarch64-linux-android
-            --disable-shared
-            --enable-static
-            --disable-tests
-            --disable-samples
-            --disable-icuio
-            --disable-extras
-            --with-cross-build=/home/runner/icu-build/
-            BUILD_COMMAND make -j ${NPROCS}
-
-            INSTALL_COMMAND ""
-
-set(ICU_INCLUDE_DIRS
-        <SOURCE_DIR>/icu4c/source/common
-        <SOURCE_DIR>/icu4c/source/i18
-    )
-)
 
 ExternalProject_Add(libjpeg-turbo
 	URL https://sourceforge.net/projects/libjpeg-turbo/files/${LIBJPEG_TURBO_VERSION}/libjpeg-turbo-${LIBJPEG_TURBO_VERSION}.tar.gz/download
@@ -652,10 +627,10 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite icu
+	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite
 
-	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
-#	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+#	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/glassmancody.info/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/Capostrophic/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL_HASH ${OPENMW_HASH}
