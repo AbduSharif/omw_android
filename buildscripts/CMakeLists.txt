@@ -21,8 +21,8 @@ set(BOOST_VERSION 1.69.0)
 set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648b04406)
 
 # https://www.ffmpeg.org/download.html
-set(FFMPEG_VERSION 4.4)
-set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
+#set(FFMPEG_VERSION 4.4)
+#set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://github.com/ptitSeb/gl4es/releases
 set(GL4ES_VERSION 3a2f9110fa2411f29ec6255b6d466a6db8fd960e)
@@ -262,7 +262,7 @@ ExternalProject_Add(boost
 )
 
 ExternalProject_Add(ffmpeg
-	URL http://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.bz2
+	URL https://www.ffmpeg.org/releases/ffmpeg-5.0.1.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/ffmpeg-${FFMPEG_VERSION}.tar.bz2
 	URL_HASH ${FFMPEG_HASH}
 	DOWNLOAD_DIR ${download_dir}
