@@ -18,8 +18,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get update --fix-missing
-        sudo apt-get update
+        sudo apt-get update -y --fix-missing
+        sudo apt-get update -y
         sudo apt-get install -y build-essential gcc-multilib python unzip pkg-config p7zip-full ccache autotools-dev
         sudo apt -y remove libicu-dev libicu66
         cd /home/runner/
