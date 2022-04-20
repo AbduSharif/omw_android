@@ -262,8 +262,8 @@ ExternalProject_Add(boost
 )
 
 ExternalProject_Add(ffmpeg
-	URL https://www.ffmpeg.org/releases/ffmpeg-5.0.1.tar.gz
-	https://github.com/xyzz/openmw-deps/releases/download/v0/ffmpeg-${FFMPEG_VERSION}.tar.bz2
+	URL https://www.ffmpeg.org/releases/ffmpeg-4.4.2.tar.gz
+	https://github.com/xyzz/openmw-deps/releases/download/v0/ffmpeg-4.4.2.tar.gz
 	URL_HASH ${FFMPEG_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
