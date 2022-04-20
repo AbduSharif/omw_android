@@ -21,11 +21,9 @@ jobs:
         sudo apt-get update -y --fix-missing
         sudo apt-get update -y
         sudo apt-get install -y build-essential gcc-multilib python unzip pkg-config p7zip-full ccache autotools-dev
-        sudo apt purge libicu-dev libicu66
         cd /home/runner/
         wget https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-Linux-x86_64.tar.gz
         tar xvf cmake-$CMAKE_VERSION-Linux-x86_64.tar.gz
-        sudo apt purge libicu-dev libicu66
 
     - name: Build ICU 
       run: |
@@ -43,7 +41,6 @@ jobs:
       run: |
         export PATH=/home/runner/cmake-$CMAKE_VERSION-Linux-x86_64/bin/:$PATH
         cd buildscripts
-        sudo apt purge libicu-dev libicu66
         ./build.sh --arch ${{ matrix.arch }} --release --lto
 
     - name: Build the APK
