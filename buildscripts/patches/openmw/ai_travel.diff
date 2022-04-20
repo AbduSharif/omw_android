@@ -1,15 +1,87 @@
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 0cbd7a1a992edf7051d86809a72901d31de99b28..8dccab01ef22c13cf50ad1c594dbe6e215378499 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -15,6 +15,10 @@ if(POLICY CMP0083)
-   cmake_policy(SET CMP0083 NEW)
+diff --git a/CI/before_script.android.sh b/CI/before_script.android.sh
+index 47655f8ace8276ae1e1bb6ccb78cbb4d03c56410..a29d9a64adb661390535be3b9eb18e3d7816c51e 100755
+--- a/CI/before_script.android.sh
++++ b/CI/before_script.android.sh
+@@ -6,20 +6,6 @@ sed -i s/"NOT FFVER_OK"/"FALSE"/ CMakeLists.txt
+ mkdir -p build
+ cd build
+ 
+-# Build a version of ICU for the host so that it can use the tools during the cross-compilation
+-mkdir -p icu-host-build
+-cd icu-host-build
+-if [ -r ../extern/fetched/icu/icu4c/source/configure ]; then
+-    ICU_SOURCE_DIR=../extern/fetched/icu/icu4c/source
+-else
+-    wget https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
+-    unzip release-70-1.zip
+-    ICU_SOURCE_DIR=./icu-release-70-1/icu4c/source
+-fi
+-${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras CC="ccache gcc" CXX="ccache g++"
+-make -j $(nproc)
+-cd ..
+-
+ cmake \
+ -DCMAKE_TOOLCHAIN_FILE=/android-ndk-r22/build/cmake/android.toolchain.cmake \
+ -DANDROID_ABI=arm64-v8a \
+diff --git a/extern/CMakeLists.txt b/extern/CMakeLists.txt
+index 1c051bff6105501ef995af0851852137ae7be24c..931a53de844c3dffab8d3723e3845cf2227b1859 100644
+--- a/extern/CMakeLists.txt
++++ b/extern/CMakeLists.txt
+@@ -244,14 +244,16 @@ if (NOT OPENMW_USE_SYSTEM_YAML_CPP)
  endif()
  
-+if(POLICY CMP0074)
-+  cmake_policy(SET CMP0074 NEW)
-+endif()
-+
- # to link with freetype library
- if(POLICY CMP0079)
-   cmake_policy(SET CMP0079 NEW)
+ if (NOT OPENMW_USE_SYSTEM_ICU)
++    include(ExternalProject)
++    include(ProcessorCount)
++    set(ICU_CONFIGURE_OPTS --enable-static --disable-shared
++                --disable-tests --disable-samples --disable-icuio
++                --disable-extras)
++    ProcessorCount(NPROCS)
+     if (ANDROID)
+-        # Note: Must be a build directory, not an install root, since the configure script
+-        # looks for a configuration file which does not get installed.
+-        set(OPENMW_ICU_HOST_BUILD_DIR "" CACHE STRING "A pre-built ICU build directory for the host system if cross-compiling")
+-        # We need a host version of ICU so that the tools can be run when building the data library.
+         set(NDK_STANDARD_ROOT ${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64)
+         string(REPLACE "android-" "" ANDROIDVER ${ANDROID_PLATFORM})
+-        set(ICU_ENV
++        set(ICU_ENV ${ICU_ENV}
+             "CC=ccache ${NDK_STANDARD_ROOT}/bin/aarch64-linux-android${ANDROIDVER}-clang"
+             "CXX=ccache ${NDK_STANDARD_ROOT}/bin/aarch64-linux-android${ANDROIDVER}-clang"
+             "RANLIB=${NDK_STANDARD_ROOT}/bin/aarch64-linux-android-ranlib"
+@@ -262,18 +264,30 @@ if (NOT OPENMW_USE_SYSTEM_ICU)
+         # Wants a triple such as aarch64-linux-android, excluding a trailing
+         # -clang etc.
+         string(REGEX MATCH "^[^-]\+-[^-]+-[^-]+" ICU_TOOLCHAIN_NAME ${ANDROID_TOOLCHAIN_NAME})
+-        set(ICU_ADDITIONAL_OPTS --host=${ICU_TOOLCHAIN_NAME}${ANDROIDVER} --with-cross-build=${OPENMW_ICU_HOST_BUILD_DIR})
++        set(ICU_ADDITIONAL_OPTS --host=${ICU_TOOLCHAIN_NAME}${ANDROIDVER} --with-cross-build=${CMAKE_CURRENT_BINARY_DIR}/icu-cross)
++        # --with-cross-build must be a build directory, not an install root, since the configure script
++        # looks for a configuration file which does not get installed.
++        # We need a host version of ICU so that the tools can be run when building the data library.
++        ExternalProject_Add(icu-cross
++            URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
++            URL_HASH MD5=49d5e2e5bab93ae1a4b56e916150544c
++            SOURCE_DIR fetched/icu
++            BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/icu-cross
++            CONFIGURE_COMMAND <SOURCE_DIR>/icu4c/source/configure ${ICU_CONFIGURE_OPTS}
++            BUILD_COMMAND make -j ${NPROCS} VERBOSE=1
++            INSTALL_COMMAND ""
++        )
++        set(ICU_DEPENDS icu-cross)
+     endif()
+-    include(ExternalProject)
+     ExternalProject_Add(icu
+         URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
+         URL_HASH MD5=49d5e2e5bab93ae1a4b56e916150544c
+         SOURCE_DIR fetched/icu
+         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${ICU_ENV}
+-            <SOURCE_DIR>/icu4c/source/configure --enable-static --disable-shared
+-            --disable-tests --disable-samples --disable-icuio --disable-extras ${ICU_ADDITIONAL_OPTS}
+-        BUILD_COMMAND make
++            <SOURCE_DIR>/icu4c/source/configure ${ICU_CONFIGURE_OPTS} ${ICU_ADDITIONAL_OPTS}
++        BUILD_COMMAND make -j ${NPROCS}
+         INSTALL_COMMAND ""
++        DEPENDS ${ICU_DEPENDS}
+     )
+     ExternalProject_Get_Property(icu SOURCE_DIR BINARY_DIR)
+     set(ICU_INCLUDE_DIRS
