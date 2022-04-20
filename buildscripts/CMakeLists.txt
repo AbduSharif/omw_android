@@ -33,7 +33,7 @@ set(SDL2_VERSION 2.0.12)
 set(SDL2_HASH SHA256=349268f695c02efbc9b9148a70b85e58cefbbf704abd3e91be654db7f1e2c863)
 
 # https://github.com/bulletphysics/bullet3/releases
-set(BULLET_VERSION 3.22b)
+set(BULLET_VERSION 3.17)
 #set(BULLET_HASH SHA256=baa642c906576d4d98d041d0acb80d85dd6eff6e3c16a009b1abf1ccd2bc0a61)
 
 # https://github.com/MyGUI/mygui/releases
@@ -348,7 +348,7 @@ ExternalProject_Add(bullet
 	URL_HASH ${BULLET_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
-#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/bullet-fix-cmake.patch
+	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/bullet-fix-cmake.patch
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
@@ -608,8 +608,8 @@ set(OPENMW_COMMON
 	-DBUILD_UNITTESTS=0
 	-DBUILD_MYGUI_PLUGIN=0
 	-DOPENMW_LTO_BUILD=ON
-#	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
-# 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
+ 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
