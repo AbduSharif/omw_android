@@ -1,5 +1,5 @@
 diff --git a/components/misc/stringops.hpp b/components/misc/stringops.hpp
-index fe4be0000..b89185919 100644
+index fe4be00006d22bba670d69e99dbf50c0c53094ba..b891859195e51b8f91bb1b20629f54474f27a79b 100644
 --- a/components/misc/stringops.hpp
 +++ b/components/misc/stringops.hpp
 @@ -7,6 +7,7 @@
