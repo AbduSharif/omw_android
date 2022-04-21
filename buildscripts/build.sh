@@ -10,7 +10,7 @@ ASAN="false"
 DEPLOY_RESOURCES="true"
 LTO="false"
 BUILD_TYPE="release"
-CFLAGS="-fPIC"
+CFLAGS="-fPIC -std=c++11"
 CXXFLAGS="-fPIC -frtti -fexceptions"
 LDFLAGS="-fPIC"
 
