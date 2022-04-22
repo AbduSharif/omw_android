@@ -1,0 +1,13 @@
+diff --git a/components/fx/pass.cpp b/components/fx/pass.cpp
+index 95b53caa20f232e1f4ea39cbf1de761480feb753..0e41b2e418691412b4a77adeb64e9b61125e3440 100644
+--- a/components/fx/pass.cpp
++++ b/components/fx/pass.cpp
+@@ -100,7 +100,7 @@ namespace fx
+ #else
+     uniform _omw_data omw;
+ #endif
+-    float omw_GetDepth(sampler2D depthSampler, vec2 uv)
++    float omw_GetDepth(highp sampler2D depthSampler, vec2 uv)
+     {
+         float depth = omw_Texture2D(depthSampler, uv).r;
+ #if OMW_REVERSE_Z
