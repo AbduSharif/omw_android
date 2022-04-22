@@ -38,7 +38,7 @@ pushd toolchain
 if [[ ! -d $ARCH ]]; then
 	echo "==> Making standalone toolchain for architecture $ARCH"
 
-	$NDK/build/tools/make_standalone_toolchain.py \
+	./ndk/build/tools/make_standalone_toolchain.py \
 		--arch $ARCH \
 		--api $ANDROID_API \
 		--stl libc++ \
