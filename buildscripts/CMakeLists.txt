@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.13)
 
 # https://github.com/libjpeg-turbo/libjpeg-turbo/releases
 set(LIBJPEG_TURBO_VERSION 1.5.3)
