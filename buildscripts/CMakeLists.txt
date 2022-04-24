@@ -384,7 +384,7 @@ ExternalProject_Add(mygui
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGLESv2.so
+#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGLESv2.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGLESv2.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DMYGUI_RENDERSYSTEM=4
