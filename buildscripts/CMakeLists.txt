@@ -384,10 +384,10 @@ ExternalProject_Add(mygui
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
-#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
-	-DMYGUI_RENDERSYSTEM=8
+	-DMYGUI_RENDERSYSTEM=4
 	-DMYGUI_BUILD_DEMOS=OFF
 	-DMYGUI_BUILD_TOOLS=OFF
 	-DMYGUI_BUILD_PLUGINS=OFF
@@ -617,8 +617,8 @@ set(OPENMW_COMMON
 	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
  	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
-#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-#	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
