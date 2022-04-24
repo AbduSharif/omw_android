@@ -108,7 +108,7 @@ class GameActivity : SDLActivity() {
             }
         }
 
-        System.loadLibrary("GLESv2")
+        System.loadLibrary("GL")
         System.loadLibrary("openmw")
     }
 
