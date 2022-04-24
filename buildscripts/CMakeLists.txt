@@ -25,7 +25,7 @@ set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648
 #set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION 86f95cf772504ca0dcc7a74003252d217b115bde)
+set(GL4ES_VERSION 3a2f9110fa2411f29ec6255b6d466a6db8fd960e)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://www.libsdl.org/download-2.0.php
@@ -324,7 +324,7 @@ ExternalProject_Add(gl4es
 	${COMMON_NDK_BUILD_FLAGS}
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
-	COMMAND cp libs/${app_abi}/libGLESv2.so ${prefix}/lib/
+	COMMAND cp libs/${app_abi}/libGL.so ${prefix}/lib/
 	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/include/gl4es/
 	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
 )
@@ -384,8 +384,8 @@ ExternalProject_Add(mygui
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
-#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGLESv2.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGLESv2.so
+#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DMYGUI_RENDERSYSTEM=8
 	-DMYGUI_BUILD_DEMOS=OFF
@@ -534,8 +534,8 @@ set(OSG_COMMON
 	-DJPEG_INCLUDE_DIR=${prefix}/include/
 	-DPNG_INCLUDE_DIR=${prefix}/include/
 	-DFREETYPE_DIR=${prefix}
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGLESv2.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGLESv2.so
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DOSG_CPP_EXCEPTIONS_AVAILABLE=TRUE
 	-DOSG_GL1_AVAILABLE=OFF
@@ -617,8 +617,8 @@ set(OPENMW_COMMON
 	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
  	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
-#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGLESv2.so
-#	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGLESv2.so
+#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
