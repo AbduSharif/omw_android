@@ -25,7 +25,7 @@ set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648
 #set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION 9061bb07816a474588a024b9aa05434d727610ec)
+set(GL4ES_VERSION 86f95cf772504ca0dcc7a74003252d217b115bde)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://www.libsdl.org/download-2.0.php
@@ -305,7 +305,7 @@ ExternalProject_Add(ffmpeg
 
 ExternalProject_Add(gl4es
 #	URL https://github.com/ptitSeb/gl4es/archive/${GL4ES_VERSION}.tar.gz
-	URL https://github.com/AbduSharif/gl4es2/archive/${GL4ES_VERSION}.tar.gz
+	URL https://github.com/AbduSharif/gl4es/archive/${GL4ES_VERSION}.tar.gz
 #	URL https://github.com/AbduSharif/VGPU/archive/${GL4ES_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/${GL4ES_VERSION}.gz
 	URL_HASH ${GL4ES_HASH}
@@ -324,7 +324,7 @@ ExternalProject_Add(gl4es
 	${COMMON_NDK_BUILD_FLAGS}
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
-	COMMAND cp libs/${app_abi}/libGL.so ${prefix}/lib/
+	COMMAND cp libs/${app_abi}/libGLESv2.so ${prefix}/lib/
 	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/include/gl4es/
 	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
 )
@@ -384,8 +384,8 @@ ExternalProject_Add(mygui
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGLESv2.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGLESv2.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DMYGUI_RENDERSYSTEM=4
 	-DMYGUI_BUILD_DEMOS=OFF
@@ -520,7 +520,7 @@ ExternalProject_Add(libcollada
 )
 
 set(OSG_COMMON
-	-DOPENGL_PROFILE="GL2"
+	-DOPENGL_PROFILE="GLES2"
 	-DDYNAMIC_OPENTHREADS=OFF
 	-DDYNAMIC_OPENSCENEGRAPH=OFF
 	-DBUILD_OSG_PLUGIN_OSG=ON
@@ -534,16 +534,15 @@ set(OSG_COMMON
 	-DJPEG_INCLUDE_DIR=${prefix}/include/
 	-DPNG_INCLUDE_DIR=${prefix}/include/
 	-DFREETYPE_DIR=${prefix}
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGLESv2.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGLESv2.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DOSG_CPP_EXCEPTIONS_AVAILABLE=TRUE
-	-DOSG_GL1_AVAILABLE=ON
+	-DOSG_GL1_AVAILABLE=OFF
 	-DOSG_GL2_AVAILABLE=ON
 	-DOSG_GL3_AVAILABLE=OFF
 	-DOSG_GLES1_AVAILABLE=OFF
 	-DOSG_GLES2_AVAILABLE=ON
-	-DOSG_GLES3_AVAILABLE=ON
 	-DOSG_GL_LIBRARY_STATIC=OFF
 	-DOSG_GL_DISPLAYLISTS_AVAILABLE=OFF
 #	-DOSG_GL_MATRICES_AVAILABLE=ON
@@ -564,7 +563,7 @@ set(OSG_COMMON
 )
 
 set(OSG_PATCH
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/psa.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/psa.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/disable-polygon-offset.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/remove-lib-prefix-from-plugins.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/remove-zlib-dependency.patch &&
@@ -618,8 +617,8 @@ set(OPENMW_COMMON
 	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
  	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGLESv2.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGLESv2.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
@@ -633,18 +632,18 @@ set(OPENMW_COMMON
 )
 
 set(OPENMW_PATCH
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma2.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma2.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0001-loadingscreen-disable-for-now.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0009-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0010-android-fix-context-being-lost-on-app-minimize.patch &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0014-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0012-components-misc-stringops-use-boost-format-instead-o.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/fix-build.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/psa.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb2.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/tcb_range_limit.diff &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/psa.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb2.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/tcb_range_limit.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/soft_particles_mr.diff &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/water_fix.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
