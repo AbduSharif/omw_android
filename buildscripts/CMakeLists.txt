@@ -387,7 +387,7 @@ ExternalProject_Add(mygui
 #	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGLESv2.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGLESv2.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
-	-DMYGUI_RENDERSYSTEM=4
+	-DMYGUI_RENDERSYSTEM=8
 	-DMYGUI_BUILD_DEMOS=OFF
 	-DMYGUI_BUILD_TOOLS=OFF
 	-DMYGUI_BUILD_PLUGINS=OFF
