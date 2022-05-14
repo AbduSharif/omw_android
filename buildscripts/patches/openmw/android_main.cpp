@@ -62,6 +62,7 @@ extern "C" int Java_org_libsdl_app_SDLActivity_nativeInit(JNIEnv* env, jclass cl
 
     SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengles2");
+    SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "1");
     SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
 
     return 0;
