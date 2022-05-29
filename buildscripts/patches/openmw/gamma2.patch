@@ -1,19 +1,30 @@
 diff --git a/files/shaders/groundcover_fragment.glsl b/files/shaders/groundcover_fragment.glsl
-index d66963419..52223cc6c 100644
+index b7ff102079c233b77320ebaaf36804e0c214e6c8..52273a157d7f558e2890b9cda54bc55e4fd6e62e 100644
 --- a/files/shaders/groundcover_fragment.glsl
 +++ b/files/shaders/groundcover_fragment.glsl
-@@ -86,4 +86,6 @@ void main()
-     gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
+@@ -95,4 +95,6 @@ void main()
+ #endif
+ 
+     applyShadowDebugOverlay();
++
++    gl_FragData[0].xyz = pow(gl_FragData[0].xyz, vec3(1.0/@gamma));
+ }
+diff --git a/files/shaders/objects_fragment.glsl b/files/shaders/objects_fragment.glsl
+index 16cbf9bbbd8db85ba182b06d7008675dcddef274..0a70bcdca006fb336d13771a4a56550e1e46bd07 100644
+--- a/files/shaders/objects_fragment.glsl
++++ b/files/shaders/objects_fragment.glsl
+@@ -257,4 +257,6 @@ void main()
+ #endif
  
      applyShadowDebugOverlay();
 +
 +    gl_FragData[0].xyz = pow(gl_FragData[0].xyz, vec3(1.0/@gamma));
  }
 diff --git a/files/shaders/nv_default_fragment.glsl b/files/shaders/nv_default_fragment.glsl
-index 1bd0f4e31..0150f46fb 100644
+index 9cb784ab98ea5209008e36c5975ac6fad3880478..65effb38cc640f9f6e2c3702b8f223d568716f71 100644
 --- a/files/shaders/nv_default_fragment.glsl
 +++ b/files/shaders/nv_default_fragment.glsl
-@@ -101,4 +101,6 @@ void main()
+@@ -108,4 +108,6 @@ void main()
  #endif
  
      applyShadowDebugOverlay();
@@ -21,33 +32,33 @@ index 1bd0f4e31..0150f46fb 100644
 +    gl_FragData[0].xyz = pow(gl_FragData[0].xyz, vec3(1.0/@gamma));
  }
 diff --git a/files/shaders/nv_nolighting_fragment.glsl b/files/shaders/nv_nolighting_fragment.glsl
-index 27679a069..0477cd4a7 100644
+index 7c4f4737e0eae82e77ed33d56e507521dd824644..c2703904d5fe1793971a0b5516c2eb735a443766 100644
 --- a/files/shaders/nv_nolighting_fragment.glsl
 +++ b/files/shaders/nv_nolighting_fragment.glsl
-@@ -52,4 +52,6 @@ void main()
+@@ -50,4 +50,6 @@ void main()
  #endif
  
      gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
 +
 +    gl_FragData[0].xyz = pow(gl_FragData[0].xyz, vec3(1.0/@gamma));
  }
-diff --git a/files/shaders/objects_fragment.glsl b/files/shaders/objects_fragment.glsl
-index 74929ec24..0a9d602e5 100644
---- a/files/shaders/objects_fragment.glsl
-+++ b/files/shaders/objects_fragment.glsl
-@@ -225,4 +225,6 @@ void main()
+diff --git a/files/shaders/terrain_fragment.glsl b/files/shaders/terrain_fragment.glsl
+index 7ff696e0833b244eb6c2ceccc4e8593f85e6842c..25740202ed1723bf9ed02fb59027dab52368ee94 100644
+--- a/files/shaders/terrain_fragment.glsl
++++ b/files/shaders/terrain_fragment.glsl
+@@ -128,4 +128,6 @@ void main()
  #endif
  
      applyShadowDebugOverlay();
 +
 +    gl_FragData[0].xyz = pow(gl_FragData[0].xyz, vec3(1.0/@gamma));
  }
-diff --git a/files/shaders/terrain_fragment.glsl b/files/shaders/terrain_fragment.glsl
-index d9d4a6dc3..dd29aa304 100644
---- a/files/shaders/terrain_fragment.glsl
-+++ b/files/shaders/terrain_fragment.glsl
-@@ -116,4 +116,6 @@ void main()
-     gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
+diff --git a/files/shaders/water_fragment.glsl b/files/shaders/water_fragment.glsl
+index 51d30be2d4a574df0c7d18c96aec7e0b580df25e..5412c7dfcf56aa81115fdaa6eea7fab1d29394f8 100644
+--- a/files/shaders/water_fragment.glsl
++++ b/files/shaders/water_fragment.glsl
+@@ -368,4 +368,6 @@ void main(void)
+ #endif
  
      applyShadowDebugOverlay();
 +
