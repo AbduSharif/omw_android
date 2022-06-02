@@ -1,0 +1,13 @@
+diff --git a/apps/openmw/mwrender/localmap.cpp b/apps/openmw/mwrender/localmap.cpp
+index 9e7b95fb0c283f0126e4664e622393529fadb40f..ccd3220efe6e9b11719a7ccb1e3a058a9108d435 100644
+--- a/apps/openmw/mwrender/localmap.cpp
++++ b/apps/openmw/mwrender/localmap.cpp
+@@ -662,6 +662,8 @@ LocalMapRenderToTexture::LocalMapRenderToTexture(osg::Node* sceneRoot, int res,
+     , mSceneRoot(sceneRoot)
+     , mActive(true)
+ {
++    setNodeMask(Mask_RenderToTexture);
++
+     if (SceneUtil::AutoDepth::isReversed())
+         mProjectionMatrix = SceneUtil::getReversedZProjectionMatrixAsOrtho(-mapWorldSize / 2, mapWorldSize / 2, -mapWorldSize / 2, mapWorldSize / 2, 5, (zmax - zmin) + 10);
+     else
