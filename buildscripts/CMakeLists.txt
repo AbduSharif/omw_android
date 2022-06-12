@@ -340,8 +340,6 @@ ExternalProject_Add(sdl2
 	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/sdl2-android-120hz-gyroscope.patch
 
 	CONFIGURE_COMMAND ""
-	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
- 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 
 	BUILD_COMMAND ${wrapper_command} ndk-build
 	${COMMON_NDK_BUILD_FLAGS}
