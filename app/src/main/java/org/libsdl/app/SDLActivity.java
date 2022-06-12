@@ -1,7 +1,5 @@
 package org.libsdl.app;
 
-import java.io.InputStream;
-import java.util.Arrays;
 import java.lang.reflect.Method;
 import java.lang.Math;
 
