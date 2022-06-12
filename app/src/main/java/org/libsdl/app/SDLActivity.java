@@ -21,6 +21,7 @@ import android.widget.RelativeLayout;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.os.*;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -485,8 +486,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         // If we do, the normal hardware back button will no longer work and people have to use home,
         // but the mouse right click will work.
         //
-        String trapBack = SDLActivity.nativeGetHint("SDL_ANDROID_TRAP_BACK_BUTTON");
-        if ((trapBack != null) && trapBack.equals("1")) {
+        boolean trapBack = SDLActivity.nativeGetHintBoolean("SDL_ANDROID_TRAP_BACK_BUTTON", false);
+        if (trapBack) {
             // Exit and let the mouse handler handle this button (if appropriate)
             return;
         }
@@ -795,6 +796,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public static native void onNativeSurfaceChanged();
     public static native void onNativeSurfaceDestroyed();
     public static native String nativeGetHint(String name);
+    public static native boolean nativeGetHintBoolean(String name, boolean default_value);
     public static native void nativeSetenv(String name, String value);
     public static native void onNativeOrientationChanged(int orientation);
     public static native void nativeAddTouch(int touchId, String name);
@@ -1702,6 +1704,52 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
             mSingleton.startActivity(i);
         } catch (Exception ex) {
+            return -1;
+        }
+        return 0;
+    }
+
+    /**
+     * This method is called by SDL using JNI.
+     */
+    public static int showToast(String message, int duration, int gravity, int xOffset, int yOffset)
+    {
+        if(null == mSingleton) {
+            return - 1;
+        }
+
+        try
+        {
+            class OneShotTask implements Runnable {
+                String mMessage;
+                int mDuration;
+                int mGravity;
+                int mXOffset;
+                int mYOffset;
+
+                OneShotTask(String message, int duration, int gravity, int xOffset, int yOffset) {
+                    mMessage  = message;
+                    mDuration = duration;
+                    mGravity  = gravity;
+                    mXOffset  = xOffset;
+                    mYOffset  = yOffset;
+                }
+
+                public void run() {
+                    try
+                    {
+                        Toast toast = Toast.makeText(mSingleton, mMessage, mDuration);
+                        if (mGravity >= 0) {
+                            toast.setGravity(mGravity, mXOffset, mYOffset);
+                        }
+                        toast.show();
+                    } catch(Exception ex) {
+                        Log.e(TAG, ex.getMessage());
+                    }
+                }
+            }
+            mSingleton.runOnUiThread(new OneShotTask(message, duration, gravity, xOffset, yOffset));
+        } catch(Exception ex) {
             return -1;
         }
         return 0;
