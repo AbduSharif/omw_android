@@ -29,8 +29,8 @@ set(GL4ES_VERSION a9d6889787c7946bb146be78446817701f1b6cc6)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://www.libsdl.org/download-2.0.php
-set(SDL2_VERSION 2.0.12)
-set(SDL2_HASH SHA256=349268f695c02efbc9b9148a70b85e58cefbbf704abd3e91be654db7f1e2c863)
+set(SDL2_VERSION 2.0.22)
+#set(SDL2_HASH SHA256=349268f695c02efbc9b9148a70b85e58cefbbf704abd3e91be654db7f1e2c863)
 
 # https://github.com/bulletphysics/bullet3/releases
 set(BULLET_VERSION 3.22b)
@@ -346,7 +346,6 @@ ExternalProject_Add(sdl2
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
 	COMMAND cp libs/${app_abi}/libSDL2.so ${prefix}/lib/
-	COMMAND cp libs/${app_abi}/libhidapi.so ${prefix}/lib/
 	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
 )
 
