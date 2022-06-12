@@ -26,11 +26,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Hashtable;
-import java.util.Locale
+import java.util.Locale;
 
 import ui.activity.GameActivity;
 import ui.activity.MainActivity;
