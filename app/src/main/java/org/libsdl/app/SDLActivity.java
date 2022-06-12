@@ -1297,9 +1297,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     /** Result of current messagebox. Also used for blocking the calling thread. */
     protected final int[] messageboxSelection = new int[1];
 
-    /** Id of current dialog. */
-    protected int dialogs = 0;
-
     /**
      * This method is called by SDL using JNI.
      * Shows the messagebox from UI thread and block calling thread.
@@ -1343,7 +1340,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                showDialog(dialogs++, args);
+                messageboxCreateAndShow(args);
             }
         });
 
@@ -1388,8 +1385,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return dialog;
     }
 
-    @Override
-    protected Dialog onCreateDialog(int ignore, Bundle args) {
+    protected void messageboxCreateAndShow(Bundle args) {
         if (args.getIntArray("buttonIds").length <= 1)
             return showModernDialog(args);
 
@@ -1420,7 +1416,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         // create dialog with title and a listener to wake up calling thread
 
-        final Dialog dialog = new Dialog(this);
+        final AlertDialog dialog = new AlertDialog.Builder(this).create();
         dialog.setTitle(args.getString("title"));
         dialog.setCancelable(false);
         dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
@@ -1506,7 +1502,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         // add content to dialog and return
 
-        dialog.setContentView(content);
+        dialog.setView(content)
         dialog.setOnKeyListener(new Dialog.OnKeyListener() {
             @Override
             public boolean onKey(DialogInterface d, int keyCode, KeyEvent event) {
@@ -1521,7 +1517,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             }
         });
 
-        return dialog;
+        dialog.show();
     }
 
     private final Runnable rehideSystemUi = new Runnable() {
