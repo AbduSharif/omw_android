@@ -1,7 +1,4 @@
-package org.libsdl.app;
-
-import java.lang.reflect.Method;
-import java.lang.Math;
+package org.libsdl.app
 
 import android.app.*;
 import android.content.*;
