@@ -1,6 +1,5 @@
 package org.libsdl.app;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Hashtable;
@@ -438,8 +437,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         if (SDLActivity.mBrokenLibraries) {
            return;
-        }
-
+        }        
 
         if (mCurrentLocale == null || !mCurrentLocale.equals(newConfig.locale)) {
             mCurrentLocale = newConfig.locale;
@@ -898,7 +896,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             }
         }
 
-        Log.v("SDL", "setOrientation() requestedOrientation=" + req + " width=" + w +" height="+ h +" resizable=" + resizable + " hint=" + hint);
+        Log.v(TAG, "setOrientation() requestedOrientation=" + req + " width=" + w +" height="+ h +" resizable=" + resizable + " hint=" + hint);
         mSingleton.setRequestedOrientation(req);
     }
 
@@ -1117,7 +1115,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             /* environment variables set! */
             return true;
         } catch (Exception e) {
-           Log.v("SDL", "exception " + e.toString());
+           Log.v(TAG, "exception " + e.toString());
         }
         return false;
     }
@@ -1300,6 +1298,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     /** Result of current messagebox. Also used for blocking the calling thread. */
     protected final int[] messageboxSelection = new int[1];
 
+    /** Id of current dialog. */
+    protected int dialogs = 0;
+
     /**
      * This method is called by SDL using JNI.
      * Shows the messagebox from UI thread and block calling thread.
@@ -1343,7 +1344,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                messageboxCreateAndShow(args);
+                showDialog(dialogs++, args);
             }
         });
 
@@ -1388,7 +1389,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return dialog;
     }
 
-    protected void messageboxCreateAndShow(Bundle args) {
+    @Override
+    protected Dialog onCreateDialog(int ignore, Bundle args) {
         if (args.getIntArray("buttonIds").length <= 1)
             return showModernDialog(args);
 
@@ -1419,7 +1421,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         // create dialog with title and a listener to wake up calling thread
 
-        final AlertDialog dialog = new AlertDialog.Builder(this).create();
+        final Dialog dialog = new Dialog(this);
         dialog.setTitle(args.getString("title"));
         dialog.setCancelable(false);
         dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
@@ -1505,7 +1507,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         // add content to dialog and return
 
-        dialog.setView(content)
+        dialog.setContentView(content);
         dialog.setOnKeyListener(new Dialog.OnKeyListener() {
             @Override
             public boolean onKey(DialogInterface d, int keyCode, KeyEvent event) {
@@ -1520,7 +1522,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             }
         });
 
-        dialog.show();
+        return dialog;
     }
 
     private final Runnable rehideSystemUi = new Runnable() {
