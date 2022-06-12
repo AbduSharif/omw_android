@@ -1,4 +1,4 @@
-package org.libsdl.app
+package org.libsdl.app;
 
 import android.app.*;
 import android.content.*;
