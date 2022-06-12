@@ -1,5 +1,9 @@
 package org.libsdl.app;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+
 import android.app.*;
 import android.content.*;
 import android.content.pm.ActivityInfo;
