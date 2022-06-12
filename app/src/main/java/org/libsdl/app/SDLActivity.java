@@ -30,6 +30,7 @@ import android.hardware.*;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ApplicationInfo;
+import android.net.Uri;
 
 import ui.activity.GameActivity;
 import ui.activity.MainActivity;
