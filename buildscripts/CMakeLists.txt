@@ -21,7 +21,7 @@ set(BOOST_VERSION 1.69.0)
 set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648b04406)
 
 # https://www.ffmpeg.org/download.html
-#set(FFMPEG_VERSION 4.4)
+set(FFMPEG_VERSION 4.4)
 #set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://github.com/ptitSeb/gl4es/releases
