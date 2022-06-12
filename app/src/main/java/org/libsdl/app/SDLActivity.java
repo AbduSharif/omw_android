@@ -1029,14 +1029,12 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return false;
     }
 
-    /**
-     * This method is called by SDL using JNI.
-     */
-    public static boolean isTablet() {
+    public static double getDiagonal() 
+    {
         DisplayMetrics metrics = new DisplayMetrics();
         Activity activity = (Activity)getContext();
         if (activity == null) {
-            return false;
+            return 0.0;
         }
         activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
 
@@ -1044,9 +1042,16 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         double dHeightInches = metrics.heightPixels / (double)metrics.ydpi;
 
         double dDiagonal = Math.sqrt((dWidthInches * dWidthInches) + (dHeightInches * dHeightInches));
+        
+        return dDiagonal;
+    }
 
+    /**
+     * This method is called by SDL using JNI.
+     */
+    public static boolean isTablet() {
         // If our diagonal size is seven inches or greater, we consider ourselves a tablet.
-        return (dDiagonal >= 7.0);
+        return (getDiagonal() >= 7.0);
     }
 
     /**
