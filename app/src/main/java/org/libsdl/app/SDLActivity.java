@@ -1314,6 +1314,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
     protected void messageboxCreateAndShow(Bundle args) {
         if (args.getIntArray("buttonIds").length <= 1)
+            return;
 
         // TODO set values from "flags" to messagebox dialog
 
