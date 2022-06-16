@@ -52,10 +52,6 @@ set(LZ4_HASH SHA256=030644df4611007ff7dc962d981f390361e6c97a34e5cbc393ddfbe019ff
 set(LUAJIT_VERSION 2.1.0-beta3)
 set(LUAJIT_HASH SHA256=1ad2e34b111c802f9d0cdf019e986909123237a28c746b21295b63c9e785d9c3)
 
-# https://www.sqlite.org/download.html
-set(SQLITE_VERSION 3360000)
-set(SQLITE_HASH SHA256=bd90c3eb96bee996206b83be7065c9ce19aef38c3f4fb53073ada0d0b69bbce3)
-
 # https://github.com/OpenMW/openmw/commits/master
 set(OPENMW_VERSION 81e1d72c6493350e5155cf7aaca5facca84568f7)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
@@ -447,19 +443,6 @@ ExternalProject_Add(luajit
 	COMMAND bash -c "rm ${prefix}/lib/libluajit*.so*"
 )
 
-ExternalProject_Add(sqlite
-	URL https://www.sqlite.org/2021/sqlite-autoconf-${SQLITE_VERSION}.tar.gz
-	URL_HASH ${SQLITE_HASH}
-	DOWNLOAD_DIR ${download_dir}
-
-	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
-	${COMMON_AUTOCONF_FLAGS}
-
-	BUILD_COMMAND ${wrapper_command} $(MAKE)
-
-	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
-)
-
 ExternalProject_Add(zlib
 		URL https://github.com/madler/zlib/archive/refs/tags/v1.2.11.tar.gz
 		URL_HASH SHA256=629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff
@@ -608,7 +591,7 @@ set(OPENMW_COMMON
 	-DBUILD_NAVMESHTOOL=OFF
 	-DBUILD_BULLETOBJECTTOOL=OFF
 #        -DBUILD_SIMPLIFIEDMESHTOOL=0
-#        -DOPENMW_USE_SYSTEM_SQLITE3=OFF
+        -DOPENMW_USE_SYSTEM_SQLITE3=OFF
 	-DBUILD_OPENCS=0
 	-DBUILD_WIZARD=0
 	-DBUILD_DOCS=0
@@ -654,7 +637,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit sqlite icu
+	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit icu
 
 #	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
