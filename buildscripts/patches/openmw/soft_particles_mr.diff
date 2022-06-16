@@ -1,35 +1,776 @@
-diff --git a/apps/openmw/mwrender/postprocessor.cpp b/apps/openmw/mwrender/postprocessor.cpp
-index 7405098a031fea692f118918b35b57877431b84e..0c048828588590843cf70f06f21372d63f88f922 100644
---- a/apps/openmw/mwrender/postprocessor.cpp
-+++ b/apps/openmw/mwrender/postprocessor.cpp
-@@ -234,8 +234,8 @@ namespace MWRender
-         if (const auto depthProxy = std::getenv("OPENMW_ENABLE_DEPTH_CLEAR_PROXY"))
-             mFirstPersonDepthRBProxy = new osg::RenderBuffer(width, height, mDepthTex->getInternalFormat(), samples);
+diff --git a/apps/launcher/advancedpage.cpp b/apps/launcher/advancedpage.cpp
+index 6566bd8d51fb3cbd84ae05026ef66c49c8d23725..033681e072c88a72d92fb26ae6c3fb4f9fe60c3e 100644
+--- a/apps/launcher/advancedpage.cpp
++++ b/apps/launcher/advancedpage.cpp
+@@ -117,7 +117,7 @@ bool Launcher::AdvancedPage::loadSettings()
+         loadSettingBool(autoUseTerrainNormalMapsCheckBox, "auto use terrain normal maps", "Shaders");
+         loadSettingBool(autoUseTerrainSpecularMapsCheckBox, "auto use terrain specular maps", "Shaders");
+         loadSettingBool(bumpMapLocalLightingCheckBox, "apply lighting to environment maps", "Shaders");
+-        loadSettingBool(radialFogCheckBox, "radial fog", "Shaders");
++        loadSettingBool(radialFogCheckBox, "radial fog", "Fog");
+         loadSettingBool(softParticlesCheckBox, "soft particles", "Shaders");
+         loadSettingBool(antialiasAlphaTestCheckBox, "antialias alpha test", "Shaders");
+         if (Settings::Manager::getInt("antialiasing", "Video") == 0) {
+@@ -265,7 +265,7 @@ void Launcher::AdvancedPage::saveSettings()
+         saveSettingBool(autoUseTerrainNormalMapsCheckBox, "auto use terrain normal maps", "Shaders");
+         saveSettingBool(autoUseTerrainSpecularMapsCheckBox, "auto use terrain specular maps", "Shaders");
+         saveSettingBool(bumpMapLocalLightingCheckBox, "apply lighting to environment maps", "Shaders");
+-        saveSettingBool(radialFogCheckBox, "radial fog", "Shaders");
++        saveSettingBool(radialFogCheckBox, "radial fog", "Fog");
+         saveSettingBool(softParticlesCheckBox, "soft particles", "Shaders");
+         saveSettingBool(antialiasAlphaTestCheckBox, "antialias alpha test", "Shaders");
+         saveSettingBool(magicItemAnimationsCheckBox, "use magic item animations", "Game");
+diff --git a/apps/openmw/engine.cpp b/apps/openmw/engine.cpp
+index b2b1dbd0d6a8662ffbcf8cc8a609c693b76e1c86..4234662d314e9ae10af487f4c9c985aa5877baa5 100644
+--- a/apps/openmw/engine.cpp
++++ b/apps/openmw/engine.cpp
+@@ -256,7 +256,18 @@ namespace
+             Log(Debug::Info) << "OpenGL Vendor: " << glGetString(GL_VENDOR);
+             Log(Debug::Info) << "OpenGL Renderer: " << glGetString(GL_RENDERER);
+             Log(Debug::Info) << "OpenGL Version: " << glGetString(GL_VERSION);
++            glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &mMaxTextureImageUnits);
+         }
++
++        int getMaxTextureImageUnits() const
++        {
++            if (mMaxTextureImageUnits == 0)
++                throw std::logic_error("mMaxTextureImageUnits is not initialized");
++            return mMaxTextureImageUnits;
++        }
++
++    private:
++        int mMaxTextureImageUnits = 0;
+     };
  
--        if (Settings::Manager::getBool("soft particles", "Shaders"))
--            osgUtil::RenderBin::getRenderBinPrototype("DepthSortedBin")->setDrawCallback(new OpaqueDepthCopyCallback(mOpaqueDepthTex, mMsaaFbo ? mMsaaFbo : mFbo));
-+//        if (Settings::Manager::getBool("soft particles", "Shaders"))
-+//            osgUtil::RenderBin::getRenderBinPrototype("DepthSortedBin")->setDrawCallback(new OpaqueDepthCopyCallback(mOpaqueDepthTex, mMsaaFbo ? mMsaaFbo : mFbo));
+     class InitializeStereoOperation final : public osg::GraphicsOperation
+@@ -664,7 +675,8 @@ void OMW::Engine::createWindow()
  
-         mViewer->getCamera()->resize(width, height);
-         mHUDCamera->resize(width, height);
-@@ -257,7 +257,7 @@ namespace MWRender
+     osg::ref_ptr<SceneUtil::OperationSequence> realizeOperations = new SceneUtil::OperationSequence(false);
+     mViewer->setRealizeOperation(realizeOperations);
+-    realizeOperations->add(new IdentifyOpenGLOperation());
++    osg::ref_ptr<IdentifyOpenGLOperation> identifyOp = new IdentifyOpenGLOperation();
++    realizeOperations->add(identifyOp);
  
-         if (Settings::Manager::getBool("soft particles", "Shaders"))
+     if (Debug::shouldDebugOpenGL())
+         realizeOperations->add(new Debug::EnableGLDebugOperation());
+@@ -679,6 +691,7 @@ void OMW::Engine::createWindow()
+     }
+ 
+     mViewer->realize();
++    mGlMaxTextureImageUnits = identifyOp->getMaxTextureImageUnits();
+ 
+     mViewer->getEventQueue()->getCurrentEventState()->setWindowRectangle(0, 0, graphicsWindow->getTraits()->width, graphicsWindow->getTraits()->height);
+ }
+@@ -724,6 +737,7 @@ void OMW::Engine::prepareEngine()
+     VFS::registerArchives(mVFS.get(), mFileCollections, mArchives, true);
+ 
+     mResourceSystem = std::make_unique<Resource::ResourceSystem>(mVFS.get());
++    mResourceSystem->getSceneManager()->getShaderManager().setMaxTextureUnits(mGlMaxTextureImageUnits);
+     mResourceSystem->getSceneManager()->setUnRefImageDataAfterApply(false); // keep to Off for now to allow better state sharing
+     mResourceSystem->getSceneManager()->setFilterSettings(
+         Settings::Manager::getString("texture mag filter", "General"),
+diff --git a/apps/openmw/engine.hpp b/apps/openmw/engine.hpp
+index e8db06a33eac38e8bd39fccf19f4bfa7e27ed96a..ba39132b04df1ceaed099dc2fb130b8a2870f98b 100644
+--- a/apps/openmw/engine.hpp
++++ b/apps/openmw/engine.hpp
+@@ -264,6 +264,7 @@ namespace OMW
+         private:
+             Files::ConfigurationManager& mCfgMgr;
+             class LuaWorker;
++            int mGlMaxTextureImageUnits;
+     };
+ }
+ 
+diff --git a/apps/openmw/mwrender/renderingmanager.cpp b/apps/openmw/mwrender/renderingmanager.cpp
+index 54649925442fbdc859a52402295641802756e126..383ade273d0a7558ede6271ee1c783178700ee1c 100644
+--- a/apps/openmw/mwrender/renderingmanager.cpp
++++ b/apps/openmw/mwrender/renderingmanager.cpp
+@@ -41,6 +41,7 @@
+ #include <components/sceneutil/workqueue.hpp>
+ #include <components/sceneutil/writescene.hpp>
+ #include <components/sceneutil/shadow.hpp>
++#include <components/sceneutil/rtt.hpp>
+ 
+ #include <components/misc/constants.hpp>
+ 
+@@ -81,7 +82,6 @@ namespace MWRender
+ {
+     class PerViewUniformStateUpdater final : public SceneUtil::StateSetUpdater
+     {
+-    public:
+     public:
+         PerViewUniformStateUpdater()
          {
--            mOpaqueDepthTex = new osg::Texture2D(*mDepthTex);
-+            mOpaqueDepthTex = mDepthTex;
-             mOpaqueDepthTex->setName("opaqueTexMap");
+@@ -90,6 +90,8 @@ namespace MWRender
+         void setDefaults(osg::StateSet* stateset) override
+         {
+             stateset->addUniform(new osg::Uniform("projectionMatrix", osg::Matrixf{}));
++            if (mSkyRTT)
++                stateset->addUniform(new osg::Uniform("sky", mSkyTextureUnit));
          }
  
+         void apply(osg::StateSet* stateset, osg::NodeVisitor* nv) override
+@@ -97,6 +99,11 @@ namespace MWRender
+             auto* uProjectionMatrix = stateset->getUniform("projectionMatrix");
+             if (uProjectionMatrix)
+                 uProjectionMatrix->set(mProjectionMatrix);
++            if (mSkyRTT && nv->getVisitorType() == osg::NodeVisitor::CULL_VISITOR)
++            {
++                osg::Texture* skyTexture = mSkyRTT->getColorTexture(static_cast<osgUtil::CullVisitor*>(nv));
++                stateset->setTextureAttributeAndModes(mSkyTextureUnit, skyTexture, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
++            }
+         }
+ 
+         void applyLeft(osg::StateSet* stateset, osgUtil::CullVisitor* nv) override
+@@ -123,8 +130,16 @@ namespace MWRender
+             return mProjectionMatrix;
+         }
+ 
++        void enableSkyRTT(int skyTextureUnit, SceneUtil::RTTNode* skyRTT)
++        {
++            mSkyTextureUnit = skyTextureUnit;
++            mSkyRTT = skyRTT;
++        }
++
+     private:
+         osg::Matrixf mProjectionMatrix;
++        int mSkyTextureUnit = -1;
++        SceneUtil::RTTNode* mSkyRTT = nullptr;
+     };
+ 
+     class SharedUniformStateUpdater : public SceneUtil::StateSetUpdater
+@@ -144,6 +159,7 @@ namespace MWRender
+             stateset->addUniform(new osg::Uniform("linearFac", 0.f));
+             stateset->addUniform(new osg::Uniform("near", 0.f));
+             stateset->addUniform(new osg::Uniform("far", 0.f));
++            stateset->addUniform(new osg::Uniform("skyBlendingStart", 0.f));
+             stateset->addUniform(new osg::Uniform("screenRes", osg::Vec2f{}));
+             if (mUsePlayerUniforms)
+             {
+@@ -166,6 +182,11 @@ namespace MWRender
+             if (uFar)
+                 uFar->set(mFar);
+ 
++            static const float mSkyBlendingStartCoef = Settings::Manager::getFloat("sky blending start", "Fog");
++            auto* uSkyBlendingStart = stateset->getUniform("skyBlendingStart");
++            if (uSkyBlendingStart)
++                uSkyBlendingStart->set(mFar * mSkyBlendingStartCoef);
++
+             auto* uScreenRes = stateset->getUniform("screenRes");
+             if (uScreenRes)
+                 uScreenRes->set(mScreenRes);
+@@ -337,7 +358,8 @@ namespace MWRender
+     RenderingManager::RenderingManager(osgViewer::Viewer* viewer, osg::ref_ptr<osg::Group> rootNode,
+                                        Resource::ResourceSystem* resourceSystem, SceneUtil::WorkQueue* workQueue,
+                                        const std::string& resourcePath, DetourNavigator::Navigator& navigator, const MWWorld::GroundcoverStore& groundcoverStore)
+-        : mViewer(viewer)
++        : mSkyBlending(Settings::Manager::getBool("sky blending", "Fog"))
++        , mViewer(viewer)
+         , mRootNode(rootNode)
+         , mResourceSystem(resourceSystem)
+         , mWorkQueue(workQueue)
+@@ -358,12 +380,14 @@ namespace MWRender
+ 
+         resourceSystem->getSceneManager()->setParticleSystemMask(MWRender::Mask_ParticleSystem);
+         // Shadows and radial fog have problems with fixed-function mode.
+-        bool forceShaders = Settings::Manager::getBool("radial fog", "Shaders")
++        bool forceShaders = Settings::Manager::getBool("radial fog", "Fog")
++                            || Settings::Manager::getBool("exponential fog", "Fog")
+                             || Settings::Manager::getBool("soft particles", "Shaders")
+                             || Settings::Manager::getBool("force shaders", "Shaders")
+                             || Settings::Manager::getBool("enable shadows", "Shadows")
+                             || lightingMethod != SceneUtil::LightingMethod::FFP
+                             || reverseZ
++                            || mSkyBlending
+                             || Stereo::getMultiview();
+         resourceSystem->getSceneManager()->setForceShaders(forceShaders);
+ 
+@@ -413,7 +437,10 @@ namespace MWRender
+         globalDefines["forcePPL"] = Settings::Manager::getBool("force per pixel lighting", "Shaders") ? "1" : "0";
+         globalDefines["clamp"] = Settings::Manager::getBool("clamp lighting", "Shaders") ? "1" : "0";
+         globalDefines["preLightEnv"] = Settings::Manager::getBool("apply lighting to environment maps", "Shaders") ? "1" : "0";
+-        globalDefines["radialFog"] = Settings::Manager::getBool("radial fog", "Shaders") ? "1" : "0";
++        bool exponentialFog = Settings::Manager::getBool("exponential fog", "Fog");
++        globalDefines["radialFog"] = (exponentialFog || Settings::Manager::getBool("radial fog", "Fog")) ? "1" : "0";
++        globalDefines["exponentialFog"] = exponentialFog ? "1" : "0";
++        globalDefines["skyBlending"] = mSkyBlending ? "1" : "0";
+         globalDefines["refraction_enabled"] = "0";
+         globalDefines["useGPUShader4"] = "0";
+         globalDefines["useOVR_multiview"] = "0";
+@@ -546,8 +573,14 @@ namespace MWRender
+ 
+         mFog = std::make_unique<FogManager>();
+ 
+-        mSky = std::make_unique<SkyManager>(sceneRoot, resourceSystem->getSceneManager());
++        mSky = std::make_unique<SkyManager>(sceneRoot, resourceSystem->getSceneManager(), mSkyBlending);
+         mSky->setCamera(mViewer->getCamera());
++        if (mSkyBlending)
++        {
++            int skyTextureUnit = mResourceSystem->getSceneManager()->getShaderManager().reserveGlobalTextureUnits(1);
++            Log(Debug::Info) << "Reserving texture unit for sky RTT: " << skyTextureUnit;
++            mPerViewUniformStateUpdater->enableSkyRTT(skyTextureUnit, mSky->getSkyRTT());
++        }
+ 
+         source->setStateSetModes(*mRootNode->getOrCreateStateSet(), osg::StateAttribute::ON);
+ 
+@@ -573,8 +606,6 @@ namespace MWRender
+ 
+         mStateUpdater->setFogEnd(mViewDistance);
+ 
+-        mRootNode->getOrCreateStateSet()->addUniform(new osg::Uniform("simpleWater", false));
+-
+         // Hopefully, anything genuinely requiring the default alpha func of GL_ALWAYS explicitly sets it
+         mRootNode->getOrCreateStateSet()->setAttribute(Shader::RemovedAlphaFunc::getInstance(GL_ALWAYS));
+         // The transparent renderbin sets alpha testing on because that was faster on old GPUs. It's now slower and breaks things.
+diff --git a/apps/openmw/mwrender/renderingmanager.hpp b/apps/openmw/mwrender/renderingmanager.hpp
+index 128ef43195afa7c6105f0f713d894cfdf88dd2d8..12f5bb073d6a00867d94f3c02b56075ab117c5cb 100644
+--- a/apps/openmw/mwrender/renderingmanager.hpp
++++ b/apps/openmw/mwrender/renderingmanager.hpp
+@@ -267,6 +267,7 @@ namespace MWRender
+ 
+         void updateRecastMesh();
+ 
++        const bool mSkyBlending;
+ 
+         osg::ref_ptr<osgUtil::IntersectionVisitor> getIntersectionVisitor(osgUtil::Intersector* intersector, bool ignorePlayer, bool ignoreActors);
+ 
+diff --git a/apps/openmw/mwrender/sky.cpp b/apps/openmw/mwrender/sky.cpp
+index 754810fc8cf046fa29004074b0a40b99345be1f3..cfab3c30a135e6b26a397bae749a57f93b70bc55 100644
+--- a/apps/openmw/mwrender/sky.cpp
++++ b/apps/openmw/mwrender/sky.cpp
+@@ -15,6 +15,7 @@
+ #include <components/sceneutil/shadow.hpp>
+ #include <components/sceneutil/visitor.hpp>
+ #include <components/sceneutil/depth.hpp>
++#include <components/sceneutil/rtt.hpp>
+ 
+ #include <components/resource/scenemanager.hpp>
+ #include <components/resource/imagemanager.hpp>
+@@ -215,11 +216,31 @@ namespace
+     private:
+         const float &mAlpha;
+     };
++
++    class SkyRTT : public SceneUtil::RTTNode
++    {
++    public:
++        SkyRTT(osg::Group* earlyRenderBinRoot) : RTTNode(512, 512, 0, false, 1, StereoAwareness::Aware),
++                                                 mEarlyRenderBinRoot(earlyRenderBinRoot) {}
++
++        void setDefaults(osg::Camera* camera) override
++        {
++            camera->setReferenceFrame(osg::Camera::RELATIVE_RF);
++            camera->setName("SkyCamera");
++            camera->setNodeMask(MWRender::Mask_RenderToTexture);
++            camera->addChild(mEarlyRenderBinRoot);
++            SceneUtil::ShadowManager::disableShadowsForStateSet(camera->getOrCreateStateSet());
++        }
++
++    private:
++        osg::ref_ptr<osg::Group> mEarlyRenderBinRoot;
++    };
++
+ }
+ 
+ namespace MWRender
+ {
+-    SkyManager::SkyManager(osg::Group* parentNode, Resource::SceneManager* sceneManager)
++    SkyManager::SkyManager(osg::Group* parentNode, Resource::SceneManager* sceneManager, bool enableSkyRTT)
+         : mSceneManager(sceneManager)
+         , mCamera(nullptr)
+         , mAtmosphereNightRoll(0.f)
+@@ -271,6 +292,12 @@ namespace MWRender
+         mEarlyRenderBinRoot->getOrCreateStateSet()->setMode(GL_CLIP_PLANE0, osg::StateAttribute::OFF);
+         mRootNode->addChild(mEarlyRenderBinRoot);
+ 
++        if (enableSkyRTT)
++        {
++            mSkyRTT = new SkyRTT(mEarlyRenderBinRoot);
++            mRootNode->addChild(mSkyRTT);
++        }
++
+         mUnderwaterSwitch = new UnderwaterSwitchCallback(skyroot);
+     }
+ 
+diff --git a/apps/openmw/mwrender/sky.hpp b/apps/openmw/mwrender/sky.hpp
+index 1fdf476bd5740d5c13bfa6cfc944913c787279b0..8682a6f17fe8470e4d8778dc54022a152df2c14d 100644
+--- a/apps/openmw/mwrender/sky.hpp
++++ b/apps/openmw/mwrender/sky.hpp
+@@ -30,6 +30,11 @@ namespace Resource
+     class SceneManager;
+ }
+ 
++namespace SceneUtil
++{
++    class RTTNode;
++}
++
+ namespace MWRender
+ {
+     ///@brief The SkyManager handles rendering of the sky domes, celestial bodies as well as other objects that need to be rendered
+@@ -37,7 +42,7 @@ namespace MWRender
+     class SkyManager
+     {
+     public:
+-        SkyManager(osg::Group* parentNode, Resource::SceneManager* sceneManager);
++        SkyManager(osg::Group* parentNode, Resource::SceneManager* sceneManager, bool enableSkyRTT);
+         ~SkyManager();
+ 
+         void update(float duration);
+@@ -98,6 +103,8 @@ namespace MWRender
+ 
+         void setSunglare(bool enabled);
+ 
++        SceneUtil::RTTNode* getSkyRTT() { return mSkyRTT.get(); }
++
+     private:
+         void create();
+         ///< no need to call this, automatically done on first enable()
+@@ -192,6 +199,8 @@ namespace MWRender
+         bool mDirtyParticlesEffect;
+ 
+         osg::Vec4f mMoonScriptColor;
++
++        osg::ref_ptr<SceneUtil::RTTNode> mSkyRTT;
+     };
+ }
+ 
+diff --git a/components/sceneutil/waterutil.cpp b/components/sceneutil/waterutil.cpp
+index e22070f40f403d4328c3500de63cff69bc13d0ea..10a0d4e885c6804c962215af7a244e5b415fb77f 100644
+--- a/components/sceneutil/waterutil.cpp
++++ b/components/sceneutil/waterutil.cpp
+@@ -84,9 +84,6 @@ namespace SceneUtil
+ 
+         stateset->setRenderBinDetails(renderBin, "RenderBin");
+ 
+-        // Let the shader know we're dealing with simple water here.
+-        stateset->addUniform(new osg::Uniform("simpleWater", true));
+-
+         return stateset;
+     }
+ }
+diff --git a/components/shader/shadermanager.cpp b/components/shader/shadermanager.cpp
+index c4d45a99582d25d6fd4fc8e364756f1214d5559d..0ac96ce4dcf4d6bb98a88f7faf6b48a6f6b08c16 100644
+--- a/components/shader/shadermanager.cpp
++++ b/components/shader/shadermanager.cpp
+@@ -12,6 +12,7 @@
+ 
+ #include <components/debug/debuglog.hpp>
+ #include <components/misc/stringops.hpp>
++#include <components/settings/settings.hpp>
+ 
+ namespace Shader
+ {
+@@ -509,4 +510,22 @@ namespace Shader
+                 program->addShader(linkedShader);
+     }
+ 
++    int ShaderManager::reserveGlobalTextureUnits(int count)
++    {
++        {
++            // Texture units from `8 - numberOfShadowMaps` to `8` are used for shadows, so we skip them here.
++            // TODO: Maybe instead of fixed texture units use `reserveGlobalTextureUnits` for shadows as well.
++            static const int numberOfShadowMaps = Settings::Manager::getBool("enable shadows", "Shadows") ?
++                                                  std::clamp(Settings::Manager::getInt("number of shadow maps", "Shadows"), 1, 8) :
++                                                  0;
++            if (getAvailableTextureUnits() >= 8 && getAvailableTextureUnits() - count < 8)
++                mReservedTextureUnits = mMaxTextureUnits - (8 - numberOfShadowMaps);
++        }
++
++        if (getAvailableTextureUnits() < count + 1)
++            throw std::runtime_error("Can't reserve texture unit; no available units");
++        mReservedTextureUnits += count;
++        return mMaxTextureUnits - mReservedTextureUnits;
++    }
++
+ }
+diff --git a/components/shader/shadermanager.hpp b/components/shader/shadermanager.hpp
+index 598dde85bb13e49c8b18ffc3ae55aa52626cf0e1..05c1b17bb49d6640742aee14ad6b4a7e5ae2d18e 100644
+--- a/components/shader/shadermanager.hpp
++++ b/components/shader/shadermanager.hpp
+@@ -54,6 +54,12 @@ namespace Shader
+ 
+         bool createSourceFromTemplate(std::string& source, std::vector<std::string>& linkedShaderTemplateNames, const std::string& templateName, const ShaderManager::DefineMap& defines);
+ 
++        void setMaxTextureUnits(int maxTextureUnits) { mMaxTextureUnits = maxTextureUnits; }
++        int getMaxTextureUnits() const { return mMaxTextureUnits; }
++        int getAvailableTextureUnits() const { return mMaxTextureUnits - mReservedTextureUnits; }
++
++        int reserveGlobalTextureUnits(int count);
++
+     private:
+         void getLinkedShaders(osg::ref_ptr<osg::Shader> shader, const std::vector<std::string>& linkedShaderNames, const DefineMap& defines);
+         void addLinkedShaders(osg::ref_ptr<osg::Shader> shader, osg::ref_ptr<osg::Program> program);
+@@ -80,6 +86,9 @@ namespace Shader
+         std::mutex mMutex;
+ 
+         osg::ref_ptr<const osg::Program> mProgramTemplate;
++
++        int mMaxTextureUnits = 0;
++        int mReservedTextureUnits = 0;
+     };
+ 
+     bool parseForeachDirective(std::string& source, const std::string& templateName, size_t foundPos);
+diff --git a/files/settings-default.cfg b/files/settings-default.cfg
+index fd9826104a1dc88bbdcb9beb4c66210b175d2059..78dae24c29146f88b43a0099fe4277c49a897558 100644
+--- a/files/settings-default.cfg
++++ b/files/settings-default.cfg
+@@ -137,6 +137,19 @@ distant interior fog start = 0
+ 
+ distant interior fog end = 16384
+ 
++# Determine fog intensity based on the distance from the eye point.
++# This makes fogging independent from the viewing angle. Shaders will be used to render all objects.
++radial fog = false
++
++# Whether to use exponential formula for fog.
++exponential fog = false
++
++# Whether to hide the clipping plane by blending with sky.
++sky blending = false
++
++# Fraction of the maximum distance at which blending with the sky starts.
++sky blending start = 0.8
++
+ [Map]
+ 
+ # Size of each exterior cell in pixels in the world map. (e.g. 12 to 24).
+@@ -427,10 +440,6 @@ terrain specular map pattern = _diffusespec
+ # Affected objects use shaders.
+ apply lighting to environment maps = false
+ 
+-# Determine fog intensity based on the distance from the eye point.
+-# This makes fogging independent from the viewing angle. Shaders will be used to render all objects.
+-radial fog = false
+-
+ # Internal handling of lights, ignored if 'force shaders' is off. "legacy"
+ # provides fixed function pipeline emulation."shaders compatibility" (default)
+ # uncaps the light limit, enables groundcover lighting, and uses a modified
+diff --git a/files/shaders/CMakeLists.txt b/files/shaders/CMakeLists.txt
+index 88fd6d45ca10f2874a1e475c9d3e9d742120dd45..affb3fc940e2ff54905db4de3f24ee39811d0058 100644
+--- a/files/shaders/CMakeLists.txt
++++ b/files/shaders/CMakeLists.txt
+@@ -52,6 +52,7 @@ set(SHADER_FILES
+     hdr_luminance_fragment.glsl
+     fullscreen_tri_vertex.glsl
+     fullscreen_tri_fragment.glsl
++    fog.glsl
+ )
+ 
+ copy_all_resource_files(${CMAKE_CURRENT_SOURCE_DIR} ${OPENMW_RESOURCES_ROOT} ${DDIRRELATIVE} "${SHADER_FILES}")
+diff --git a/files/shaders/fog.glsl b/files/shaders/fog.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..76f9afe51fc9461b5756af1ee680b0befb33d9aa
+--- /dev/null
++++ b/files/shaders/fog.glsl
+@@ -0,0 +1,33 @@
++uniform float far;
++
++#if @skyBlending
++uniform sampler2D sky;
++uniform float skyBlendingStart;
++#endif
++
++vec4 applyFogAtDist(vec4 color, float euclideanDist, float linearDist)
++{
++#if @radialFog
++    float dist = euclideanDist;
++#else
++    float dist = abs(linearDist);
++#endif
++#if @exponentialFog
++    float fogValue = 1.0 - exp(-2.0 * max(0.0, dist - gl_Fog.start/2.0) / (gl_Fog.end - gl_Fog.start/2.0));
++#else
++    float fogValue = clamp((dist - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
++#endif
++    color.xyz = mix(color.xyz, gl_Fog.color.xyz, fogValue);
++
++#if @skyBlending
++    float fadeValue = clamp((far - dist) / (far - skyBlendingStart), 0.0, 1.0);
++    color.xyz = mix(texture2D(sky, gl_FragCoord.xy / screenRes).xyz, color.xyz, fadeValue * fadeValue);
++#endif
++
++    return color;
++}
++
++vec4 applyFogAtPos(vec4 color, vec3 pos)
++{
++    return applyFogAtDist(color, length(pos), pos.z);
++}
+diff --git a/files/shaders/groundcover_fragment.glsl b/files/shaders/groundcover_fragment.glsl
+index b7ff102079c233b77320ebaaf36804e0c214e6c8..0bdc3d915da2221d8426b50bdbd480f73e92c006 100644
+--- a/files/shaders/groundcover_fragment.glsl
++++ b/files/shaders/groundcover_fragment.glsl
+@@ -27,6 +27,7 @@ varying vec4 passTangent;
+ 
+ varying float euclideanDepth;
+ varying float linearDepth;
++uniform vec2 screenRes;
+ 
+ #if PER_PIXEL_LIGHTING
+ varying vec3 passViewPos;
+@@ -40,6 +41,7 @@ varying vec3 passNormal;
+ #include "shadows_fragment.glsl"
+ #include "lighting.glsl"
+ #include "alpha.glsl"
++#include "fog.glsl"
+ 
+ void main()
+ {
+@@ -82,13 +84,7 @@ void main()
+     clampLightingResult(lighting);
+ 
+     gl_FragData[0].xyz *= lighting;
+-
+-#if @radialFog
+-    float fogValue = clamp((euclideanDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#else
+-    float fogValue = clamp((linearDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#endif
+-    gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
++    gl_FragData[0] = applyFogAtDist(gl_FragData[0], euclideanDepth, linearDepth);
+ 
+ #if !@disableNormals
+     gl_FragData[1].xyz = worldNormal * 0.5 + 0.5;
+diff --git a/files/shaders/nv_default_fragment.glsl b/files/shaders/nv_default_fragment.glsl
+index 9cb784ab98ea5209008e36c5975ac6fad3880478..57ef7b14dfbbc64bac43d3def5333c9acf8ddb71 100644
+--- a/files/shaders/nv_default_fragment.glsl
++++ b/files/shaders/nv_default_fragment.glsl
+@@ -33,10 +33,13 @@ varying float linearDepth;
+ varying vec3 passViewPos;
+ varying vec3 passNormal;
+ 
++uniform vec2 screenRes;
++
+ #include "vertexcolors.glsl"
+ #include "shadows_fragment.glsl"
+ #include "lighting.glsl"
+ #include "alpha.glsl"
++#include "fog.glsl"
+ 
+ uniform float emissiveMult;
+ uniform float specStrength;
+@@ -91,12 +94,8 @@ void main()
+ 
+     if (matSpec != vec3(0.0))
+         gl_FragData[0].xyz += getSpecular(normalize(viewNormal), normalize(passViewPos.xyz), shininess, matSpec) * shadowing;
+-#if @radialFog
+-    float fogValue = clamp((euclideanDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#else
+-    float fogValue = clamp((linearDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#endif
+-    gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
++
++    gl_FragData[0] = applyFogAtDist(gl_FragData[0], euclideanDepth, linearDepth);
+ 
+ #if defined(FORCE_OPAQUE) && FORCE_OPAQUE
+     // having testing & blending isn't enough - we need to write an opaque pixel to be opaque
+diff --git a/files/shaders/nv_nolighting_fragment.glsl b/files/shaders/nv_nolighting_fragment.glsl
+index 7c4f4737e0eae82e77ed33d56e507521dd824644..59dfda9ee87aebaff02ee3cb5cb569cf92add41c 100644
+--- a/files/shaders/nv_nolighting_fragment.glsl
++++ b/files/shaders/nv_nolighting_fragment.glsl
+@@ -10,18 +10,17 @@ uniform sampler2D diffuseMap;
+ varying vec2 diffuseMapUV;
+ #endif
+ 
+-#if @radialFog
+ varying float euclideanDepth;
+-#else
+ varying float linearDepth;
+-#endif
+ 
+ uniform bool useFalloff;
++uniform vec2 screenRes;
+ 
+ varying float passFalloff;
+ 
+ #include "vertexcolors.glsl"
+ #include "alpha.glsl"
++#include "fog.glsl"
+ 
+ void main()
+ {
+@@ -39,15 +38,9 @@ void main()
+ 
+     alphaTest();
+ 
+-#if @radialFog
+-    float fogValue = clamp((euclideanDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#else
+-    float fogValue = clamp((linearDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#endif
+-
+ #if defined(FORCE_OPAQUE) && FORCE_OPAQUE
+     gl_FragData[0].a = 1.0;
+ #endif
+ 
+-    gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
++    gl_FragData[0] = applyFogAtDist(gl_FragData[0], euclideanDepth, linearDepth);
+ }
+diff --git a/files/shaders/objects_fragment.glsl b/files/shaders/objects_fragment.glsl
+index 16cbf9bbbd8db85ba182b06d7008675dcddef274..6ebc7cbd62f7fbbe62b7772ed27629cb222736f6 100644
+--- a/files/shaders/objects_fragment.glsl
++++ b/files/shaders/objects_fragment.glsl
+@@ -63,10 +63,7 @@ uniform sampler2D glossMap;
+ varying vec2 glossMapUV;
+ #endif
+ 
+-uniform bool simpleWater;
+-
+-varying float euclideanDepth;
+-varying float linearDepth;
++uniform vec2 screenRes;
+ 
+ #define PER_PIXEL_LIGHTING (@normalMap || @forcePPL)
+ 
+@@ -85,6 +82,7 @@ varying vec3 passNormal;
+ #include "lighting.glsl"
+ #include "parallax.glsl"
+ #include "alpha.glsl"
++#include "fog.glsl"
+ 
+ #if @softParticles
+ #include "softparticles.glsl"
+@@ -190,7 +188,7 @@ void main()
+ 
+ #endif
+ 
+-    float shadowing = unshadowedLightRatio(linearDepth);
++    float shadowing = unshadowedLightRatio(passViewPos.z);
+     vec3 lighting;
+ #if !PER_PIXEL_LIGHTING
+     lighting = passLighting + shadowDiffuseLighting * shadowing;
+@@ -230,18 +228,8 @@ void main()
+ #endif
+         gl_FragData[0].xyz += getSpecular(normalize(viewNormal), normalize(passViewPos.xyz), shininess, matSpec) * shadowing;
+     }
+-#if @radialFog
+-    float depth;
+-    // For the less detailed mesh of simple water we need to recalculate depth on per-pixel basis
+-    if (simpleWater)
+-        depth = length(passViewPos);
+-    else
+-        depth = euclideanDepth;
+-    float fogValue = clamp((depth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#else
+-    float fogValue = clamp((linearDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#endif
+-    gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
++
++    gl_FragData[0] = applyFogAtPos(gl_FragData[0], passViewPos);
+ 
+ #if !defined(FORCE_OPAQUE) && @softParticles
+     gl_FragData[0].a *= calcSoftParticleFade();
+diff --git a/files/shaders/objects_vertex.glsl b/files/shaders/objects_vertex.glsl
+index 5c94417491fc3b9e50f43ef60726ff3cd944bc7a..971b95d8e0d920b886583a48d0bb6afb3ef94c91 100644
+--- a/files/shaders/objects_vertex.glsl
++++ b/files/shaders/objects_vertex.glsl
+@@ -50,9 +50,6 @@ varying vec2 specularMapUV;
+ varying vec2 glossMapUV;
+ #endif
+ 
+-varying float euclideanDepth;
+-varying float linearDepth;
+-
+ #define PER_PIXEL_LIGHTING (@normalMap || @forcePPL)
+ 
+ #if !PER_PIXEL_LIGHTING
+@@ -74,10 +71,7 @@ void main(void)
+     gl_Position = mw_modelToClip(gl_Vertex);
+ 
+     vec4 viewPos = mw_modelToView(gl_Vertex);
+-
+     gl_ClipVertex = viewPos;
+-    euclideanDepth = length(viewPos.xyz);
+-    linearDepth = getLinearDepth(gl_Position.z, viewPos.z);
+ 
+ #if (@envMap || !PER_PIXEL_LIGHTING || @shadows_enabled)
+     vec3 viewNormal = normalize((gl_NormalMatrix * gl_Normal).xyz);
 diff --git a/files/shaders/softparticles.glsl b/files/shaders/softparticles.glsl
-index fa8b4de4c118c7d0c14f5d92a7352f022d9306bd..0116efdcadf8c30a2a3ca2cc6919a83b022e111b 100644
+index fa8b4de4c118c7d0c14f5d92a7352f022d9306bd..f2ed36a8ad1e4553662d98f929f3789d78ac5e06 100644
 --- a/files/shaders/softparticles.glsl
 +++ b/files/shaders/softparticles.glsl
-@@ -1,6 +1,6 @@
+@@ -1,7 +1,5 @@
  uniform float near;
- uniform float far;
--uniform sampler2D opaqueDepthTex;
-+uniform highp sampler2D opaqueDepthTex;
- uniform vec2 screenRes;
+-uniform float far;
+ uniform sampler2D opaqueDepthTex;
+-uniform vec2 screenRes;
  uniform float particleSize;
+ 
+ float viewDepth(float depth)
+diff --git a/files/shaders/terrain_fragment.glsl b/files/shaders/terrain_fragment.glsl
+index 7ff696e0833b244eb6c2ceccc4e8593f85e6842c..1e72cf582846904b225a36a68197a1729a9c02ab 100644
+--- a/files/shaders/terrain_fragment.glsl
++++ b/files/shaders/terrain_fragment.glsl
+@@ -32,10 +32,13 @@ centroid varying vec3 shadowDiffuseLighting;
+ varying vec3 passViewPos;
+ varying vec3 passNormal;
+ 
++uniform vec2 screenRes;
++
+ #include "vertexcolors.glsl"
+ #include "shadows_fragment.glsl"
+ #include "lighting.glsl"
+ #include "parallax.glsl"
++#include "fog.glsl"
+ 
+ void main()
+ {
+@@ -116,12 +119,7 @@ void main()
+         gl_FragData[0].xyz += getSpecular(normalize(viewNormal), normalize(passViewPos), shininess, matSpec) * shadowing;
+     }
+ 
+-#if @radialFog
+-    float fogValue = clamp((euclideanDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#else
+-    float fogValue = clamp((linearDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#endif
+-    gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
++    gl_FragData[0] = applyFogAtDist(gl_FragData[0], euclideanDepth, linearDepth);
+ 
+ #if !@disableNormals && @writeNormals
+     gl_FragData[1].xyz = worldNormal.xyz * 0.5 + 0.5;
+diff --git a/files/shaders/water_fragment.glsl b/files/shaders/water_fragment.glsl
+index 51d30be2d4a574df0c7d18c96aec7e0b580df25e..175f0e83e9c32f4fbc8c0a18d4e8a8d77461ea72 100644
+--- a/files/shaders/water_fragment.glsl
++++ b/files/shaders/water_fragment.glsl
+@@ -212,7 +212,6 @@ uniform sampler2D normalMap;
+ uniform float osg_SimulationTime;
+ 
+ uniform float near;
+-uniform float far;
+ uniform vec3 nodePosition;
+ 
+ uniform float rainIntensity;
+@@ -223,6 +222,7 @@ uniform vec2 screenRes;
+ 
+ #include "shadows_fragment.glsl"
+ #include "lighting.glsl"
++#include "fog.glsl"
+ 
+ float frustumDepth;
+ 
+@@ -291,6 +291,8 @@ void main(void)
+     // TODO: Figure out how to properly radialise refraction depth and thus underwater fog
+     // while avoiding oddities when the water plane is close to the clipping plane
+     // radialise = radialDepth / linearDepth;
++#else
++    float radialDepth = 0;
+ #endif
+ 
+     vec2 screenCoordsOffset = normal.xy * REFL_BUMP;
+@@ -355,13 +357,7 @@ void main(void)
+     gl_FragData[0].w = clamp(fresnel*6.0 + specular * sunSpec.w, 0.0, 1.0);     //clamp(fresnel*2.0 + specular * gl_LightSource[0].specular.w, 0.0, 1.0);
+ #endif
+ 
+-    // fog
+-#if @radialFog
+-    float fogValue = clamp((radialDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#else
+-    float fogValue = clamp((linearDepth - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+-#endif
+-    gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
++    gl_FragData[0] = applyFogAtDist(gl_FragData[0], radialDepth, linearDepth);
+ 
+ #if !@disableNormals
+     gl_FragData[1].rgb = normal * 0.5 + 0.5;
