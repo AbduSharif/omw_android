@@ -1,25 +1,25 @@
 diff --git a/components/sceneutil/mwshadowtechnique.cpp b/components/sceneutil/mwshadowtechnique.cpp
-index daf6bb80abcbb13c14608aaa1bbdaa4e04aa71a7..d5a4fdb10983bfed2b572e8a45f40c24f93ca92e 100644
+index 3210bf4a4e46a49140f38ec31a47d364aadb3fae..3481e99579a9532541f6f2ae76280985ec68d892 100644
 --- a/components/sceneutil/mwshadowtechnique.cpp
 +++ b/components/sceneutil/mwshadowtechnique.cpp
-@@ -28,6 +28,7 @@
- #include <sstream>
+@@ -30,6 +30,7 @@
+ #include <vector>
  
  #include "shadowsbin.hpp"
 +#include <components/debug/debuglog.hpp>
  
  namespace {
  
-@@ -550,7 +551,7 @@ MWShadowTechnique::ShadowData::ShadowData(MWShadowTechnique::ViewDependentData*
+@@ -552,7 +553,7 @@ MWShadowTechnique::ShadowData::ShadowData(MWShadowTechnique::ViewDependentData*
      else
      {
          _texture->setInternalFormat(GL_DEPTH_COMPONENT);
 -        _texture->setShadowComparison(true);
-+        // _texture->setShadowComparison(true);
++//        _texture->setShadowComparison(true);
          _texture->setShadowTextureMode(osg::Texture2D::LUMINANCE);
      }
  
-@@ -1427,6 +1428,15 @@ void MWShadowTechnique::cull(osgUtil::CullVisitor& cv)
+@@ -1543,6 +1544,15 @@ void MWShadowTechnique::cull(osgUtil::CullVisitor& cv)
                  {
                      vdsmCallback->getProjectionMatrix()->set(camera->getProjectionMatrix());
                  }
@@ -33,32 +33,31 @@ index daf6bb80abcbb13c14608aaa1bbdaa4e04aa71a7..d5a4fdb10983bfed2b572e8a45f40c24
 +                    }
 +                }
              }
- 
+  
              // 4.4 compute main scene graph TexGen + uniform settings + setup state
-@@ -1634,7 +1644,7 @@ void MWShadowTechnique::createShaders()
+@@ -1752,7 +1762,7 @@ void MWShadowTechnique::createShaders()
          _fallbackShadowMapTexture->setWrap(osg::Texture2D::WRAP_T,osg::Texture2D::REPEAT);
          _fallbackShadowMapTexture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::NEAREST);
          _fallbackShadowMapTexture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::NEAREST);
 -        _fallbackShadowMapTexture->setShadowComparison(true);
-+        // _fallbackShadowMapTexture->setShadowComparison(true);
++//        _fallbackShadowMapTexture->setShadowComparison(true);
          _fallbackShadowMapTexture->setShadowCompareFunc(osg::Texture::ShadowCompareFunc::ALWAYS);
  
      }
 diff --git a/files/shaders/shadows_fragment.glsl b/files/shaders/shadows_fragment.glsl
-index 61437099152174552a5e86ea17e614f3c0ed3dd7..4974c05bff1c7b41733a0037ce28e6404af498ab 100644
+index 61437099152174552a5e86ea17e614f3c0ed3dd7..295fc4c82932c02636084e9238be47152899e204 100644
 --- a/files/shaders/shadows_fragment.glsl
 +++ b/files/shaders/shadows_fragment.glsl
-@@ -4,7 +4,8 @@
+@@ -4,7 +4,7 @@
      uniform float maximumShadowMapDistance;
      uniform float shadowFadeStart;
      @foreach shadow_texture_unit_index @shadow_texture_unit_list
 -        uniform sampler2DShadow shadowTexture@shadow_texture_unit_index;
-+        // uniform sampler2DShadow shadowTexture@shadow_texture_unit_index;
 +        uniform highp sampler2D shadowTexture@shadow_texture_unit_index;
          varying vec4 shadowSpaceCoords@shadow_texture_unit_index;
  
  #if @perspectiveShadowMaps
-@@ -27,13 +28,13 @@ float unshadowedLightRatio(float distance)
+@@ -27,13 +27,13 @@ float unshadowedLightRatio(float distance)
          @foreach shadow_texture_unit_index @shadow_texture_unit_list
              if (!doneShadows)
              {
@@ -75,7 +74,7 @@ index 61437099152174552a5e86ea17e614f3c0ed3dd7..4974c05bff1c7b41733a0037ce28e640
  
                      
                      doneShadows = all(lessThan(shadowXYZ, vec3(0.95, 0.95, 1.0))) && all(greaterThan(shadowXYZ, vec3(0.05, 0.05, 0.0)));
-@@ -45,7 +46,7 @@ float unshadowedLightRatio(float distance)
+@@ -45,7 +45,7 @@ float unshadowedLightRatio(float distance)
          @endforeach
      #else
          @foreach shadow_texture_unit_index @shadow_texture_unit_list
@@ -85,7 +84,7 @@ index 61437099152174552a5e86ea17e614f3c0ed3dd7..4974c05bff1c7b41733a0037ce28e640
      #endif
  #if @limitShadowMapDistance
 diff --git a/files/shaders/shadows_vertex.glsl b/files/shaders/shadows_vertex.glsl
-index f96e1a67359a8ae617a269003dcb1e71f02e2826..e3f9094e8cc64c80b038d4e6ec9c3e01d4315ea2 100644
+index f96e1a67359a8ae617a269003dcb1e71f02e2826..0e2506b70db8fd29dcad58e0c0ccc5bbb46ec348 100644
 --- a/files/shaders/shadows_vertex.glsl
 +++ b/files/shaders/shadows_vertex.glsl
 @@ -1,5 +1,7 @@
@@ -117,14 +116,14 @@ index f96e1a67359a8ae617a269003dcb1e71f02e2826..e3f9094e8cc64c80b038d4e6ec9c3e01
      vec4 shadowOffset;
      @foreach shadow_texture_unit_index @shadow_texture_unit_list
 -        eyePlaneMat = mat4(gl_EyePlaneS[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneT[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneR[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneQ[shadowTextureUnit@shadow_texture_unit_index]);
-+//         eyePlaneMat = mat4(gl_EyePlaneS[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneT[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneR[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneQ[shadowTextureUnit@shadow_texture_unit_index]);
++//        eyePlaneMat = mat4(gl_EyePlaneS[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneT[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneR[shadowTextureUnit@shadow_texture_unit_index], gl_EyePlaneQ[shadowTextureUnit@shadow_texture_unit_index]);
  
 -#if @perspectiveShadowMaps
 -        shadowRegionCoords@shadow_texture_unit_index = validRegionMatrix@shadow_texture_unit_index * viewPos;
 -#endif
-+// #if @perspectiveShadowMaps
-+//         shadowRegionCoords@shadow_texture_unit_index = validRegionMatrix@shadow_texture_unit_index * viewPos;
-+// #endif
++//#if @perspectiveShadowMaps
++//        shadowRegionCoords@shadow_texture_unit_index = validRegionMatrix@shadow_texture_unit_index * viewPos;
++//#endif
          
 -#if @disableNormalOffsetShadows
 -        shadowSpaceCoords@shadow_texture_unit_index = viewPos * eyePlaneMat;
@@ -146,26 +145,26 @@ index f96e1a67359a8ae617a269003dcb1e71f02e2826..e3f9094e8cc64c80b038d4e6ec9c3e01
 -            shadowSpaceCoords@shadow_texture_unit_index = offsetViewPosition * eyePlaneMat;
 -        }
 -#endif
-+// #if @disableNormalOffsetShadows
-+//         shadowSpaceCoords@shadow_texture_unit_index = viewPos * eyePlaneMat;
-+// #else
-+//         shadowOffset = vec4(viewNormal * @shadowNormalOffset, 0.0);
++//#if @disableNormalOffsetShadows
++//        shadowSpaceCoords@shadow_texture_unit_index = viewPos * eyePlaneMat;
++//#else
++//        shadowOffset = vec4(viewNormal * @shadowNormalOffset, 0.0);
 +
-+//         if (onlyNormalOffsetUV)
-+//         {
-+//             shadowSpaceCoords@shadow_texture_unit_index = viewPos * eyePlaneMat;
++//        if (onlyNormalOffsetUV)
++//        {
++//            shadowSpaceCoords@shadow_texture_unit_index = viewPos * eyePlaneMat;
 +
-+//             vec4 lightSpaceXY = viewPos + shadowOffset;
-+//             lightSpaceXY = lightSpaceXY * eyePlaneMat;
++//            vec4 lightSpaceXY = viewPos + shadowOffset;
++//            lightSpaceXY = lightSpaceXY * eyePlaneMat;
 +
-+//             shadowSpaceCoords@shadow_texture_unit_index.xy = lightSpaceXY.xy;
-+//         }
-+//         else
-+//         {
-+//             vec4 offsetViewPosition = viewPos + shadowOffset;
-+//             shadowSpaceCoords@shadow_texture_unit_index = offsetViewPosition * eyePlaneMat;
-+//         }
-+// #endif
++//            shadowSpaceCoords@shadow_texture_unit_index.xy = lightSpaceXY.xy;
++//        }
++//        else
++//        {
++//            vec4 offsetViewPosition = viewPos + shadowOffset;
++//            shadowSpaceCoords@shadow_texture_unit_index = offsetViewPosition * eyePlaneMat;
++//        }
++//#endif
 +
 +    shadowRegionCoords@shadow_texture_unit_index = ((validRegionMatrix@shadow_texture_unit_index * model) * vec4(gl_Vertex.xyz, 1.0));
 +
@@ -174,10 +173,10 @@ index f96e1a67359a8ae617a269003dcb1e71f02e2826..e3f9094e8cc64c80b038d4e6ec9c3e01
  }
 \ No newline at end of file
 diff --git a/files/shaders/groundcover_vertex.glsl b/files/shaders/groundcover_vertex.glsl
-index c8db4be000ade5edb8494529851c2295ac8c49bd..4ae292ddc531cce194a99954e8f10a4b0ad4405d 100644
+index aa9dea33550a6e5b71868b68158732e57e83e49e..7648fb12ae880d2a13cd5b99c690a8edb7b5afe2 100644
 --- a/files/shaders/groundcover_vertex.glsl
 +++ b/files/shaders/groundcover_vertex.glsl
-@@ -42,7 +42,7 @@ centroid varying vec3 shadowDiffuseLighting;
+@@ -45,7 +45,7 @@ varying vec3 passNormal;
  #include "depth.glsl"
  
  uniform float osg_SimulationTime;
