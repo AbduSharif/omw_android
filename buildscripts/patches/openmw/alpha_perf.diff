@@ -1,0 +1,12 @@
+diff --git a/apps/openmw/mwrender/renderingmanager.cpp b/apps/openmw/mwrender/renderingmanager.cpp
+index 54649925442fbdc859a52402295641802756e126..a95008a1806484269e39a05bcd0790339e9c0cd0 100644
+--- a/apps/openmw/mwrender/renderingmanager.cpp
++++ b/apps/openmw/mwrender/renderingmanager.cpp
+@@ -594,6 +594,7 @@ namespace MWRender
+ 
+         mViewer->getCamera()->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+         mViewer->getUpdateVisitor()->setTraversalMode(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN);
++        osgUtil::RenderBin::getRenderBinPrototype("RenderBin")->setSortMode(osgUtil::RenderBin::SORT_FRONT_TO_BACK);
+     }
+ 
+     RenderingManager::~RenderingManager()
