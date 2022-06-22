@@ -539,11 +539,11 @@ set(OSG_COMMON
 	-DOSG_WINDOWING_SYSTEM=None
 	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
-	-DOSG_USE_FLOAT_MATRIX=ON
-	-DOSG_USE_FLOAT_PLANE=ON
-	-DOSG_USE_FLOAT_QUAT=ON
-#	-DOSG_USE_FLOAT_BOUNDINGSPHERE=OFF
-#	-DOSG_USE_FLOAT_BOUNDINGBOX=OFF
+#	-DOSG_USE_FLOAT_MATRIX=ON
+#	-DOSG_USE_FLOAT_PLANE=ON
+#	-DOSG_USE_FLOAT_QUAT=ON
+	-DOSG_USE_FLOAT_BOUNDINGSPHERE=OFF
+	-DOSG_USE_FLOAT_BOUNDINGBOX=OFF
 )
 
 set(OSG_PATCH
@@ -633,7 +633,7 @@ set(OPENMW_PATCH
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/localmap.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/shader_fixes.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/highp.diff &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/highp.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/alpha_perf.diff &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp
 )
