@@ -70,6 +70,11 @@ set(host ${ndk_triplet})
 set(android_platform android-${ANDROID_API})
 set(app_abi ${ABI})
 
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  # Workaroudn linker bug in CLang: https://github.com/android/ndk/issues/721
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -flto=thin")
+endif()
+
 set(COMMON_CMAKE_ARGS
 	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
 	-DANDROID_ABI=${app_abi}
