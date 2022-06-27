@@ -6,7 +6,7 @@ jobs:
   build:
     strategy:
       matrix:
-        arch: [arm64]
+        arch: [arm, arm64]
 
     runs-on: ubuntu-20.04
 
@@ -33,7 +33,7 @@ jobs:
         wget https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
         unzip release-70-1.zip
         ICU_SOURCE_DIR=./icu-release-70-1/icu4c/source
-        ${ICU_SOURCE_DIR}/configure --disable-shared --enable-static --host=aarch64-linux-android --disable-tests --disable-samples --disable-icuio --disable-extras
+        ${ICU_SOURCE_DIR}/configure --disable-shared --enable-static --disable-tests --disable-samples --disable-icuio --disable-extras
         make -j $(nproc)
         cd ..
 
