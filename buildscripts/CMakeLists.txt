@@ -260,10 +260,10 @@ ExternalProject_Add(boost
 	link=static
 	runtime-link=static
 	install
-	COMMAND ${host}-ranlib ${prefix}/lib/libboost_filesystem.a
-	COMMAND ${host}-ranlib ${prefix}/lib/libboost_program_options.a
-	COMMAND ${host}-ranlib ${prefix}/lib/libboost_system.a
-	COMMAND ${host}-ranlib ${prefix}/lib/libboost_iostreams.a
+	COMMAND llvm-ranlib ${prefix}/lib/libboost_filesystem.a
+	COMMAND llvm-ranlib ${prefix}/lib/libboost_program_options.a
+	COMMAND llvm-ranlib ${prefix}/lib/libboost_system.a
+	COMMAND llvm-ranlib ${prefix}/lib/libboost_iostreams.a
 )
 
 ExternalProject_Add(ffmpeg
@@ -276,7 +276,7 @@ ExternalProject_Add(ffmpeg
 	${ffmpeg_configure_flags}
 	--target-os=android
 	--enable-cross-compile
-	--cross-prefix=${host}-
+	--cross-prefix=llvm-
 	--cc=${host}-clang
 	--arch=${ARCH}
 	--cpu=${FFMPEG_CPU}
@@ -425,7 +425,7 @@ set(LUAJIT_MAKE_FLAGS
 	HOST_CC=${LUAJIT_HOST_CC}
 	CFLAGS=
 	TARGET_CFLAGS=$ENV{CFLAGS}
-	CROSS=${host}-
+	CROSS=llvm-
 	STATIC_CC=${host}-clang
 	DYNAMIC_CC=${host}-clang\ -fPIC
 	TARGET_LD=${host}-clang
