@@ -248,7 +248,7 @@ ExternalProject_Add(boost
 	--with-program_options
 	--with-system
 	--with-iostreams
-	--with-regex
+#	--with-regex
 	--ignore-site-config
 	toolset=clang-android
 	architecture=${BOOST_ARCH}
