@@ -4,9 +4,6 @@ cmake_minimum_required(VERSION 3.13)
 set(LIBJPEG_TURBO_VERSION 1.5.3)
 set(LIBJPEG_TURBO_HASH SHA256=b24890e2bb46e12e72a79f7e965f409f4e16466d00e1dd15d93d73ee6b592523)
 
-set(LIBICU_VERSION 70-1)
-set(LIBICU_HASH SHA256=4013d7aff8a34bae410664bdb16554d7eda03654b22627b9284ab55a685492d4)
-
 # http://www.libpng.org/pub/png/libpng.html
 set(LIBPNG_VERSION 1.6.37)
 set(LIBPNG_HASH SHA256=505e70834d35383537b6491e7ae8641f1a4bed1876dbfe361201fc80868d88ca)
@@ -152,27 +149,27 @@ ExternalProject_Add(libjpeg-turbo
 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install-libLTLIBRARIES install-data-am
 )
 
-set(libicu_flags
-		--disable-tests
-		--disable-samples
-		--disable-icuio
-		--disable-extras
-		--with-cross-build=/home/runner/icu-build/)
+ExternalProject_Add(icu
+            URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
+            URL_HASH MD5=49d5e2e5bab93ae1a4b56e916150544c
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/icu/
+            BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/icu/
 
 
-ExternalProject_Add(libicu
-		URL https://github.com/unicode-org/icu/archive/refs/tags/release-${LIBICU_VERSION}.zip
-		URL_HASH ${LIBICU_HASH}
-		DOWNLOAD_DIR ${download_dir}
+            CONFIGURE_COMMAND <SOURCE_DIR>/icu4c/source/configure
+            --host=aarch64-linux-android
+            --disable-shared
+            --enable-static
+            --disable-tests
+            --disable-samples
+            --disable-icuio
+            --disable-extras
+            --with-cross-build=/home/runner/icu-build/
 
 
-		CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/icu4c/source/configure
-		${COMMON_AUTOCONF_FLAGS}
-		${libicu_flags}
+            BUILD_COMMAND make -j ${NPROCS}
 
-		BUILD_COMMAND ${wrapper_command} $(MAKE) check_PROGRAMS= bin_PROGRAMS=
-
-		INSTALL_COMMAND ${wrapper_command} $(MAKE) install check_PROGRAMS= bin_PROGRAMS=
+            INSTALL_COMMAND ""
 )
 
 ExternalProject_Add(libpng
@@ -260,10 +257,10 @@ ExternalProject_Add(boost
 	link=static
 	runtime-link=static
 	install
-	COMMAND llvm-ranlib ${prefix}/lib/libboost_filesystem.a
-	COMMAND llvm-ranlib ${prefix}/lib/libboost_program_options.a
-	COMMAND llvm-ranlib ${prefix}/lib/libboost_system.a
-	COMMAND llvm-ranlib ${prefix}/lib/libboost_iostreams.a
+	COMMAND ${host}-ranlib ${prefix}/lib/libboost_filesystem.a
+	COMMAND ${host}-ranlib ${prefix}/lib/libboost_program_options.a
+	COMMAND ${host}-ranlib ${prefix}/lib/libboost_system.a
+	COMMAND ${host}-ranlib ${prefix}/lib/libboost_iostreams.a
 )
 
 ExternalProject_Add(ffmpeg
@@ -276,7 +273,7 @@ ExternalProject_Add(ffmpeg
 	${ffmpeg_configure_flags}
 	--target-os=android
 	--enable-cross-compile
-	--cross-prefix=llvm-
+	--cross-prefix=${host}-
 	--cc=${host}-clang
 	--arch=${ARCH}
 	--cpu=${FFMPEG_CPU}
@@ -425,7 +422,7 @@ set(LUAJIT_MAKE_FLAGS
 	HOST_CC=${LUAJIT_HOST_CC}
 	CFLAGS=
 	TARGET_CFLAGS=$ENV{CFLAGS}
-	CROSS=llvm-
+	CROSS=${host}-
 	STATIC_CC=${host}-clang
 	DYNAMIC_CC=${host}-clang\ -fPIC
 	TARGET_LD=${host}-clang
@@ -603,9 +600,9 @@ set(OPENMW_COMMON
 	-DBUILD_DOCS=0
 	-DBUILD_UNITTESTS=0
 	-DBUILD_MYGUI_PLUGIN=0
-#	-DOPENMW_LTO_BUILD=ON
-#	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
-# 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+	-DOPENMW_LTO_BUILD=ON
+	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
+ 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
@@ -614,9 +611,9 @@ set(OPENMW_COMMON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
-	-DOPENMW_USE_SYSTEM_ICU=ON
-#	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-build/
-#	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=TRUE
+	-DOPENMW_USE_SYSTEM_ICU=OFF
+	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-build/
+	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=TRUE
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
 )
@@ -644,7 +641,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit libicu
+	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit icu
 
 #	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
