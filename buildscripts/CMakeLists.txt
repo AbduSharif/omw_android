@@ -170,6 +170,11 @@ ExternalProject_Add(icu
             BUILD_COMMAND make -j ${NPROCS}
 
             INSTALL_COMMAND ""
+
+set(ICU_INCLUDE_DIRS
+        <SOURCE_DIR>/icu4c/source/common
+        <SOURCE_DIR>/icu4c/source/i18
+    )
 )
 
 ExternalProject_Add(libpng
