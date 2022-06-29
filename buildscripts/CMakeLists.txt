@@ -244,7 +244,6 @@ ExternalProject_Add(boost
 
 	INSTALL_COMMAND ${wrapper_command} ./b2
 	-j4
-	--with-filesystem
 	--with-program_options
 	--with-system
 	--with-iostreams
@@ -262,7 +261,6 @@ ExternalProject_Add(boost
 	link=static
 	runtime-link=static
 	install
-	COMMAND ${host}-ranlib ${prefix}/lib/libboost_filesystem.a
 	COMMAND ${host}-ranlib ${prefix}/lib/libboost_program_options.a
 	COMMAND ${host}-ranlib ${prefix}/lib/libboost_system.a
 	COMMAND ${host}-ranlib ${prefix}/lib/libboost_iostreams.a
