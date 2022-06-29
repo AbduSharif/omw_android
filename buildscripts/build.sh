@@ -11,7 +11,7 @@ DEPLOY_RESOURCES="true"
 LTO="false"
 BUILD_TYPE="release"
 CFLAGS="-fPIC"
-CXXFLAGS="-fPIC -frtti -fexceptions"
+CXXFLAGS="-fPIC -frtti -fexceptions -fno-rtti"
 LDFLAGS="-fpic"
 
 usage() {
