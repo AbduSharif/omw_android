@@ -11,8 +11,8 @@ DEPLOY_RESOURCES="true"
 LTO="false"
 BUILD_TYPE="release"
 CFLAGS="-fPIC"
-CXXFLAGS="-fPIC -frtti -fexceptions -fno-rtti"
-LDFLAGS="-fpic"
+CXXFLAGS="-fPIC -frtti -fexceptions"
+LDFLAGS="-fPIC"
 
 usage() {
 	echo "Usage: ./build.sh [--help] [--asan] [--arch arch] [--debug|--release]"
