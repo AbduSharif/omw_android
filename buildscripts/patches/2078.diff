@@ -1,0 +1,48 @@
+diff --git a/apps/openmw/mwrender/renderingmanager.cpp b/apps/openmw/mwrender/renderingmanager.cpp
+index 55b50c9d7cb011e044acd83a041be62be59e7324..7245b62e6b33901c26578889e7db6664afb34a86 100644
+--- a/apps/openmw/mwrender/renderingmanager.cpp
++++ b/apps/openmw/mwrender/renderingmanager.cpp
+@@ -548,6 +548,7 @@ namespace MWRender
+ 
+         mPostProcessor = new PostProcessor(*this, viewer, mRootNode, resourceSystem->getVFS());
+         resourceSystem->getSceneManager()->setOpaqueDepthTex(mPostProcessor->getTexture(PostProcessor::Tex_OpaqueDepth, 0), mPostProcessor->getTexture(PostProcessor::Tex_OpaqueDepth, 1));
++        resourceSystem->getSceneManager()->setSoftParticles(mPostProcessor->softParticlesEnabled());
+         resourceSystem->getSceneManager()->setSupportsNormalsRT(mPostProcessor->getSupportsNormalsRT());
+ 
+         // water goes after terrain for correct waterculling order
+diff --git a/components/resource/scenemanager.hpp b/components/resource/scenemanager.hpp
+index 669b6df7584b5752e8afbbd4366cb509920039c9..d3ad868a99df65fb892bd47856e3837cb7676fcc 100644
+--- a/components/resource/scenemanager.hpp
++++ b/components/resource/scenemanager.hpp
+@@ -198,6 +198,9 @@ namespace Resource
+         void setSupportsNormalsRT(bool supports) { mSupportsNormalsRT = supports; }
+         bool getSupportsNormalsRT() const { return mSupportsNormalsRT; }
+ 
++        void setSoftParticles(bool enabled) { mSoftParticles = enabled; }
++        bool getSoftParticles() const { return mSoftParticles; }
++
+     private:
+ 
+         Shader::ShaderVisitor* createShaderVisitor(const std::string& shaderPrefix = "objects");
+@@ -216,6 +219,7 @@ namespace Resource
+         bool mConvertAlphaTestToAlphaToCoverage;
+         bool mSupportsNormalsRT;
+         std::array<osg::ref_ptr<osg::Texture>, 2> mOpaqueDepthTex;
++        bool mSoftParticles = false;
+ 
+         osg::ref_ptr<Resource::SharedStateManager> mSharedStateManager;
+         mutable std::mutex mSharedStateMutex;
+diff --git a/components/sceneutil/extradata.cpp b/components/sceneutil/extradata.cpp
+index 7b50e281c70914436f8c05099561c40d6dc87ef1..3f5bb6df8856994f114605916aa15460d5611f76 100644
+--- a/components/sceneutil/extradata.cpp
++++ b/components/sceneutil/extradata.cpp
+@@ -20,6 +20,9 @@ namespace SceneUtil
+ {
+     void ProcessExtraDataVisitor::setupSoftEffect(osg::Node& node, float size, bool falloff)
+     {
++        if (!mSceneMgr->getSoftParticles())
++            return;
++
+         const int unitSoftEffect = mSceneMgr->getShaderManager().reserveGlobalTextureUnits(Shader::ShaderManager::Slot::OpaqueDepthTexture);
+         static const osg::ref_ptr<SceneUtil::AutoDepth> depth = new SceneUtil::AutoDepth(osg::Depth::LESS, 0, 1, false);
+ 
