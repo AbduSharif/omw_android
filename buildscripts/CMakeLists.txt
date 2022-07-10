@@ -609,9 +609,9 @@ set(OPENMW_COMMON
 	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
  	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 #	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
@@ -648,7 +648,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4 luajit icu
+	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit icu
 
 #	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
