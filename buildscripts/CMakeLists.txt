@@ -25,7 +25,7 @@ set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648
 #set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION 01efa2b2d4e4bdb3b4b7cc231d2d2834a75993ea)
+set(GL4ES_VERSION 0a0a8737b1cd8b4085b48f394f9225511ee9d52b)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://www.libsdl.org/download-2.0.php
@@ -612,7 +612,7 @@ set(OPENMW_COMMON
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
-#	-DOPENMW_GL4ES_MANUAL_INIT=ON
+	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
