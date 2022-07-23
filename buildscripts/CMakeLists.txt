@@ -25,7 +25,7 @@ set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648
 #set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION d1a3c36e920cc5fe216c0d7922e37283089ec17a)
+set(GL4ES_VERSION a518a79adabf6393aea9b361eeefec9eadd2f35f)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://www.libsdl.org/download-2.0.php
@@ -48,12 +48,8 @@ set(OSG_VERSION ada34a6d38772f684aa70d2eb76549a33edc9a5f)
 set(LZ4_VERSION 1.9.3)
 set(LZ4_HASH SHA256=030644df4611007ff7dc962d981f390361e6c97a34e5cbc393ddfbe019ffe2c1)
 
-# https://luajit.org/download.html
-set(LUAJIT_VERSION 2.1.0-beta3)
-set(LUAJIT_HASH SHA256=1ad2e34b111c802f9d0cdf019e986909123237a28c746b21295b63c9e785d9c3)
-
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 95e3ce25a9f480c146542703fbd47bbfdb0df884)
+set(OPENMW_VERSION f327288953d5cc1281d12b913bfe877359a68f7e)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -147,34 +143,6 @@ ExternalProject_Add(libjpeg-turbo
 	BUILD_COMMAND ${wrapper_command} $(MAKE) PROGRAMS=
 
 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install-libLTLIBRARIES install-data-am
-)
-
-ExternalProject_Add(icu
-            URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
-            URL_HASH MD5=49d5e2e5bab93ae1a4b56e916150544c
-            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/icu/
-            BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/icu/
-
-
-            CONFIGURE_COMMAND <SOURCE_DIR>/icu4c/source/configure
-            --host=aarch64-linux-android
-            --disable-shared
-            --enable-static
-            --disable-tests
-            --disable-samples
-            --disable-icuio
-            --disable-extras
-            --with-cross-build=/home/runner/icu-build/
-
-
-            BUILD_COMMAND make -j ${NPROCS}
-
-            INSTALL_COMMAND ""
-
-set(ICU_INCLUDE_DIRS
-        <SOURCE_DIR>/icu4c/source/common
-        <SOURCE_DIR>/icu4c/source/i18
-    )
 )
 
 ExternalProject_Add(libpng
@@ -423,34 +391,6 @@ ExternalProject_Add(lz4
 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
 )
 
-set(LUAJIT_MAKE_FLAGS
-	HOST_CC=${LUAJIT_HOST_CC}
-	CFLAGS=
-	TARGET_CFLAGS=$ENV{CFLAGS}
-	CROSS=${host}-
-	STATIC_CC=${host}-clang
-	DYNAMIC_CC=${host}-clang\ -fPIC
-	TARGET_LD=${host}-clang
-	PREFIX=${prefix}
-)
-
-ExternalProject_Add(luajit
-	URL https://luajit.org/download/LuaJIT-${LUAJIT_VERSION}.tar.gz
-	URL_HASH ${LUAJIT_HASH}
-	DOWNLOAD_DIR ${download_dir}
-
-	BUILD_IN_SOURCE 1
-
-	CONFIGURE_COMMAND ""
-
-	BUILD_COMMAND ${wrapper_command} $(MAKE) amalg
-	${LUAJIT_MAKE_FLAGS}
-
-	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
-	${LUAJIT_MAKE_FLAGS}
-	COMMAND bash -c "rm ${prefix}/lib/libluajit*.so*"
-)
-
 ExternalProject_Add(zlib
 		URL https://github.com/madler/zlib/archive/refs/tags/v1.2.11.tar.gz
 		URL_HASH SHA256=629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff
@@ -597,9 +537,7 @@ set(OPENMW_COMMON
 	-DBUILD_LAUNCHER=0
 	-DBUILD_MWINIIMPORTER=0
 	-DBUILD_ESSIMPORTER=0
-	-DBUILD_NAVMESHTOOL=OFF
 	-DBUILD_BULLETOBJECTTOOL=OFF
-#        -DBUILD_SIMPLIFIEDMESHTOOL=0
         -DOPENMW_USE_SYSTEM_SQLITE3=OFF
 	-DBUILD_OPENCS=0
 	-DBUILD_WIZARD=0
@@ -610,15 +548,12 @@ set(OPENMW_COMMON
 	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
  	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
-#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-#	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-#	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
-#	-DOPENMW_GL4ES_MANUAL_INIT=ON
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
-	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
-	-DOPENMW_USE_SYSTEM_ICU=OFF
-	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-build/
 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=TRUE
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
@@ -630,26 +565,15 @@ set(OPENMW_PATCH
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0001-loadingscreen-disable-for-now.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0009-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0010-android-fix-context-being-lost-on-app-minimize.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0014-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0012-components-misc-stringops-use-boost-format-instead-o.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0014-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0012-components-misc-stringops-use-boost-format-instead-o.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/fix-build.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/psa.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb2.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/tcb_range_limit.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/soft_particles_mr.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/localmap.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/shader_fixes.diff &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/highp.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/alpha_perf.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/vertex.diff &&
-#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/2078.diff &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit icu
+	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4
 
 #	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
