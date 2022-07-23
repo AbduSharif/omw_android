@@ -298,8 +298,8 @@ ExternalProject_Add(gl4es
 	${COMMON_NDK_BUILD_FLAGS}
 
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
+	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/gl4es/
 	COMMAND cp libs/${app_abi}/libGL.so ${prefix}/lib/
-	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/include/gl4es/
 	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
 )
 
@@ -359,7 +359,7 @@ ExternalProject_Add(mygui
 	${COMMON_CMAKE_ARGS}
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+	-DOPENGL_INCLUDE_DIR=${prefix}/gl4es/
 	-DMYGUI_RENDERSYSTEM=4
 	-DMYGUI_BUILD_DEMOS=OFF
 	-DMYGUI_BUILD_TOOLS=OFF
@@ -468,7 +468,7 @@ set(OSG_COMMON
 	-DFREETYPE_DIR=${prefix}
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+	-DOPENGL_INCLUDE_DIR=${prefix}/gl4es/
 	-DOSG_CPP_EXCEPTIONS_AVAILABLE=TRUE
 	-DOSG_GL1_AVAILABLE=ON
 	-DOSG_GL2_AVAILABLE=ON
@@ -550,7 +550,7 @@ set(OPENMW_COMMON
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+	-DOPENGL_INCLUDE_DIR=${prefix}/gl4es/
 	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
@@ -573,7 +573,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4
+	DEPENDS boost openal gl4es osg mygui ffmpeg sdl2 bullet lz4
 
 #	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
