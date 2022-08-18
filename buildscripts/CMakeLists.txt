@@ -97,6 +97,7 @@ set(COMMON_NDK_BUILD_FLAGS
 	APP_PLATFORM=${android_platform}
 	APP_ABI=${app_abi}
 	APP_LD=deprecated
+        APP_OPTIM=release
 	LOCAL_LDFLAGS=$ENV{LDFLAGS}
 	-j4
 )
