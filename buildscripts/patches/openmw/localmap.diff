@@ -1,13 +1,74 @@
-diff --git a/apps/openmw/mwrender/localmap.cpp b/apps/openmw/mwrender/localmap.cpp
-index 9e7b95fb0c283f0126e4664e622393529fadb40f..ccd3220efe6e9b11719a7ccb1e3a058a9108d435 100644
---- a/apps/openmw/mwrender/localmap.cpp
-+++ b/apps/openmw/mwrender/localmap.cpp
-@@ -662,6 +662,8 @@ LocalMapRenderToTexture::LocalMapRenderToTexture(osg::Node* sceneRoot, int res,
-     , mSceneRoot(sceneRoot)
-     , mActive(true)
- {
-+    setNodeMask(Mask_RenderToTexture);
-+
-     if (SceneUtil::AutoDepth::isReversed())
-         mProjectionMatrix = SceneUtil::getReversedZProjectionMatrixAsOrtho(-mapWorldSize / 2, mapWorldSize / 2, -mapWorldSize / 2, mapWorldSize / 2, 5, (zmax - zmin) + 10);
-     else
+diff --git a/components/sceneutil/lightmanager.cpp b/components/sceneutil/lightmanager.cpp
+index 85c3b67c6841fe39376a799991ac24917d61a3fb..94a0bda8bcb24401dcaa98b43e1f76067b121011 100644
+--- a/components/sceneutil/lightmanager.cpp
++++ b/components/sceneutil/lightmanager.cpp
+@@ -471,14 +471,16 @@ namespace SceneUtil
+         {
+             osg::ref_ptr<osg::StateSet> stateset = new osg::StateSet;
+ 
+-            osg::ref_ptr<osg::Uniform> indicesUni = new osg::Uniform(osg::Uniform::Type::INT, "PointLightIndex", mLightManager->getMaxLights());
++            osg::ref_ptr<osg::IntArray> indices = new osg::IntArray(mLightManager->getMaxLights());
++            osg::ref_ptr<osg::Uniform> indicesUni = new osg::Uniform(osg::Uniform::Type::INT, "PointLightIndex", indices->size());
+             int pointCount = 0;
+ 
+             for (size_t i = 0; i < lightList.size(); ++i)
+             {
+                 int bufIndex = mLightManager->getLightIndexMap(frameNum)[lightList[i]->mLightSource->getId()];
+-                indicesUni->setElement(pointCount++, bufIndex);
++                indices->at(pointCount++) = bufIndex;
+             }
++            indicesUni->setArray(indices);
+             stateset->addUniform(indicesUni);
+             stateset->addUniform(new osg::Uniform("PointLightCount", pointCount));
+ 
+@@ -601,28 +603,15 @@ namespace SceneUtil
+     class LightManagerCullCallback : public SceneUtil::NodeCallback<LightManagerCullCallback, LightManager*, osgUtil::CullVisitor*>
+     {
+     public:
+-        LightManagerCullCallback(LightManager* lightManager)
+-        {
+-            if (!lightManager->getUBOManager())
+-                return;
+-
+-            for (size_t i = 0; i < mStateSet.size(); ++i)
+-            {
+-                auto& buffer = lightManager->getUBOManager()->getLightBuffer(i);
+-                osg::ref_ptr<osg::UniformBufferBinding> ubb = new osg::UniformBufferBinding(static_cast<int>(Resource::SceneManager::UBOBinding::LightBuffer), buffer->getData(), 0, buffer->getData()->getTotalDataSize());
+-                mStateSet[i]->setAttributeAndModes(ubb, osg::StateAttribute::ON);
+-            }
+-        }
+-
+         void operator()(LightManager* node, osgUtil::CullVisitor* cv)
+         {
+-            const size_t frameId = cv->getTraversalNumber() % 2;
+-
+-            auto& stateset = mStateSet[frameId];
++            osg::ref_ptr<osg::StateSet> stateset = new osg::StateSet;
+ 
+             if (node->getLightingMethod() == LightingMethod::SingleUBO)
+             {
+-                auto& buffer = node->getUBOManager()->getLightBuffer(cv->getTraversalNumber());
++                auto buffer = node->getUBOManager()->getLightBuffer(cv->getTraversalNumber());
++                osg::ref_ptr<osg::UniformBufferBinding> ubb = new osg::UniformBufferBinding(static_cast<int>(Resource::SceneManager::UBOBinding::LightBuffer), buffer->getData(), 0, buffer->getData()->getTotalDataSize());
++                stateset->setAttributeAndModes(ubb, osg::StateAttribute::ON);
+ 
+                 if (auto sun = node->getSunlight())
+                 {
+@@ -653,8 +642,6 @@ namespace SceneUtil
+             if (node->getPPLightsBuffer() && cv->getCurrentCamera()->getName() == Constants::SceneCamera)
+                 node->getPPLightsBuffer()->updateCount(cv->getTraversalNumber());
+         }
+-
+-        std::array<osg::ref_ptr<osg::StateSet>, 2> mStateSet = { new osg::StateSet, new osg::StateSet };
+     };
+ 
+     UBOManager::UBOManager(int lightCount)
+@@ -841,7 +828,7 @@ namespace SceneUtil
+ 
+         getOrCreateStateSet()->addUniform(new osg::Uniform("PointLightCount", 0));
+ 
+-        addCullCallback(new LightManagerCullCallback(this));
++        addCullCallback(new LightManagerCullCallback);
+     }
+ 
+     LightManager::LightManager(const LightManager &copy, const osg::CopyOp &copyop)
