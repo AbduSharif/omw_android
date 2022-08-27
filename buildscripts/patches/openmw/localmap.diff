@@ -1,74 +1,460 @@
-diff --git a/components/sceneutil/lightmanager.cpp b/components/sceneutil/lightmanager.cpp
-index 85c3b67c6841fe39376a799991ac24917d61a3fb..94a0bda8bcb24401dcaa98b43e1f76067b121011 100644
---- a/components/sceneutil/lightmanager.cpp
-+++ b/components/sceneutil/lightmanager.cpp
-@@ -471,14 +471,16 @@ namespace SceneUtil
+diff --git a/README.md b/README.md
+index 1a49cbc50c360cd5b723c2726cc7561ac712faee..029054703b6b06b3a1185e7300ed89a7520b431b 100644
+--- a/README.md
++++ b/README.md
+@@ -14,8 +14,8 @@ OpenMW also comes with OpenMW-CS, a replacement for Bethesda's Construction Set.
+ 
+ Font Licenses:
+ * DejaVuLGCSansMono.ttf: custom (see [files/data/fonts/DejaVuFontLicense.txt](https://gitlab.com/OpenMW/openmw/-/raw/master/files/data/fonts/DejaVuFontLicense.txt) for more information)
+-* OMWAyembedt.ttf: SIL Open Font License (see [files/data/fonts/OMWAyembedtFontLicense.txt](https://gitlab.com/OpenMW/openmw/-/raw/master/files/data/fonts/OMWAyembedtFontLicense.txt) for more information)
+-* Pelagiad.ttf: SIL Open Font License (see [files/data/fonts/PelagiadFontLicense.txt](https://gitlab.com/OpenMW/openmw/-/raw/master/files/data/fonts/PelagiadFontLicense.txt) for more information)
++* DemonicLetters.ttf: SIL Open Font License (see [files/data/fonts/DemonicLettersFontLicense.txt](https://gitlab.com/OpenMW/openmw/-/raw/master/files/data/fonts/DemonicLettersFontLicense.txt) for more information)
++* MysticCards.ttf: SIL Open Font License (see [files/data/fonts/MysticCardsFontLicense.txt](https://gitlab.com/OpenMW/openmw/-/raw/master/files/data/fonts/MysticCardsFontLicense.txt) for more information)
+ 
+ Current Status
+ --------------
+diff --git a/apps/openmw/mwgui/itemwidget.cpp b/apps/openmw/mwgui/itemwidget.cpp
+index ffe854a72bfc6f651fae8bd013f6d9aac7c08754..a7e6cb8beff6eb46b387e89a0caeb95d5c7131da 100644
+--- a/apps/openmw/mwgui/itemwidget.cpp
++++ b/apps/openmw/mwgui/itemwidget.cpp
+@@ -25,14 +25,29 @@ namespace
+         if (count == 1)
+             return "";
+ 
++        // With small text size we can use up to 4 characters, while with large ones - only up to 3.
++        if (fontHeight > 16)
++        {
++            if (count > 999999999)
++                return MyGUI::utility::toString(count/1000000000) + "b";
++            else if (count > 9999999)
++                return ">9m";
++            else if (count > 999999)
++                return MyGUI::utility::toString(count/1000000) + "m";
++            else if (count > 9999)
++                return ">9k";
++            else if (count > 999)
++                return MyGUI::utility::toString(count/1000) + "k";
++            else
++                return MyGUI::utility::toString(count);
++        }
++
+         if (count > 999999999)
+             return MyGUI::utility::toString(count/1000000000) + "b";
+         else if (count > 999999)
+             return MyGUI::utility::toString(count/1000000) + "m";
+         else if (count > 9999)
+             return MyGUI::utility::toString(count/1000) + "k";
+-        else if (fontHeight >= 18 && count > 999)
+-            return MyGUI::utility::toString(count/1000) + "k";
+         else
+             return MyGUI::utility::toString(count);
+     }
+diff --git a/apps/openmw/mwgui/trainingwindow.cpp b/apps/openmw/mwgui/trainingwindow.cpp
+index 96267cc7b241ad7f103f60d0dc1f81953c7318e5..24a4eb360736445b2fdba0cfcf6b23757850ef3a 100644
+--- a/apps/openmw/mwgui/trainingwindow.cpp
++++ b/apps/openmw/mwgui/trainingwindow.cpp
+@@ -98,6 +98,8 @@ namespace MWGui
+         const MWWorld::Store<ESM::GameSetting> &gmst =
+             MWBase::Environment::get().getWorld()->getStore().get<ESM::GameSetting>();
+ 
++        const int lineHeight = MWBase::Environment::get().getWindowManager()->getFontHeight() + 2;
++
+         for (int i=0; i<3; ++i)
          {
-             osg::ref_ptr<osg::StateSet> stateset = new osg::StateSet;
+             int price = static_cast<int>(pcStats.getSkill (skills[i].first).getBase() * gmst.find("iTrainingMod")->mValue.getInteger());
+@@ -105,7 +107,7 @@ namespace MWGui
+             price = MWBase::Environment::get().getMechanicsManager()->getBarterOffer(mPtr, price, true);
  
--            osg::ref_ptr<osg::Uniform> indicesUni = new osg::Uniform(osg::Uniform::Type::INT, "PointLightIndex", mLightManager->getMaxLights());
-+            osg::ref_ptr<osg::IntArray> indices = new osg::IntArray(mLightManager->getMaxLights());
-+            osg::ref_ptr<osg::Uniform> indicesUni = new osg::Uniform(osg::Uniform::Type::INT, "PointLightIndex", indices->size());
-             int pointCount = 0;
+             MyGUI::Button* button = mTrainingOptions->createWidget<MyGUI::Button>(price <= playerGold ? "SandTextButton" : "SandTextButtonDisabled", // can't use setEnabled since that removes tooltip
+-                MyGUI::IntCoord(5, 5+i*18, mTrainingOptions->getWidth()-10, 18), MyGUI::Align::Default);
++                MyGUI::IntCoord(5, 5+i*lineHeight, mTrainingOptions->getWidth()-10, lineHeight), MyGUI::Align::Default);
  
-             for (size_t i = 0; i < lightList.size(); ++i)
-             {
-                 int bufIndex = mLightManager->getLightIndexMap(frameNum)[lightList[i]->mLightSource->getId()];
--                indicesUni->setElement(pointCount++, bufIndex);
-+                indices->at(pointCount++) = bufIndex;
-             }
-+            indicesUni->setArray(indices);
-             stateset->addUniform(indicesUni);
-             stateset->addUniform(new osg::Uniform("PointLightCount", pointCount));
+             button->setUserData(skills[i].first);
+             button->eventMouseButtonClick += MyGUI::newDelegate(this, &TrainingWindow::onTrainingSelected);
+diff --git a/components/fontloader/fontloader.cpp b/components/fontloader/fontloader.cpp
+index e575b8cbc02f1a4d597df6e8823a99e6e55ac7e8..dbf42e810b4f4e475f38a5c006719780739fb788 100644
+--- a/components/fontloader/fontloader.cpp
++++ b/components/fontloader/fontloader.cpp
+@@ -155,7 +155,7 @@ namespace Gui
  
-@@ -601,28 +603,15 @@ namespace SceneUtil
-     class LightManagerCullCallback : public SceneUtil::NodeCallback<LightManagerCullCallback, LightManager*, osgUtil::CullVisitor*>
+     FontLoader::FontLoader(ToUTF8::FromType encoding, const VFS::Manager* vfs, float scalingFactor)
+         : mVFS(vfs)
+-        , mFontHeight(std::clamp(Settings::Manager::getInt("font size", "GUI"), 12, 20))
++        , mFontHeight(std::clamp(Settings::Manager::getInt("font size", "GUI"), 12, 18))
+         , mScalingFactor(scalingFactor)
      {
-     public:
--        LightManagerCullCallback(LightManager* lightManager)
--        {
--            if (!lightManager->getUBOManager())
--                return;
--
--            for (size_t i = 0; i < mStateSet.size(); ++i)
--            {
--                auto& buffer = lightManager->getUBOManager()->getLightBuffer(i);
--                osg::ref_ptr<osg::UniformBufferBinding> ubb = new osg::UniformBufferBinding(static_cast<int>(Resource::SceneManager::UBOBinding::LightBuffer), buffer->getData(), 0, buffer->getData()->getTotalDataSize());
--                mStateSet[i]->setAttributeAndModes(ubb, osg::StateAttribute::ON);
--            }
--        }
--
-         void operator()(LightManager* node, osgUtil::CullVisitor* cv)
-         {
--            const size_t frameId = cv->getTraversalNumber() % 2;
--
--            auto& stateset = mStateSet[frameId];
-+            osg::ref_ptr<osg::StateSet> stateset = new osg::StateSet;
+         if (encoding == ToUTF8::WINDOWS_1252)
+@@ -176,10 +176,10 @@ namespace Gui
+         loadFont("DejaVuLGCSansMono", "MonoFont"); // We need to use a TrueType monospace font to display debug texts properly.
  
-             if (node->getLightingMethod() == LightingMethod::SingleUBO)
-             {
--                auto& buffer = node->getUBOManager()->getLightBuffer(cv->getTraversalNumber());
-+                auto buffer = node->getUBOManager()->getLightBuffer(cv->getTraversalNumber());
-+                osg::ref_ptr<osg::UniformBufferBinding> ubb = new osg::UniformBufferBinding(static_cast<int>(Resource::SceneManager::UBOBinding::LightBuffer), buffer->getData(), 0, buffer->getData()->getTotalDataSize());
-+                stateset->setAttributeAndModes(ubb, osg::StateAttribute::ON);
- 
-                 if (auto sun = node->getSunlight())
-                 {
-@@ -653,8 +642,6 @@ namespace SceneUtil
-             if (node->getPPLightsBuffer() && cv->getCurrentCamera()->getName() == Constants::SceneCamera)
-                 node->getPPLightsBuffer()->updateCount(cv->getTraversalNumber());
-         }
--
--        std::array<osg::ref_ptr<osg::StateSet>, 2> mStateSet = { new osg::StateSet, new osg::StateSet };
-     };
- 
-     UBOManager::UBOManager(int lightCount)
-@@ -841,7 +828,7 @@ namespace SceneUtil
- 
-         getOrCreateStateSet()->addUniform(new osg::Uniform("PointLightCount", 0));
- 
--        addCullCallback(new LightManagerCullCallback(this));
-+        addCullCallback(new LightManagerCullCallback);
+         // Use our TrueType fonts as a fallback.
+-        if (!MyGUI::ResourceManager::getInstance().isExist("DefaultFont") && !Misc::StringUtils::ciEqual(defaultFont, "Pelagiad"))
+-            loadFont("Pelagiad", "DefaultFont");
+-        if (!MyGUI::ResourceManager::getInstance().isExist("ScrollFont") && !Misc::StringUtils::ciEqual(scrollFont, "OMWAyembedt"))
+-            loadFont("OMWAyembedt", "ScrollFont");
++        if (!MyGUI::ResourceManager::getInstance().isExist("DefaultFont") && !Misc::StringUtils::ciEqual(defaultFont, "MysticCards"))
++            loadFont("MysticCards", "DefaultFont");
++        if (!MyGUI::ResourceManager::getInstance().isExist("ScrollFont") && !Misc::StringUtils::ciEqual(scrollFont, "DemonicLetters"))
++            loadFont("DemonicLetters", "ScrollFont");
      }
  
-     LightManager::LightManager(const LightManager &copy, const osg::CopyOp &copyop)
+     void FontLoader::loadFont(const std::string& fileName, const std::string& fontId)
+@@ -553,12 +553,9 @@ namespace Gui
+     std::string FontLoader::getFontForFace(const std::string& face)
+     {
+         const std::string lowerFace = Misc::StringUtils::lowerCase(face);
+-
+-        if (lowerFace == "magic cards")
+-            return "DefaultFont";
+         if (lowerFace == "daedric")
+             return "ScrollFont";
+ 
+-        return face;
++        return "DefaultFont";
+     }
+ }
+diff --git a/components/widgets/fontwrapper.hpp b/components/widgets/fontwrapper.hpp
+index 122cf20257e88597413df2422dc18e09d0fa7abe..3396792f348642307785263ebcf436db0d80e898 100644
+--- a/components/widgets/fontwrapper.hpp
++++ b/components/widgets/fontwrapper.hpp
+@@ -35,7 +35,7 @@ namespace Gui
+         std::string getFontSize()
+         {
+             // Note: we can not use the FontLoader here, so there is a code duplication a bit.
+-            static const std::string fontSize = std::to_string(std::clamp(Settings::Manager::getInt("font size", "GUI"), 12, 20));
++            static const std::string fontSize = std::to_string(std::clamp(Settings::Manager::getInt("font size", "GUI"), 12, 18));
+             return fontSize;
+         }
+     };
+diff --git a/docs/source/reference/modding/font.rst b/docs/source/reference/modding/font.rst
+index 8b3be358e6050e49915f95241089cb93d665a34b..0b8c3273f5463e4ebdb6a54bb24d615b9f53e1c3 100644
+--- a/docs/source/reference/modding/font.rst
++++ b/docs/source/reference/modding/font.rst
+@@ -3,8 +3,8 @@ Fonts
+ 
+ Default UI font and font used in magic scrolls are defined in ``openmw.cfg``:
+ 
+-			fallback=Fonts_Font_0,Pelagiad
+-			fallback=Fonts_Font_2,OMWAyembedt
++			fallback=Fonts_Font_0,MysticCards
++			fallback=Fonts_Font_2,DemonicLetters
+ 
+ When there are no ``Fonts_Font_*`` lines in user's ``openmw.cfg``, built-in TrueType fonts are used.
+ Font used by console and another debug windows is not configurable (so ``Fonts_Font_1`` is unused).
+@@ -30,11 +30,11 @@ TrueType fonts
+ --------------
+ 
+ Unlike vanilla Morrowind, OpenMW directly supports TrueType (``.ttf``) fonts. This is the recommended fonts format.
+-OpenMW has build-in TrueType fonts: Pelagiad, OMWAyembedt and DejaVuLGCSansMono, which are used by default.
++OpenMW has build-in TrueType fonts: MysticCards, DemonicLetters and DejaVuLGCSansMono, which are used by default.
+ TrueType fonts are configured via ``openmw.cfg`` too:
+ 
+-			fallback=Fonts_Font_0,Pelagiad
+-			fallback=Fonts_Font_2,OMWAyembedt
++			fallback=Fonts_Font_0,MysticCards
++			fallback=Fonts_Font_2,DemonicLetters
+ 
+ In this example, OpenMW will scan ``Fonts`` folder in data directories for ``.omwfont`` files.
+ These files are XML files with schema provided by MyGUI. OpenMW uses ``.omwfont`` files which name (without extension) matches ``openmw.cfg`` entries.
+@@ -45,7 +45,7 @@ It is also possible to adjust the font size and resolution via ``settings.cfg``
+ 			font size = 16
+ 			ttf resolution = 75
+ 
+-The ``font size`` setting accepts clamped values in range from 12 to 20 while ``ttf resolution`` setting accepts values from 50 to 125.
++The ``font size`` setting accepts clamped values in range from 12 to 18 while ``ttf resolution`` setting accepts values from 50 to 125.
+ 
+ Any Resolution or Size properties in the ``.omwfont`` file have no effect because the engine settings override them.
+ 
+diff --git a/docs/source/reference/modding/settings/GUI.rst b/docs/source/reference/modding/settings/GUI.rst
+index 08f3fbd830031f6a50d9299f7f994aa607b9f7a7..5f2b6b1ca0b2bb2613a4cdb0d51a3aa0c279f085 100644
+--- a/docs/source/reference/modding/settings/GUI.rst
++++ b/docs/source/reference/modding/settings/GUI.rst
+@@ -17,7 +17,7 @@ font size
+ ---------
+ 
+ :Type:		integer
+-:Range:		12 to 20
++:Range:		12 to 18
+ :Default:	16
+ 
+ Allows to specify glyph size for in-game fonts.
+diff --git a/files/data/CMakeLists.txt b/files/data/CMakeLists.txt
+index 6186759102e7084bfa0b03d54a62e37d002b80a7..2630fbed84bf303506aa3bea5e27b29512a21a79 100644
+--- a/files/data/CMakeLists.txt
++++ b/files/data/CMakeLists.txt
+@@ -13,12 +13,12 @@ set(BUILTIN_DATA_FILES
+     fonts/DejaVuFontLicense.txt
+     fonts/DejaVuLGCSansMono.ttf
+     fonts/DejaVuLGCSansMono.omwfont
+-    fonts/OMWAyembedt.ttf
+-    fonts/OMWAyembedt.omwfont
+-    fonts/OMWAyembedtFontLicense.txt
+-    fonts/Pelagiad.ttf
+-    fonts/Pelagiad.omwfont
+-    fonts/PelagiadFontLicense.txt
++    fonts/DemonicLetters.ttf
++    fonts/DemonicLetters.omwfont
++    fonts/DemonicLettersFontLicense.txt
++    fonts/MysticCards.ttf
++    fonts/MysticCards.omwfont
++    fonts/MysticCardsFontLicense.txt
+ 
+     l10n/BuiltInShaders/de.yaml
+     l10n/BuiltInShaders/en.yaml
+diff --git a/files/data/fonts/OMWAyembedt.omwfont b/files/data/fonts/DemonicLetters.omwfont
+similarity index 57%
+rename from files/data/fonts/OMWAyembedt.omwfont
+rename to files/data/fonts/DemonicLetters.omwfont
+index 5abf514e24170afb2da513f017d97df580656276..bbe15dac5d07c285d945c5b18a7162b1179fd8fd 100644
+--- a/files/data/fonts/OMWAyembedt.omwfont
++++ b/files/data/fonts/DemonicLetters.omwfont
+@@ -1,11 +1,14 @@
+ <MyGUI type="Resource" version="1.1">
+     <Resource type="ResourceTrueTypeFont">
+-        <Property key="Source" value="OMWAyembedt.ttf"/>
++        <Property key="Source" value="DemonicLetters.ttf"/>
+         <Property key="Antialias" value="false"/>
+         <Property key="TabWidth" value="8"/>
++        <Property key="SubstituteCode" value="0"/>
+         <Property key="OffsetHeight" value="0"/>
+         <Codes>
+-            <Code range="32 126"/>
++            <Code range="0"/>
++            <Code range="65 90"/>
++            <Code range="97 122"/>
+         </Codes>
+     </Resource>
+ </MyGUI>
+diff --git a/files/data/fonts/DemonicLetters.ttf b/files/data/fonts/DemonicLetters.ttf
+new file mode 100644
+index 0000000000000000000000000000000000000000..33b5fc7c2dd725da319c91584e6c39be9b0adfd9
+Binary files /dev/null and b/files/data/fonts/DemonicLetters.ttf differ
+diff --git a/files/data/fonts/OMWAyembedtFontLicense.txt b/files/data/fonts/DemonicLettersFontLicense.txt
+similarity index 97%
+rename from files/data/fonts/OMWAyembedtFontLicense.txt
+rename to files/data/fonts/DemonicLettersFontLicense.txt
+index 47986d54634aac6bd7e7a56e0c2a586ffd3dcfb8..11f50143cfb7a70a462abf30ae4cde484410ca7b 100644
+--- a/files/data/fonts/OMWAyembedtFontLicense.txt
++++ b/files/data/fonts/DemonicLettersFontLicense.txt
+@@ -1,3 +1,6 @@
++Copyright (c) 2022, OpenMW Team (https://gitlab.com/OpenMW),
++with Reserved Font Name "DemonicLetters.ttf".
++
+ Copyright (c) 2014, Georg Duffner (https://github.com/georgd/OpenMW-Fonts),
+ with Reserved Font Name "OMWAyembedt.ttf".
+ 
+diff --git a/files/data/fonts/Pelagiad.omwfont b/files/data/fonts/MysticCards.omwfont
+similarity index 71%
+rename from files/data/fonts/Pelagiad.omwfont
+rename to files/data/fonts/MysticCards.omwfont
+index 2fe2bcf9421c30d529cd6fa5475c7284345a76c0..2749d6d1c30a036ec3fff86b1edd61d41804d3f4 100644
+--- a/files/data/fonts/Pelagiad.omwfont
++++ b/files/data/fonts/MysticCards.omwfont
+@@ -1,7 +1,8 @@
+ <MyGUI type="Resource" version="1.1">
+     <Resource type="ResourceTrueTypeFont">
+-        <Property key="Source" value="Pelagiad.ttf"/>
++        <Property key="Source" value="MysticCards.ttf"/>
+         <Property key="Antialias" value="false"/>
++        <Property key="SubstituteCode" value="63"/>
+         <Property key="TabWidth" value="8"/>
+         <Property key="OffsetHeight" value="0"/>
+         <Codes>
+@@ -9,34 +10,33 @@
+             <Code range="161"/>
+             <Code range="173"/>
+             <Code range="180"/>
+-            <Code range="191 255"/>
++            <Code range="191 253"/>
++            <Code range="255"/>
+             <Code range="260 263"/>
+             <Code range="268 271"/>
+             <Code range="280 283"/>
+             <Code range="305"/>
+             <Code range="321 324"/>
+             <Code range="327 328"/>
+-            <Code range="339"/>
++            <Code range="330"/>
++            <Code range="338 339"/>
+             <Code range="344 347"/>
+             <Code range="352 353"/>
+             <Code range="356 357"/>
+             <Code range="366 367"/>
+-            <Code range="377 382"/>
++            <Code range="376 382"/>
++            <Code range="711"/>
+             <Code range="1025"/>
+             <Code range="1040 1103"/>
+             <Code range="1105"/>
+-	    <Code range="8208 8212"/>
++            <Code range="7838"/>
++            <Code range="8208 8212"/>
+             <Code range="8216 8217"/>
+             <Code range="8220 8221"/>
+             <Code range="8228 8230"/>
+-            <Code hide="198"/>
+             <Code hide="208"/>
+-            <Code hide="215 216"/>
+-	    <Code hide="222"/>
+-            <Code hide="230"/>
++            <Code hide="222"/>
+             <Code hide="240"/>
+-            <Code hide="247 248"/>
+-            <Code hide="254"/>
+         </Codes>
+     </Resource>
+ </MyGUI>
+diff --git a/files/data/fonts/MysticCards.ttf b/files/data/fonts/MysticCards.ttf
+new file mode 100644
+index 0000000000000000000000000000000000000000..c6e7401e1fcae4cf0d68f9227a299a818a586ca6
+Binary files /dev/null and b/files/data/fonts/MysticCards.ttf differ
+diff --git a/files/data/fonts/PelagiadFontLicense.txt b/files/data/fonts/MysticCardsFontLicense.txt
+similarity index 97%
+rename from files/data/fonts/PelagiadFontLicense.txt
+rename to files/data/fonts/MysticCardsFontLicense.txt
+index 2d4aff5cddf5b8d7753eb5bfac9ec0bbd5a05193..7d73af5dec043ed5dedbb089078e9cf8a31879fc 100644
+--- a/files/data/fonts/PelagiadFontLicense.txt
++++ b/files/data/fonts/MysticCardsFontLicense.txt
+@@ -1,3 +1,6 @@
++Copyright (c) 2022, OpenMW Team (https://gitlab.com/OpenMW),
++with Reserved Font Name "MysticCards.ttf".
++
+ Copyright (c) 2015, Isak Larborn (isaskar.github.io/Pelagiad|Isaskar@users.noreply.github.com),
+ with Reserved Font Name "Pelagiad.ttf".
+ 
+diff --git a/files/data/fonts/OMWAyembedt.ttf b/files/data/fonts/OMWAyembedt.ttf
+deleted file mode 100644
+index fb889b17fcc290758f65252f0e5a458bf8ca7157..0000000000000000000000000000000000000000
+Binary files a/files/data/fonts/OMWAyembedt.ttf and /dev/null differ
+diff --git a/files/data/fonts/Pelagiad.ttf b/files/data/fonts/Pelagiad.ttf
+deleted file mode 100644
+index 07653b0530b0468ccc2d92d2d81e8f2796edb549..0000000000000000000000000000000000000000
+Binary files a/files/data/fonts/Pelagiad.ttf and /dev/null differ
+diff --git a/files/data/mygui/openmw_dialogue_window.layout b/files/data/mygui/openmw_dialogue_window.layout
+index d1f96121e9bdf1b86a3d69e8c4ed07ec6f34fb64..6d53d63351d860595440d38a8abd722a71775865 100644
+--- a/files/data/mygui/openmw_dialogue_window.layout
++++ b/files/data/mygui/openmw_dialogue_window.layout
+@@ -18,7 +18,7 @@
+         <!-- The disposition bar-->
+         <Widget type="ProgressBar" skin="MW_Progress_Blue" position="398 8 166 18"
+             align="Right Top" name="Disposition">
+-            <Widget type="TextBox" skin="ProgressText" position="0 0 166 14" name="DispositionText" align="Right VCenter">
++            <Widget type="TextBox" skin="ProgressText" position="0 0 166 12" name="DispositionText" align="Right VCenter">
+                 <Property key="NeedMouse" value="false"/>
+              </Widget>
+         </Widget>
+diff --git a/files/data/mygui/openmw_stats_window.layout b/files/data/mygui/openmw_stats_window.layout
+index 77de3ac75308ee919998b101885d44dd77dca5a7..2fcede969f451a8e3492f817214e826d2fd95e16 100644
+--- a/files/data/mygui/openmw_stats_window.layout
++++ b/files/data/mygui/openmw_stats_window.layout
+@@ -21,7 +21,7 @@
+                     </Widget>
+                     <Widget type="ProgressBar" skin="MW_Progress_Red" position="74 0 130 18" name="HBar" align="Right Top">
+                         <Property key="NeedMouse" value="false"/>
+-                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 14" name="HBarT" align="Right VCenter">
++                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 12" name="HBarT" align="Right Top">
+                             <Property key="NeedMouse" value="false"/>
+                         </Widget>
+                     </Widget>
+@@ -41,7 +41,7 @@
+ 
+                     <Widget type="ProgressBar" skin="MW_Progress_Blue" position="74 0 130 18" name="MBar" align="Right Top">
+                         <Property key="NeedMouse" value="false"/>
+-                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 14" name="MBarT" align="Right VCenter">
++                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 12" name="MBarT" align="Right VCenter">
+                             <Property key="NeedMouse" value="false"/>
+                         </Widget>
+                     </Widget>
+@@ -61,7 +61,7 @@
+ 
+                     <Widget type="ProgressBar" skin="MW_Progress_Green" position="74 0 130 18" name="FBar" align="Right Top">
+                         <Property key="NeedMouse" value="false"/>
+-                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 14" name="FBarT" align="Right VCenter">
++                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 12" name="FBarT" align="Right VCenter">
+                             <Property key="NeedMouse" value="false"/>
+                         </Widget>
+                     </Widget>
+diff --git a/files/data/mygui/openmw_text.skin.xml b/files/data/mygui/openmw_text.skin.xml
+index 5f96d0a57c838774e2c81bba7477759bb17454d8..00a69c486be8d9de27ab76beb384d9b5b260a813 100644
+--- a/files/data/mygui/openmw_text.skin.xml
++++ b/files/data/mygui/openmw_text.skin.xml
+@@ -149,18 +149,18 @@ color_misc=0,205,205 # ????
+     <Resource type="ResourceSkin" name="MW_DynamicStat_Red" size="204 18">
+         <Child type="TextBox" skin="SandText" offset="0 0 100 18" align="Left Top" name="Text"/>
+         <Child type="ProgressBar" skin="MW_Progress_Red" offset="74 0 130 18" align="Right Top" name="Bar"/>
+-        <Child type="TextBox" skin="ProgressText" offset="74 0 130 14" align="Right Top" name="BarText"/>
++        <Child type="TextBox" skin="ProgressText" offset="74 0 130 12" align="Right Top" name="BarText"/>
+     </Resource>
+ 
+     <Resource type="ResourceSkin" name="MW_DynamicStat_Blue" size="204 18">
+         <Child type="TextBox" skin="SandText" offset="0 0 100 18" align="Left Top" name="Text"/>
+         <Child type="ProgressBar" skin="MW_Progress_Blue" offset="74 0 130 18" align="Right Top" name="Bar"/>
+-        <Child type="TextBox" skin="ProgressText" offset="74 0 130 14" align="Right Top" name="BarText"/>
++        <Child type="TextBox" skin="ProgressText" offset="74 0 130 12" align="Right Top" name="BarText"/>
+     </Resource>
+ 
+     <Resource type="ResourceSkin" name="MW_DynamicStat_Green" size="204 18">
+         <Child type="TextBox" skin="SandText" offset="0 0 100 18" align="Left Top" name="Text"/>
+         <Child type="ProgressBar" skin="MW_Progress_Green" offset="74 0 130 18" align="Right Top" name="Bar"/>
+-        <Child type="TextBox" skin="ProgressText" offset="74 0 130 14" align="Right Top" name="BarText"/>
++        <Child type="TextBox" skin="ProgressText" offset="74 0 130 12" align="Right Top" name="BarText"/>
+     </Resource>
+ </MyGUI>
+diff --git a/files/data/mygui/openmw_wait_dialog_progressbar.layout b/files/data/mygui/openmw_wait_dialog_progressbar.layout
+index 8147abbdfb9bc7730abe6070f501bc6bdee3d448..720bfa4327b4a1a4d4b75f56f7aee6d0c80d5e55 100644
+--- a/files/data/mygui/openmw_wait_dialog_progressbar.layout
++++ b/files/data/mygui/openmw_wait_dialog_progressbar.layout
+@@ -4,7 +4,7 @@
+     <Widget type="Window" skin="MW_Dialog" layer="Windows" position="0 0 219 40" align="Center" name="_Main">
+ 
+         <Widget type="ProgressBar" skin="MW_Progress_Blue" position="5 6 199 20" name="ProgressBar">
+-            <Widget type="TextBox" skin="ProgressText" position="0 0 199 16" name="ProgressText" align="Right VCenter">
++            <Widget type="TextBox" skin="ProgressText" position="0 0 199 14" name="ProgressText" align="Right VCenter">
+                 <Property key="NeedMouse" value="false"/>
+             </Widget>
+         </Widget>
+diff --git a/files/openmw.cfg b/files/openmw.cfg
+index fb4cf70f5f58579ca2a8799928f32503460fe08f..4c25d6ed9849b66ea1edeafd1cef6e8d4fe8eb1a 100644
+--- a/files/openmw.cfg
++++ b/files/openmw.cfg
+@@ -71,9 +71,9 @@ fallback=Water_UnderwaterColor,012,030,037
+ fallback=Water_UnderwaterColorWeight,0.85
+ 
+ # fonts
+-fallback=Fonts_Font_0,Pelagiad
++fallback=Fonts_Font_0,MysticCards
+ fallback=Fonts_Font_1,DejaVuLGCSansMono
+-fallback=Fonts_Font_2,OMWAyembedt
++fallback=Fonts_Font_2,DemonicLetters
+ fallback=FontColor_color_normal,202,165,96
+ fallback=FontColor_color_normal_over,223,201,159
+ fallback=FontColor_color_normal_pressed,243,237,221
+diff --git a/files/openmw.cfg.local b/files/openmw.cfg.local
+index cb05d5f22a43e9c50bd1c1597a4a62eef65f50c8..ee8bda8196f82df0aefe2850d95d011d91389bc1 100644
+--- a/files/openmw.cfg.local
++++ b/files/openmw.cfg.local
+@@ -71,9 +71,9 @@ fallback=Water_UnderwaterColor,012,030,037
+ fallback=Water_UnderwaterColorWeight,0.85
+ 
+ # fonts
+-fallback=Fonts_Font_0,Pelagiad
++fallback=Fonts_Font_0,MysticCards
+ fallback=Fonts_Font_1,DejaVuLGCSansMono
+-fallback=Fonts_Font_2,OMWAyembedt
++fallback=Fonts_Font_2,DemonicLetters
+ fallback=FontColor_color_normal,202,165,96
+ fallback=FontColor_color_normal_over,223,201,159
+ fallback=FontColor_color_normal_pressed,243,237,221
+diff --git a/files/ui/advancedpage.ui b/files/ui/advancedpage.ui
+index 42b46080fdbe5292cdc77997414012629877fe6d..0f895ad65bb62819e9faaf6bc8ad7ed5f3c4d697 100644
+--- a/files/ui/advancedpage.ui
++++ b/files/ui/advancedpage.ui
+@@ -946,7 +946,7 @@
+             <number>12</number>
+            </property>
+            <property name="maximum">
+-            <number>20</number>
++            <number>18</number>
+            </property>
+            <property name="singleStep">
+             <number>1</number>
