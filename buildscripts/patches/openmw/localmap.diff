@@ -662,7 +662,7 @@ index 14c865f018399b1138f1096460d94c81368766e4..9acb043820e3befe5bc7ec157e64c6ff
 +
          WindowModal::onOpen();
      }
- 
+
 diff --git a/files/ui/advancedpage.ui b/files/ui/advancedpage.ui
 index 42b46080fdbe5292cdc77997414012629877fe6d..0f895ad65bb62819e9faaf6bc8ad7ed5f3c4d697 100644
 --- a/files/ui/advancedpage.ui
