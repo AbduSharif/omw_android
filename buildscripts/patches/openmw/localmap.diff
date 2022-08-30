@@ -1,3 +1,143 @@
+diff --git a/apps/openmw/mwgui/debugwindow.cpp b/apps/openmw/mwgui/debugwindow.cpp
+index f4a481465463d3fd748b4895e0a43e43afda2199..93f5fdb07638d9d55b4b19f738a0bc53a280a552 100644
+--- a/apps/openmw/mwgui/debugwindow.cpp
++++ b/apps/openmw/mwgui/debugwindow.cpp
+@@ -92,14 +92,14 @@ namespace MWGui
+         // - Shader editor
+ 
+         MyGUI::TabItem* itemLV = mTabControl->addItem("Log Viewer");
+-        itemLV->setCaptionWithReplacing("#{DebugMenu:LogViewer}");
++        itemLV->setCaptionWithReplacing(" #{DebugMenu:LogViewer} ");
+         mLogView = itemLV->createWidgetReal<MyGUI::EditBox>
+                 ("LogEdit", MyGUI::FloatCoord(0,0,1,1), MyGUI::Align::Stretch);
+         mLogView->setEditReadOnly(true);
+ 
+ #ifndef BT_NO_PROFILE
+         MyGUI::TabItem* item = mTabControl->addItem("Physics Profiler");
+-        item->setCaptionWithReplacing("#{DebugMenu:PhysicsProfiler}");
++        item->setCaptionWithReplacing(" #{DebugMenu:PhysicsProfiler} ");
+         mBulletProfilerEdit = item->createWidgetReal<MyGUI::EditBox>
+                 ("LogEdit", MyGUI::FloatCoord(0,0,1,1), MyGUI::Align::Stretch);
+ #else
+diff --git a/apps/openmw/mwgui/dialogue.cpp b/apps/openmw/mwgui/dialogue.cpp
+index 14c865f018399b1138f1096460d94c81368766e4..9acb043820e3befe5bc7ec157e64c6ff266242d1 100644
+--- a/apps/openmw/mwgui/dialogue.cpp
++++ b/apps/openmw/mwgui/dialogue.cpp
+@@ -7,6 +7,7 @@
+ #include <MyGUI_Button.h>
+ 
+ #include <components/debug/debuglog.hpp>
++#include <components/widgets/box.hpp>
+ #include <components/widgets/list.hpp>
+ #include <components/translation/translation.hpp>
+ 
+@@ -25,6 +26,7 @@
+ 
+ #include "bookpage.hpp"
+ #include "textcolours.hpp"
++#include "tooltips.hpp"
+ 
+ #include "journalbooks.hpp" // to_utf8_span
+ 
+@@ -59,6 +61,8 @@ namespace MWGui
+     PersuasionDialog::PersuasionDialog(std::unique_ptr<ResponseCallback> callback)
+         : WindowModal("openmw_persuasion_dialog.layout")
+         , mCallback(std::move(callback))
++        , mInitialGoldLabelWidth(0)
++        , mInitialMainWidgetWidth(0)
+     {
+         getWidget(mCancelButton, "CancelButton");
+         getWidget(mAdmireButton, "AdmireButton");
+@@ -68,6 +72,26 @@ namespace MWGui
+         getWidget(mBribe100Button, "Bribe100Button");
+         getWidget(mBribe1000Button, "Bribe1000Button");
+         getWidget(mGoldLabel, "GoldLabel");
++        getWidget(mActionsBox, "ActionsBox");
++
++        int totalHeight = 3;
++        adjustAction(mAdmireButton, totalHeight);
++        adjustAction(mIntimidateButton, totalHeight);
++        adjustAction(mTauntButton, totalHeight);
++        adjustAction(mBribe10Button, totalHeight);
++        adjustAction(mBribe100Button, totalHeight);
++        adjustAction(mBribe1000Button, totalHeight);
++        totalHeight += 3;
++
++        int diff = totalHeight - mActionsBox->getSize().height;
++        if (diff > 0)
++        {
++            auto mainWidgetSize = mMainWidget->getSize();
++            mMainWidget->setSize(mainWidgetSize.width, mainWidgetSize.height + diff);
++        }
++
++        mInitialGoldLabelWidth = mActionsBox->getSize().width - mCancelButton->getSize().width - 8;
++        mInitialMainWidgetWidth = mMainWidget->getSize().width;
+ 
+         mCancelButton->eventMouseButtonClick += MyGUI::newDelegate(this, &PersuasionDialog::onCancel);
+         mAdmireButton->eventMouseButtonClick += MyGUI::newDelegate(this, &PersuasionDialog::onPersuade);
+@@ -78,6 +102,14 @@ namespace MWGui
+         mBribe1000Button->eventMouseButtonClick += MyGUI::newDelegate(this, &PersuasionDialog::onPersuade);
+     }
+ 
++    void PersuasionDialog::adjustAction(MyGUI::Widget* action, int& totalHeight)
++    {
++        const int lineHeight = MWBase::Environment::get().getWindowManager()->getFontHeight() + 2;
++        auto currentCoords = action->getCoord();
++        action->setCoord(currentCoords.left, totalHeight, currentCoords.width, lineHeight);
++        totalHeight += lineHeight;
++    }
++
+     void PersuasionDialog::onCancel(MyGUI::Widget *sender)
+     {
+         setVisible(false);
+@@ -114,6 +146,13 @@ namespace MWGui
+         mBribe1000Button->setEnabled (playerGold >= 1000);
+ 
+         mGoldLabel->setCaptionWithReplacing("#{sGold}: " + MyGUI::utility::toString(playerGold));
++
++        int diff = mGoldLabel->getRequestedSize().width - mInitialGoldLabelWidth;
++        if (diff > 0)
++            mMainWidget->setSize(mInitialMainWidgetWidth + diff, mMainWidget->getSize().height);
++        else
++            mMainWidget->setSize(mInitialMainWidgetWidth, mMainWidget->getSize().height);
++
+         WindowModal::onOpen();
+     }
+ 
+diff --git a/apps/openmw/mwgui/dialogue.hpp b/apps/openmw/mwgui/dialogue.hpp
+index 7ea70307cfa57df06720112e44fc0f46eecafb3b..7965a7cb245c36246042382f5fa162160ffa01b4 100644
+--- a/apps/openmw/mwgui/dialogue.hpp
++++ b/apps/openmw/mwgui/dialogue.hpp
+@@ -14,6 +14,7 @@
+ 
+ namespace Gui
+ {
++    class AutoSizedTextBox;
+     class MWList;
+ }
+ 
+@@ -33,6 +34,9 @@ namespace MWGui
+     private:
+         std::unique_ptr<ResponseCallback> mCallback;
+ 
++        int mInitialGoldLabelWidth;
++        int mInitialMainWidgetWidth;
++
+         MyGUI::Button* mCancelButton;
+         MyGUI::Button* mAdmireButton;
+         MyGUI::Button* mIntimidateButton;
+@@ -40,7 +44,10 @@ namespace MWGui
+         MyGUI::Button* mBribe10Button;
+         MyGUI::Button* mBribe100Button;
+         MyGUI::Button* mBribe1000Button;
+-        MyGUI::TextBox* mGoldLabel;
++        MyGUI::Widget* mActionsBox;
++        Gui::AutoSizedTextBox* mGoldLabel;
++
++        void adjustAction(MyGUI::Widget* action, int& totalHeight);
+ 
+         void onCancel (MyGUI::Widget* sender);
+         void onPersuade (MyGUI::Widget* sender);
 diff --git a/apps/openmw/mwgui/itemwidget.cpp b/apps/openmw/mwgui/itemwidget.cpp
 index ffe854a72bfc6f651fae8bd013f6d9aac7c08754..a7e6cb8beff6eb46b387e89a0caeb95d5c7131da 100644
 --- a/apps/openmw/mwgui/itemwidget.cpp
@@ -111,6 +251,19 @@ index 122cf20257e88597413df2422dc18e09d0fa7abe..3396792f348642307785263ebcf436db
              return fontSize;
          }
      };
+diff --git a/files/data/l10n/SettingsMenu/ru.yaml b/files/data/l10n/SettingsMenu/ru.yaml
+index 528aff49a1e6addb3b7016ae15dd860b01d592af..422b00750f83aa8138875405c6dae32e4241f88b 100644
+--- a/files/data/l10n/SettingsMenu/ru.yaml
++++ b/files/data/l10n/SettingsMenu/ru.yaml
+@@ -13,7 +13,7 @@ LanguageNote: "Примечание: эти настройки не затраг
+ LightingMethod: "Способ освещения"
+ LightingMethodLegacy: "Устаревший"
+ LightingMethodShaders: "Шейдеры"
+-LightingMethodShadersCompatibility: "Шейдеры (режим совместимости)"
++LightingMethodShadersCompatibility: "Шейдеры (режим совм-ти)"
+ LightingResetToDefaults: "Обнулить настройки освещения? Смена метода освещения вступит в силу только после перезапуска приложения."
+ Lights: "Освещение"
+ LightsBoundingSphereMultiplier: "Множитель размера ограничивающей сферы"
 diff --git a/files/data/mygui/openmw_dialogue_window.layout b/files/data/mygui/openmw_dialogue_window.layout
 index d1f96121e9bdf1b86a3d69e8c4ed07ec6f34fb64..6d53d63351d860595440d38a8abd722a71775865 100644
 --- a/files/data/mygui/openmw_dialogue_window.layout
@@ -124,6 +277,290 @@ index d1f96121e9bdf1b86a3d69e8c4ed07ec6f34fb64..6d53d63351d860595440d38a8abd722a
                  <Property key="NeedMouse" value="false"/>
               </Widget>
          </Widget>
+diff --git a/files/data/mygui/openmw_persuasion_dialog.layout b/files/data/mygui/openmw_persuasion_dialog.layout
+index 3b10588ec8dd689afa001791706a2c3a8a687fcf..977da40f8fd6900213db50ff7fe77817dfc85f9f 100644
+--- a/files/data/mygui/openmw_persuasion_dialog.layout
++++ b/files/data/mygui/openmw_persuasion_dialog.layout
+@@ -3,12 +3,12 @@
+ <MyGUI type="Layout">
+     <Widget type="Window" skin="MW_DialogNoTransp" layer="Modal" position="0 0 220 192" align="Center" name="_Main">
+ 
+-        <Widget type="TextBox" skin="NormalText" position="0 4 220 24">
++        <Widget type="TextBox" skin="NormalText" position="0 4 220 24" align="HCenter Top">
+             <Property key="Caption" value="#{sPersuasionMenuTitle}"/>
+             <Property key="TextAlign" value="Center"/>
+         </Widget>
+ 
+-        <Widget type="Widget" skin="MW_Box" position="8 32 196 115">
++        <Widget type="Widget" skin="MW_Box" position="8 32 196 114" align="Stretch Top" name="ActionsBox">
+             <Widget type="AutoSizedButton" skin="SandTextButton" position="4 0 0 18" name="AdmireButton">
+                 <Property key="Caption" value="#{sAdmire}"/>
+                 <Property key="TextAlign" value="Left"/>
+@@ -35,11 +35,11 @@
+             </Widget>
+         </Widget>
+ 
+-        <Widget type="TextBox" skin="SandText" position="8 152 208 24" name="GoldLabel">
++        <Widget type="AutoSizedTextBox" skin="SandText" position="8 158 102 24" align="Left Bottom" name="GoldLabel">
+             <Property key="TextAlign" value="Left VCenter"/>
+         </Widget>
+ 
+-        <Widget type="AutoSizedButton" skin="MW_Button" position="204 154 0 24" name="CancelButton">
++        <Widget type="AutoSizedButton" skin="MW_Button" position="204 154 0 24" align="Right Bottom" name="CancelButton">
+             <Property key="ExpandDirection" value="Left"/>
+             <Property key="Caption" value="#{sCancel}"/>
+         </Widget>
+diff --git a/files/data/mygui/openmw_resources.xml b/files/data/mygui/openmw_resources.xml
+index 03ca91f5eb1b5ab253bbe3cbd8bf26b8f55ba59f..70fccbfbe7b4be6050778a785f20a5acb6603c12 100644
+--- a/files/data/mygui/openmw_resources.xml
++++ b/files/data/mygui/openmw_resources.xml
+@@ -41,13 +41,13 @@
+     </Resource>
+ 
+     <Resource type="ResourceLayout" name="TabControl" version="3.2.0">
+-        <Widget type="Widget" skin="" position="5 5 89 60" name="Root">
++        <Widget type="Widget" skin="" position="5 5 89 64" name="Root">
+             <UserString key="ButtonSkin" value="MW_Button_RightPadding"/>
+-            <Widget type="Widget" skin="MW_Box" position="0 28 89 32" align="Left Top Stretch">
++            <Widget type="Widget" skin="MW_Box" position="0 30 89 32" align="Left Top Stretch">
+                 <Widget type="Widget" skin="" position="4 4 81 28" align="Left Top Stretch" name="TabItem"/>
+             </Widget>
+-            <Widget type="Widget" skin="" position="0 0 89 23" align="HStretch Top" name="HeaderPlace">
+-                <Widget type="Widget" skin="" position="0 0 60 23" name="Controls">
++            <Widget type="Widget" skin="" position="0 0 89 24" align="HStretch Top" name="HeaderPlace">
++                <Widget type="Widget" skin="" position="0 0 60 28" name="Controls">
+                     <Widget type="Widget" skin="MW_Box" position="10 0 15 14" align="Left VCenter">
+                         <Widget type="Button" skin="MW_ArrowLeft" position="2 2 10 10" align="Left VStretch" name="Left" />
+                     </Widget>
+@@ -63,8 +63,8 @@
+         <Widget type="Widget" skin="" position="5 5 89 60" name="Root">
+             <UserString key="ButtonSkin" value="MW_Button_RightPadding"/>
+             <Widget type="Widget" skin="" position="0 28 89 32" align="Left Top Stretch" name="TabItem"/>
+-            <Widget type="Widget" skin="" position="0 0 89 23" align="HStretch Top" name="HeaderPlace">
+-                <Widget type="Widget" skin="" position="52 0 37 23" name="Controls">
++            <Widget type="Widget" skin="" position="0 0 89 24" align="HStretch Top" name="HeaderPlace">
++                <Widget type="Widget" skin="" position="52 0 37 28" name="Controls">
+                 </Widget>
+             </Widget>
+         </Widget>
+@@ -75,8 +75,8 @@
+             <UserString key="ButtonSkin" value="MW_Button_RightPadding"/>
+             <Widget type="Widget" skin="" position="0 28 89 32" align="Left Top Stretch" name="TabItem"/>
+ 
+-            <Widget type="Widget" skin="" position="0 0 89 23" align="HStretch Top" name="HeaderPlace">
+-                <Widget type="Widget" skin="" position="52 0 37 23" name="Controls">
++            <Widget type="Widget" skin="" position="0 0 89 24" align="HStretch Top" name="HeaderPlace">
++                <Widget type="Widget" skin="" position="52 0 37 28" name="Controls">
+                 </Widget>
+             </Widget>
+         </Widget>
+diff --git a/files/data/mygui/openmw_settings_window.layout b/files/data/mygui/openmw_settings_window.layout
+index d698844d2ebb4889bda554cd117dad22a338b460..9042a13546d995614d5fd071c850ddccba6962c5 100644
+--- a/files/data/mygui/openmw_settings_window.layout
++++ b/files/data/mygui/openmw_settings_window.layout
+@@ -5,7 +5,7 @@
+         <Widget type="TabControl" skin="TabControl" position="8 8 368 405" align="Stretch" name="SettingsTab">
+             <Property key="ButtonAutoWidth" value="true"/>
+             <Widget type="TabItem">
+-                <Property key="Caption" value="  #{sPrefs}  "/>
++                <Property key="Caption" value=" #{sPrefs} "/>
+                 <Widget type="Widget" position="4 4 352 54" align="Left Top HStretch">
+                     <Widget type="TextBox" skin="NormalText" position="0 0 352 16" align="Left Top">
+                         <Property key="Caption" value="#{sTransparency_Menu}"/>
+@@ -98,7 +98,7 @@
+                         <Property key="TextAlign" value="Right"/>
+                     </Widget>
+                 </Widget>
+-                <Widget type="HBox" position="4 250 260 24">
++                <Widget type="HBox" position="4 250 260 28">
+                     <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
+                         <UserString key="SettingCategory" value="Saves"/>
+                         <UserString key="SettingName" value="autosave"/>
+@@ -108,7 +108,7 @@
+                         <Property key="Caption" value="#{sQuick_Save}"/>
+                     </Widget>
+                 </Widget>
+-                <Widget type="HBox" position="4 280 260 24">
++                <Widget type="HBox" position="4 280 260 28">
+                     <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
+                         <UserString key="SettingCategory" value="Game"/>
+                         <UserString key="SettingName" value="best attack"/>
+@@ -118,7 +118,7 @@
+                         <Property key="Caption" value="#{sBestAttack}"/>
+                     </Widget>
+                 </Widget>
+-                <Widget type="HBox" position="4 310 260 24">
++                <Widget type="HBox" position="4 310 260 28">
+                     <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
+                         <UserString key="SettingCategory" value="GUI"/>
+                         <UserString key="SettingName" value="subtitles"/>
+@@ -128,7 +128,7 @@
+                         <Property key="Caption" value="#{sSubtitles}"/>
+                     </Widget>
+                 </Widget>
+-                <Widget type="HBox" position="4 340 260 24">
++                <Widget type="HBox" position="4 340 260 28">
+                     <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
+                         <UserString key="SettingCategory" value="HUD"/>
+                         <UserString key="SettingName" value="crosshair"/>
+@@ -140,7 +140,7 @@
+                 </Widget>
+             </Widget>
+             <Widget type="TabItem">
+-                <Property key="Caption" value="  #{sAudio}  "/>
++                <Property key="Caption" value=" #{sAudio} "/>
+                 <Widget type="TextBox" skin="NormalText" position="4 4 352 18" align="Left Top">
+                     <Property key="Caption" value="#{sMaster}"/>
+                 </Widget>
+@@ -198,9 +198,9 @@
+                 </Widget>
+             </Widget>
+             <Widget type="TabItem">
+-                <Property key="Caption" value="  #{sControls}  "/>
++                <Property key="Caption" value=" #{sControls} "/>
+ 
+-                <Widget type="HBox" position="4 4 360 24">
++                <Widget type="HBox" position="4 4 360 28">
+                     <Property key="Padding" value="0"/>
+                     <Property key="Spacing" value="4"/>
+                     <Widget type="AutoSizedButton" skin="MW_Button" name="KeyboardButton">
+@@ -211,15 +211,15 @@
+                     </Widget>
+                 </Widget>
+ 
+-                <Widget type="Widget" skin="MW_Box" position="4 34 352 154" align="Stretch">
++                <Widget type="Widget" skin="MW_Box" position="4 38 352 154" align="Stretch">
+                     <Widget type="ScrollView" skin="MW_ScrollView" position="4 4 344 146" align="Stretch" name="ControlsBox">
+                         <Property key="CanvasAlign" value="Left Top"/>
+                     </Widget>
+                 </Widget>
+-                <Widget type="AutoSizedButton" skin="MW_Button" position="4 194 137 24" align="Left Bottom" name="ResetControlsButton">
++                <Widget type="AutoSizedButton" skin="MW_Button" position="4 198 137 24" align="Left Bottom" name="ResetControlsButton">
+                     <Property key="Caption" value="#{sControlsMenu1}"/>
+                 </Widget>
+-                <Widget type="HBox" position="4 224 600 24" align="Left Bottom">
++                <Widget type="HBox" position="4 228 600 28" align="Left Bottom">
+                     <Widget type="AutoSizedButton" skin="MW_Button">
+                         <UserString key="SettingCategory" value="Input"/>
+                         <UserString key="SettingName" value="invert x axis"/>
+@@ -237,10 +237,10 @@
+                         <Property key="Caption" value="#{sMouseFlip}"/>
+                     </Widget>
+                 </Widget>
+-                <Widget type="TextBox" skin="NormalText" position="4 254 352 18" align="Left Bottom">
++                <Widget type="TextBox" skin="NormalText" position="4 258 352 18" align="Left Bottom">
+                     <Property key="Caption" value="#{SettingsMenu:CameraSensitivity}"/>
+                 </Widget>
+-                <Widget type="ScrollBar" skin="MW_HScroll" position="4 278 352 18" align="HStretch Bottom">
++                <Widget type="ScrollBar" skin="MW_HScroll" position="4 282 352 18" align="HStretch Bottom">
+                     <Property key="Range" value="10000"/>
+                     <Property key="Page" value="300"/>
+                     <UserString key="SettingType" value="Slider"/>
+@@ -250,15 +250,15 @@
+                     <UserString key="SettingMin" value="0.2"/>
+                     <UserString key="SettingMax" value="5.0"/>
+                 </Widget>
+-                <Widget type="TextBox" skin="SandText" position="4 302 352 18" align="Left Bottom">
++                <Widget type="TextBox" skin="SandText" position="4 306 352 18" align="Left Bottom">
+                     <Property key="Caption" value="#{sLow}"/>
+                     <Property key="TextAlign" value="Left"/>
+                 </Widget>
+-                <Widget type="TextBox" skin="SandText" position="4 302 352 18" align="Right Bottom">
++                <Widget type="TextBox" skin="SandText" position="4 306 352 18" align="Right Bottom">
+                     <Property key="Caption" value="#{sHigh}"/>
+                     <Property key="TextAlign" value="Right"/>
+                 </Widget>
+-                <Widget type="HBox" position="4 324 352 24" align="Left Bottom">
++                <Widget type="HBox" position="4 328 352 28" align="Left Bottom">
+                     <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Bottom">
+                         <UserString key="SettingCategory" value="Input"/>
+                         <UserString key="SettingName" value="enable controller"/>
+@@ -270,11 +270,11 @@
+                 </Widget>
+             </Widget>
+             <Widget type="TabItem">
+-                <Property key="Caption" value="  #{sVideo}  "/>
++                <Property key="Caption" value=" #{sVideo} "/>
+                 <Widget type="TabControl" skin="TabControlInner" position="4 4 352 390" align="Stretch">
+                     <Property key="ButtonAutoWidth" value="true"/>
+                     <Widget type="TabItem">
+-                        <Property key="Caption" value="  #{sVideo}  "/>
++                        <Property key="Caption" value=" #{sVideo} "/>
+                         <Widget type="ListBox" skin="MW_List" position="0 4 185 215" align="Left Top" name="ResolutionList"/>
+                         <Widget type="TextBox" skin="NormalText" position="197 4 185 18" align="Left Top">
+                             <Property key="Caption" value="#{SettingsMenu:WindowMode}"/>
+@@ -286,7 +286,7 @@
+                                 <Property key="AddItem" value="#{SettingsMenu:WindowModeWindowed}"/>
+                             </Widget>
+                         </Widget>
+-                        <Widget type="HBox" position="197 64 400 24">
++                        <Widget type="HBox" position="197 58 400 28">
+                             <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top" name="VSyncButton">
+                                 <UserString key="SettingCategory" value="Video"/>
+                                 <UserString key="SettingName" value="vsync"/>
+@@ -296,7 +296,7 @@
+                                 <Property key="Caption" value="#{SettingsMenu:VSync}"/>
+                             </Widget>
+                         </Widget>
+-                        <Widget type="HBox" position="197 94 300 24">
++                        <Widget type="HBox" position="197 88 300 28">
+                             <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top" name="WindowBorderButton">
+                                 <UserString key="SettingCategory" value="Video"/>
+                                 <UserString key="SettingName" value="window border"/>
+@@ -306,7 +306,7 @@
+                                 <Property key="Caption" value="#{SettingsMenu:WindowBorder}"/>
+                             </Widget>
+                         </Widget>
+-                        <Widget type="HBox" position="197 124 300 24">
++                        <Widget type="HBox" position="197 118 300 28">
+                             <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top" name="WindowBorderButton">
+                                 <UserString key="SettingCategory" value="Post Processing"/>
+                                 <UserString key="SettingName" value="enabled"/>
+@@ -369,7 +369,7 @@
+                         </Widget>
+                     </Widget>
+                     <Widget type="TabItem">
+-                        <Property key="Caption" value="  #{sDetail_Level}  "/>
++                        <Property key="Caption" value=" #{sDetail_Level} "/>
+ 
+                         <Widget type="AutoSizedTextBox" skin="NormalText" align="Left Top">
+                             <Property key="Caption" value="#{SettingsMenu:TextureFiltering}"/>
+@@ -432,7 +432,7 @@
+ 
+                     </Widget>
+                     <Widget type="TabItem">
+-                        <Property key="Caption" value="  #{SettingsMenu:Water}  "/>
++                        <Property key="Caption" value=" #{SettingsMenu:Water} "/>
+ 
+                         <Widget type="VBox" position_real="0 0 1 1" align="Stretch">
+ 
+@@ -529,7 +529,7 @@
+ 
+                     </Widget>
+                     <Widget type="TabItem">
+-                        <Property key="Caption" value="  #{SettingsMenu:Lights}  "/>
++                        <Property key="Caption" value=" #{SettingsMenu:Lights} "/>
+                         <!-- Lighting Method -->
+                         <Widget type="TextBox" skin="NormalText" position="0 4 250 18" align="Left Top">
+                             <Property key="Caption" value="#{SettingsMenu:LightingMethod}"/>
+@@ -637,7 +637,7 @@
+                 </Widget>
+             </Widget>
+             <Widget type="TabItem">
+-                <Property key="Caption" value="  #{SettingsMenu:Scripts}  "/>
++                <Property key="Caption" value=" #{SettingsMenu:Scripts} "/>
+ 
+                 <Widget name="ScriptDisabled" type="EditBox" skin="SandText" position_real="0 0 1 1" align="HStretch Top">
+                     <Property key="Caption" value="#{SettingsMenu:ScriptsDisabled}"/>
+@@ -678,7 +678,7 @@
+ 
+             </Widget>
+             <Widget type="TabItem">
+-                <Property key="Caption" value="  #{SettingsMenu:Language}  "/>
++                <Property key="Caption" value=" #{SettingsMenu:Language} "/>
+                 <Widget type="AutoSizedTextBox" skin="SandText" position="4 4 300 32" align="Left Top">
+                     <Property key="Caption" value="#{SettingsMenu:LanguageNote}"/>
+                 </Widget>
 diff --git a/files/data/mygui/openmw_stats_window.layout b/files/data/mygui/openmw_stats_window.layout
 index 77de3ac75308ee919998b101885d44dd77dca5a7..2fcede969f451a8e3492f817214e826d2fd95e16 100644
 --- a/files/data/mygui/openmw_stats_window.layout
@@ -194,6 +631,38 @@ index 8147abbdfb9bc7730abe6070f501bc6bdee3d448..720bfa4327b4a1a4d4b75f56f7aee6d0
                  <Property key="NeedMouse" value="false"/>
              </Widget>
          </Widget>
+diff --git a/files/openmw.cfg b/files/openmw.cfg
+index fb4cf70f5f58579ca2a8799928f32503460fe08f..4c25d6ed9849b66ea1edeafd1cef6e8d4fe8eb1a 100644
+--- a/files/openmw.cfg
++++ b/files/openmw.cfg
+@@ -71,9 +71,9 @@ fallback=Water_UnderwaterColor,012,030,037
+ fallback=Water_UnderwaterColorWeight,0.85
+ 
+ # fonts
+-fallback=Fonts_Font_0,Pelagiad
++fallback=Fonts_Font_0,MysticCards
+ fallback=Fonts_Font_1,DejaVuLGCSansMono
+-fallback=Fonts_Font_2,OMWAyembedt
++fallback=Fonts_Font_2,DemonicLetters
+ fallback=FontColor_color_normal,202,165,96
+ fallback=FontColor_color_normal_over,223,201,159
+ fallback=FontColor_color_normal_pressed,243,237,221
+diff --git a/files/openmw.cfg.local b/files/openmw.cfg.local
+index cb05d5f22a43e9c50bd1c1597a4a62eef65f50c8..ee8bda8196f82df0aefe2850d95d011d91389bc1 100644
+--- a/files/openmw.cfg.local
++++ b/files/openmw.cfg.local
+@@ -71,9 +71,9 @@ fallback=Water_UnderwaterColor,012,030,037
+ fallback=Water_UnderwaterColorWeight,0.85
+ 
+ # fonts
+-fallback=Fonts_Font_0,Pelagiad
++fallback=Fonts_Font_0,MysticCards
+ fallback=Fonts_Font_1,DejaVuLGCSansMono
+-fallback=Fonts_Font_2,OMWAyembedt
++fallback=Fonts_Font_2,DemonicLetters
+ fallback=FontColor_color_normal,202,165,96
+ fallback=FontColor_color_normal_over,223,201,159
+ fallback=FontColor_color_normal_pressed,243,237,221
 diff --git a/files/ui/advancedpage.ui b/files/ui/advancedpage.ui
 index 42b46080fdbe5292cdc77997414012629877fe6d..0f895ad65bb62819e9faaf6bc8ad7ed5f3c4d697 100644
 --- a/files/ui/advancedpage.ui
