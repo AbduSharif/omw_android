@@ -214,7 +214,19 @@ ExternalProject_Add(openal
 	DOWNLOAD_DIR ${download_dir}
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-	${COMMON_CMAKE_ARGS}
+	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	-DANDROID_ABI=${app_abi}
+	-DANDROID_PLATFORM=${android_platform}
+	-DANDROID_STL=c++_shared
+	-DANDROID_CPP_FEATURES=rtti\ exceptions
+	-DANDROID_LD=lld
+	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
+	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	-DCMAKE_DEBUG_POSTFIX=
+	-DCMAKE_INSTALL_PREFIX=${prefix}
+	-DCMAKE_FIND_ROOT_PATH=${prefix}
 	-DALSOFT_EXAMPLES=OFF
 	-DALSOFT_TESTS=OFF
 	-DALSOFT_UTILS=OFF
@@ -363,7 +375,19 @@ ExternalProject_Add(bullet
 #	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/bullet-fix-cmake.patch
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-	${COMMON_CMAKE_ARGS}
+	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	-DANDROID_ABI=${app_abi}
+	-DANDROID_PLATFORM=${android_platform}
+	-DANDROID_STL=c++_shared
+	-DANDROID_CPP_FEATURES=rtti\ exceptions
+	-DANDROID_LD=lld
+	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
+	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	-DCMAKE_DEBUG_POSTFIX=
+	-DCMAKE_INSTALL_PREFIX=${prefix}
+	-DCMAKE_FIND_ROOT_PATH=${prefix}
 	-DBUILD_BULLET2_DEMOS=OFF
 	-DBUILD_CPU_DEMOS=OFF
 	-DBUILD_UNIT_TESTS=OFF
@@ -389,7 +413,19 @@ ExternalProject_Add(mygui
 #	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/mygui-dont-set-debug-postfix.patch
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-	${COMMON_CMAKE_ARGS}
+	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	-DANDROID_ABI=${app_abi}
+	-DANDROID_PLATFORM=${android_platform}
+	-DANDROID_STL=c++_shared
+	-DANDROID_CPP_FEATURES=rtti\ exceptions
+	-DANDROID_LD=lld
+	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
+	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	-DCMAKE_DEBUG_POSTFIX=
+	-DCMAKE_INSTALL_PREFIX=${prefix}
+	-DCMAKE_FIND_ROOT_PATH=${prefix}
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
@@ -415,7 +451,19 @@ ExternalProject_Add(lz4
 	DOWNLOAD_DIR ${download_dir}
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>/build/cmake/
-	${COMMON_CMAKE_ARGS}
+	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	-DANDROID_ABI=${app_abi}
+	-DANDROID_PLATFORM=${android_platform}
+	-DANDROID_STL=c++_shared
+	-DANDROID_CPP_FEATURES=rtti\ exceptions
+	-DANDROID_LD=lld
+	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
+	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	-DCMAKE_DEBUG_POSTFIX=
+	-DCMAKE_INSTALL_PREFIX=${prefix}
+	-DCMAKE_FIND_ROOT_PATH=${prefix}
 	-DBUILD_STATIC_LIBS=ON
 	-DBUILD_SHARED_LIBS=OFF
 
@@ -472,7 +520,19 @@ ExternalProject_Add(libxml
 		DOWNLOAD_DIR ${download_dir}
 
 		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-		${COMMON_CMAKE_ARGS}
+	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	-DANDROID_ABI=${app_abi}
+	-DANDROID_PLATFORM=${android_platform}
+	-DANDROID_STL=c++_shared
+	-DANDROID_CPP_FEATURES=rtti\ exceptions
+	-DANDROID_LD=lld
+	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
+	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	-DCMAKE_DEBUG_POSTFIX=
+	-DCMAKE_INSTALL_PREFIX=${prefix}
+	-DCMAKE_FIND_ROOT_PATH=${prefix}
 		-DBUILD_SHARED_LIBS=OFF
 		-DLIBXML2_WITH_CATALOG=OFF
 		-DLIBXML2_WITH_ICONV=OFF
@@ -499,7 +559,19 @@ ExternalProject_Add(libcollada
 		PATCH_COMMAND ${LIBCOLLADA_PATCH}
 
 		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-		${COMMON_CMAKE_ARGS}
+	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	-DANDROID_ABI=${app_abi}
+	-DANDROID_PLATFORM=${android_platform}
+	-DANDROID_STL=c++_shared
+	-DANDROID_CPP_FEATURES=rtti\ exceptions
+	-DANDROID_LD=lld
+	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
+	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	-DCMAKE_DEBUG_POSTFIX=
+	-DCMAKE_INSTALL_PREFIX=${prefix}
+	-DCMAKE_FIND_ROOT_PATH=${prefix}
 		-DBoost_USE_STATIC_LIBS=ON
 		-DBoost_USE_STATIC_RUNTIME=ON
 		-DBoost_NO_SYSTEM_PATHS=ON
