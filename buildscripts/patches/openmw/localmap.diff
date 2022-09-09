@@ -1,678 +1,212 @@
-diff --git a/apps/openmw/mwgui/debugwindow.cpp b/apps/openmw/mwgui/debugwindow.cpp
-index f4a481465463d3fd748b4895e0a43e43afda2199..93f5fdb07638d9d55b4b19f738a0bc53a280a552 100644
---- a/apps/openmw/mwgui/debugwindow.cpp
-+++ b/apps/openmw/mwgui/debugwindow.cpp
-@@ -92,14 +92,14 @@ namespace MWGui
-         // - Shader editor
- 
-         MyGUI::TabItem* itemLV = mTabControl->addItem("Log Viewer");
--        itemLV->setCaptionWithReplacing("#{DebugMenu:LogViewer}");
-+        itemLV->setCaptionWithReplacing(" #{DebugMenu:LogViewer} ");
-         mLogView = itemLV->createWidgetReal<MyGUI::EditBox>
-                 ("LogEdit", MyGUI::FloatCoord(0,0,1,1), MyGUI::Align::Stretch);
-         mLogView->setEditReadOnly(true);
- 
- #ifndef BT_NO_PROFILE
-         MyGUI::TabItem* item = mTabControl->addItem("Physics Profiler");
--        item->setCaptionWithReplacing("#{DebugMenu:PhysicsProfiler}");
-+        item->setCaptionWithReplacing(" #{DebugMenu:PhysicsProfiler} ");
-         mBulletProfilerEdit = item->createWidgetReal<MyGUI::EditBox>
-                 ("LogEdit", MyGUI::FloatCoord(0,0,1,1), MyGUI::Align::Stretch);
- #else
-diff --git a/apps/openmw/mwgui/dialogue.hpp b/apps/openmw/mwgui/dialogue.hpp
-index 7ea70307cfa57df06720112e44fc0f46eecafb3b..7965a7cb245c36246042382f5fa162160ffa01b4 100644
---- a/apps/openmw/mwgui/dialogue.hpp
-+++ b/apps/openmw/mwgui/dialogue.hpp
-@@ -14,6 +14,7 @@
- 
- namespace Gui
- {
-+    class AutoSizedTextBox;
-     class MWList;
+diff --git a/components/bsa/bsa_file.cpp b/components/bsa/bsa_file.cpp
+index 9fc6448c2b5dfdab493f917f4a8ca6cc7aa02d6f..fd72fd151e6882f192f0afe1930d839287435111 100644
+--- a/components/bsa/bsa_file.cpp
++++ b/components/bsa/bsa_file.cpp
+@@ -258,9 +258,27 @@ void Bsa::BSAFile::close()
+     mIsLoaded = false;
  }
  
-@@ -33,6 +34,9 @@ namespace MWGui
-     private:
-         std::unique_ptr<ResponseCallback> mCallback;
- 
-+        int mInitialGoldLabelWidth;
-+        int mInitialMainWidgetWidth;
-+
-         MyGUI::Button* mCancelButton;
-         MyGUI::Button* mAdmireButton;
-         MyGUI::Button* mIntimidateButton;
-@@ -40,7 +44,10 @@ namespace MWGui
-         MyGUI::Button* mBribe10Button;
-         MyGUI::Button* mBribe100Button;
-         MyGUI::Button* mBribe1000Button;
--        MyGUI::TextBox* mGoldLabel;
-+        MyGUI::Widget* mActionsBox;
-+        Gui::AutoSizedTextBox* mGoldLabel;
-+
-+        void adjustAction(MyGUI::Widget* action, int& totalHeight);
- 
-         void onCancel (MyGUI::Widget* sender);
-         void onPersuade (MyGUI::Widget* sender);
-diff --git a/apps/openmw/mwgui/itemwidget.cpp b/apps/openmw/mwgui/itemwidget.cpp
-index ffe854a72bfc6f651fae8bd013f6d9aac7c08754..a7e6cb8beff6eb46b387e89a0caeb95d5c7131da 100644
---- a/apps/openmw/mwgui/itemwidget.cpp
-+++ b/apps/openmw/mwgui/itemwidget.cpp
-@@ -25,14 +25,29 @@ namespace
-         if (count == 1)
-             return "";
- 
-+        // With small text size we can use up to 4 characters, while with large ones - only up to 3.
-+        if (fontHeight > 16)
-+        {
-+            if (count > 999999999)
-+                return MyGUI::utility::toString(count/1000000000) + "b";
-+            else if (count > 9999999)
-+                return ">9m";
-+            else if (count > 999999)
-+                return MyGUI::utility::toString(count/1000000) + "m";
-+            else if (count > 9999)
-+                return ">9k";
-+            else if (count > 999)
-+                return MyGUI::utility::toString(count/1000) + "k";
-+            else
-+                return MyGUI::utility::toString(count);
-+        }
-+
-         if (count > 999999999)
-             return MyGUI::utility::toString(count/1000000000) + "b";
-         else if (count > 999999)
-             return MyGUI::utility::toString(count/1000000) + "m";
-         else if (count > 9999)
-             return MyGUI::utility::toString(count/1000) + "k";
--        else if (fontHeight >= 18 && count > 999)
--            return MyGUI::utility::toString(count/1000) + "k";
-         else
-             return MyGUI::utility::toString(count);
-     }
-diff --git a/apps/openmw/mwgui/trainingwindow.cpp b/apps/openmw/mwgui/trainingwindow.cpp
-index 96267cc7b241ad7f103f60d0dc1f81953c7318e5..24a4eb360736445b2fdba0cfcf6b23757850ef3a 100644
---- a/apps/openmw/mwgui/trainingwindow.cpp
-+++ b/apps/openmw/mwgui/trainingwindow.cpp
-@@ -98,6 +98,8 @@ namespace MWGui
-         const MWWorld::Store<ESM::GameSetting> &gmst =
-             MWBase::Environment::get().getWorld()->getStore().get<ESM::GameSetting>();
- 
-+        const int lineHeight = MWBase::Environment::get().getWindowManager()->getFontHeight() + 2;
-+
-         for (int i=0; i<3; ++i)
-         {
-             int price = static_cast<int>(pcStats.getSkill (skills[i].first).getBase() * gmst.find("iTrainingMod")->mValue.getInteger());
-@@ -105,7 +107,7 @@ namespace MWGui
-             price = MWBase::Environment::get().getMechanicsManager()->getBarterOffer(mPtr, price, true);
- 
-             MyGUI::Button* button = mTrainingOptions->createWidget<MyGUI::Button>(price <= playerGold ? "SandTextButton" : "SandTextButtonDisabled", // can't use setEnabled since that removes tooltip
--                MyGUI::IntCoord(5, 5+i*18, mTrainingOptions->getWidth()-10, 18), MyGUI::Align::Default);
-+                MyGUI::IntCoord(5, 5+i*lineHeight, mTrainingOptions->getWidth()-10, lineHeight), MyGUI::Align::Default);
- 
-             button->setUserData(skills[i].first);
-             button->eventMouseButtonClick += MyGUI::newDelegate(this, &TrainingWindow::onTrainingSelected);
-diff --git a/components/fontloader/fontloader.cpp b/components/fontloader/fontloader.cpp
-index e575b8cbc02f1a4d597df6e8823a99e6e55ac7e8..dbf42e810b4f4e475f38a5c006719780739fb788 100644
---- a/components/fontloader/fontloader.cpp
-+++ b/components/fontloader/fontloader.cpp
-@@ -155,7 +155,7 @@ namespace Gui
- 
-     FontLoader::FontLoader(ToUTF8::FromType encoding, const VFS::Manager* vfs, float scalingFactor)
-         : mVFS(vfs)
--        , mFontHeight(std::clamp(Settings::Manager::getInt("font size", "GUI"), 12, 20))
-+        , mFontHeight(std::clamp(Settings::Manager::getInt("font size", "GUI"), 12, 18))
-         , mScalingFactor(scalingFactor)
-     {
-         if (encoding == ToUTF8::WINDOWS_1252)
-@@ -176,10 +176,10 @@ namespace Gui
-         loadFont("DejaVuLGCSansMono", "MonoFont"); // We need to use a TrueType monospace font to display debug texts properly.
- 
-         // Use our TrueType fonts as a fallback.
--        if (!MyGUI::ResourceManager::getInstance().isExist("DefaultFont") && !Misc::StringUtils::ciEqual(defaultFont, "Pelagiad"))
--            loadFont("Pelagiad", "DefaultFont");
--        if (!MyGUI::ResourceManager::getInstance().isExist("ScrollFont") && !Misc::StringUtils::ciEqual(scrollFont, "OMWAyembedt"))
--            loadFont("OMWAyembedt", "ScrollFont");
-+        if (!MyGUI::ResourceManager::getInstance().isExist("DefaultFont") && !Misc::StringUtils::ciEqual(defaultFont, "MysticCards"))
-+            loadFont("MysticCards", "DefaultFont");
-+        if (!MyGUI::ResourceManager::getInstance().isExist("ScrollFont") && !Misc::StringUtils::ciEqual(scrollFont, "DemonicLetters"))
-+            loadFont("DemonicLetters", "ScrollFont");
-     }
- 
-     void FontLoader::loadFont(const std::string& fileName, const std::string& fontId)
-@@ -553,12 +553,9 @@ namespace Gui
-     std::string FontLoader::getFontForFace(const std::string& face)
-     {
-         const std::string lowerFace = Misc::StringUtils::lowerCase(face);
--
--        if (lowerFace == "magic cards")
--            return "DefaultFont";
-         if (lowerFace == "daedric")
-             return "ScrollFont";
- 
--        return face;
-+        return "DefaultFont";
-     }
- }
-diff --git a/components/widgets/fontwrapper.hpp b/components/widgets/fontwrapper.hpp
-index 122cf20257e88597413df2422dc18e09d0fa7abe..3396792f348642307785263ebcf436db0d80e898 100644
---- a/components/widgets/fontwrapper.hpp
-+++ b/components/widgets/fontwrapper.hpp
-@@ -35,7 +35,7 @@ namespace Gui
-         std::string getFontSize()
-         {
-             // Note: we can not use the FontLoader here, so there is a code duplication a bit.
--            static const std::string fontSize = std::to_string(std::clamp(Settings::Manager::getInt("font size", "GUI"), 12, 20));
-+            static const std::string fontSize = std::to_string(std::clamp(Settings::Manager::getInt("font size", "GUI"), 12, 18));
-             return fontSize;
-         }
-     };
-diff --git a/files/data/l10n/SettingsMenu/ru.yaml b/files/data/l10n/SettingsMenu/ru.yaml
-index 528aff49a1e6addb3b7016ae15dd860b01d592af..422b00750f83aa8138875405c6dae32e4241f88b 100644
---- a/files/data/l10n/SettingsMenu/ru.yaml
-+++ b/files/data/l10n/SettingsMenu/ru.yaml
-@@ -13,7 +13,7 @@ LanguageNote: "Примечание: эти настройки не затраг
- LightingMethod: "Способ освещения"
- LightingMethodLegacy: "Устаревший"
- LightingMethodShaders: "Шейдеры"
--LightingMethodShadersCompatibility: "Шейдеры (режим совместимости)"
-+LightingMethodShadersCompatibility: "Шейдеры (режим совм-ти)"
- LightingResetToDefaults: "Обнулить настройки освещения? Смена метода освещения вступит в силу только после перезапуска приложения."
- Lights: "Освещение"
- LightsBoundingSphereMultiplier: "Множитель размера ограничивающей сферы"
-diff --git a/files/data/mygui/openmw_dialogue_window.layout b/files/data/mygui/openmw_dialogue_window.layout
-index d1f96121e9bdf1b86a3d69e8c4ed07ec6f34fb64..6d53d63351d860595440d38a8abd722a71775865 100644
---- a/files/data/mygui/openmw_dialogue_window.layout
-+++ b/files/data/mygui/openmw_dialogue_window.layout
-@@ -18,7 +18,7 @@
-         <!-- The disposition bar-->
-         <Widget type="ProgressBar" skin="MW_Progress_Blue" position="398 8 166 18"
-             align="Right Top" name="Disposition">
--            <Widget type="TextBox" skin="ProgressText" position="0 0 166 14" name="DispositionText" align="Right VCenter">
-+            <Widget type="TextBox" skin="ProgressText" position="0 0 166 12" name="DispositionText" align="Right VCenter">
-                 <Property key="NeedMouse" value="false"/>
-              </Widget>
-         </Widget>
-diff --git a/files/data/mygui/openmw_persuasion_dialog.layout b/files/data/mygui/openmw_persuasion_dialog.layout
-index 3b10588ec8dd689afa001791706a2c3a8a687fcf..977da40f8fd6900213db50ff7fe77817dfc85f9f 100644
---- a/files/data/mygui/openmw_persuasion_dialog.layout
-+++ b/files/data/mygui/openmw_persuasion_dialog.layout
-@@ -3,12 +3,12 @@
- <MyGUI type="Layout">
-     <Widget type="Window" skin="MW_DialogNoTransp" layer="Modal" position="0 0 220 192" align="Center" name="_Main">
- 
--        <Widget type="TextBox" skin="NormalText" position="0 4 220 24">
-+        <Widget type="TextBox" skin="NormalText" position="0 4 220 24" align="HCenter Top">
-             <Property key="Caption" value="#{sPersuasionMenuTitle}"/>
-             <Property key="TextAlign" value="Center"/>
-         </Widget>
- 
--        <Widget type="Widget" skin="MW_Box" position="8 32 196 115">
-+        <Widget type="Widget" skin="MW_Box" position="8 32 196 114" align="Stretch Top" name="ActionsBox">
-             <Widget type="AutoSizedButton" skin="SandTextButton" position="4 0 0 18" name="AdmireButton">
-                 <Property key="Caption" value="#{sAdmire}"/>
-                 <Property key="TextAlign" value="Left"/>
-@@ -35,11 +35,11 @@
-             </Widget>
-         </Widget>
- 
--        <Widget type="TextBox" skin="SandText" position="8 152 208 24" name="GoldLabel">
-+        <Widget type="AutoSizedTextBox" skin="SandText" position="8 158 102 24" align="Left Bottom" name="GoldLabel">
-             <Property key="TextAlign" value="Left VCenter"/>
-         </Widget>
- 
--        <Widget type="AutoSizedButton" skin="MW_Button" position="204 154 0 24" name="CancelButton">
-+        <Widget type="AutoSizedButton" skin="MW_Button" position="204 154 0 24" align="Right Bottom" name="CancelButton">
-             <Property key="ExpandDirection" value="Left"/>
-             <Property key="Caption" value="#{sCancel}"/>
-         </Widget>
-diff --git a/files/data/mygui/openmw_resources.xml b/files/data/mygui/openmw_resources.xml
-index 03ca91f5eb1b5ab253bbe3cbd8bf26b8f55ba59f..70fccbfbe7b4be6050778a785f20a5acb6603c12 100644
---- a/files/data/mygui/openmw_resources.xml
-+++ b/files/data/mygui/openmw_resources.xml
-@@ -41,13 +41,13 @@
-     </Resource>
- 
-     <Resource type="ResourceLayout" name="TabControl" version="3.2.0">
--        <Widget type="Widget" skin="" position="5 5 89 60" name="Root">
-+        <Widget type="Widget" skin="" position="5 5 89 64" name="Root">
-             <UserString key="ButtonSkin" value="MW_Button_RightPadding"/>
--            <Widget type="Widget" skin="MW_Box" position="0 28 89 32" align="Left Top Stretch">
-+            <Widget type="Widget" skin="MW_Box" position="0 30 89 32" align="Left Top Stretch">
-                 <Widget type="Widget" skin="" position="4 4 81 28" align="Left Top Stretch" name="TabItem"/>
-             </Widget>
--            <Widget type="Widget" skin="" position="0 0 89 23" align="HStretch Top" name="HeaderPlace">
--                <Widget type="Widget" skin="" position="0 0 60 23" name="Controls">
-+            <Widget type="Widget" skin="" position="0 0 89 24" align="HStretch Top" name="HeaderPlace">
-+                <Widget type="Widget" skin="" position="0 0 60 28" name="Controls">
-                     <Widget type="Widget" skin="MW_Box" position="10 0 15 14" align="Left VCenter">
-                         <Widget type="Button" skin="MW_ArrowLeft" position="2 2 10 10" align="Left VStretch" name="Left" />
-                     </Widget>
-@@ -63,8 +63,8 @@
-         <Widget type="Widget" skin="" position="5 5 89 60" name="Root">
-             <UserString key="ButtonSkin" value="MW_Button_RightPadding"/>
-             <Widget type="Widget" skin="" position="0 28 89 32" align="Left Top Stretch" name="TabItem"/>
--            <Widget type="Widget" skin="" position="0 0 89 23" align="HStretch Top" name="HeaderPlace">
--                <Widget type="Widget" skin="" position="52 0 37 23" name="Controls">
-+            <Widget type="Widget" skin="" position="0 0 89 24" align="HStretch Top" name="HeaderPlace">
-+                <Widget type="Widget" skin="" position="52 0 37 28" name="Controls">
-                 </Widget>
-             </Widget>
-         </Widget>
-@@ -75,8 +75,8 @@
-             <UserString key="ButtonSkin" value="MW_Button_RightPadding"/>
-             <Widget type="Widget" skin="" position="0 28 89 32" align="Left Top Stretch" name="TabItem"/>
- 
--            <Widget type="Widget" skin="" position="0 0 89 23" align="HStretch Top" name="HeaderPlace">
--                <Widget type="Widget" skin="" position="52 0 37 23" name="Controls">
-+            <Widget type="Widget" skin="" position="0 0 89 24" align="HStretch Top" name="HeaderPlace">
-+                <Widget type="Widget" skin="" position="52 0 37 28" name="Controls">
-                 </Widget>
-             </Widget>
-         </Widget>
-diff --git a/files/data/mygui/openmw_settings_window.layout b/files/data/mygui/openmw_settings_window.layout
-index d698844d2ebb4889bda554cd117dad22a338b460..9042a13546d995614d5fd071c850ddccba6962c5 100644
---- a/files/data/mygui/openmw_settings_window.layout
-+++ b/files/data/mygui/openmw_settings_window.layout
-@@ -5,7 +5,7 @@
-         <Widget type="TabControl" skin="TabControl" position="8 8 368 405" align="Stretch" name="SettingsTab">
-             <Property key="ButtonAutoWidth" value="true"/>
-             <Widget type="TabItem">
--                <Property key="Caption" value="  #{sPrefs}  "/>
-+                <Property key="Caption" value=" #{sPrefs} "/>
-                 <Widget type="Widget" position="4 4 352 54" align="Left Top HStretch">
-                     <Widget type="TextBox" skin="NormalText" position="0 0 352 16" align="Left Top">
-                         <Property key="Caption" value="#{sTransparency_Menu}"/>
-@@ -98,7 +98,7 @@
-                         <Property key="TextAlign" value="Right"/>
-                     </Widget>
-                 </Widget>
--                <Widget type="HBox" position="4 250 260 24">
-+                <Widget type="HBox" position="4 250 260 28">
-                     <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
-                         <UserString key="SettingCategory" value="Saves"/>
-                         <UserString key="SettingName" value="autosave"/>
-@@ -108,7 +108,7 @@
-                         <Property key="Caption" value="#{sQuick_Save}"/>
-                     </Widget>
-                 </Widget>
--                <Widget type="HBox" position="4 280 260 24">
-+                <Widget type="HBox" position="4 280 260 28">
-                     <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
-                         <UserString key="SettingCategory" value="Game"/>
-                         <UserString key="SettingName" value="best attack"/>
-@@ -118,7 +118,7 @@
-                         <Property key="Caption" value="#{sBestAttack}"/>
-                     </Widget>
-                 </Widget>
--                <Widget type="HBox" position="4 310 260 24">
-+                <Widget type="HBox" position="4 310 260 28">
-                     <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
-                         <UserString key="SettingCategory" value="GUI"/>
-                         <UserString key="SettingName" value="subtitles"/>
-@@ -128,7 +128,7 @@
-                         <Property key="Caption" value="#{sSubtitles}"/>
-                     </Widget>
-                 </Widget>
--                <Widget type="HBox" position="4 340 260 24">
-+                <Widget type="HBox" position="4 340 260 28">
-                     <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
-                         <UserString key="SettingCategory" value="HUD"/>
-                         <UserString key="SettingName" value="crosshair"/>
-@@ -140,7 +140,7 @@
-                 </Widget>
-             </Widget>
-             <Widget type="TabItem">
--                <Property key="Caption" value="  #{sAudio}  "/>
-+                <Property key="Caption" value=" #{sAudio} "/>
-                 <Widget type="TextBox" skin="NormalText" position="4 4 352 18" align="Left Top">
-                     <Property key="Caption" value="#{sMaster}"/>
-                 </Widget>
-@@ -198,9 +198,9 @@
-                 </Widget>
-             </Widget>
-             <Widget type="TabItem">
--                <Property key="Caption" value="  #{sControls}  "/>
-+                <Property key="Caption" value=" #{sControls} "/>
- 
--                <Widget type="HBox" position="4 4 360 24">
-+                <Widget type="HBox" position="4 4 360 28">
-                     <Property key="Padding" value="0"/>
-                     <Property key="Spacing" value="4"/>
-                     <Widget type="AutoSizedButton" skin="MW_Button" name="KeyboardButton">
-@@ -211,15 +211,15 @@
-                     </Widget>
-                 </Widget>
- 
--                <Widget type="Widget" skin="MW_Box" position="4 34 352 154" align="Stretch">
-+                <Widget type="Widget" skin="MW_Box" position="4 38 352 154" align="Stretch">
-                     <Widget type="ScrollView" skin="MW_ScrollView" position="4 4 344 146" align="Stretch" name="ControlsBox">
-                         <Property key="CanvasAlign" value="Left Top"/>
-                     </Widget>
-                 </Widget>
--                <Widget type="AutoSizedButton" skin="MW_Button" position="4 194 137 24" align="Left Bottom" name="ResetControlsButton">
-+                <Widget type="AutoSizedButton" skin="MW_Button" position="4 198 137 24" align="Left Bottom" name="ResetControlsButton">
-                     <Property key="Caption" value="#{sControlsMenu1}"/>
-                 </Widget>
--                <Widget type="HBox" position="4 224 600 24" align="Left Bottom">
-+                <Widget type="HBox" position="4 228 600 28" align="Left Bottom">
-                     <Widget type="AutoSizedButton" skin="MW_Button">
-                         <UserString key="SettingCategory" value="Input"/>
-                         <UserString key="SettingName" value="invert x axis"/>
-@@ -237,10 +237,10 @@
-                         <Property key="Caption" value="#{sMouseFlip}"/>
-                     </Widget>
-                 </Widget>
--                <Widget type="TextBox" skin="NormalText" position="4 254 352 18" align="Left Bottom">
-+                <Widget type="TextBox" skin="NormalText" position="4 258 352 18" align="Left Bottom">
-                     <Property key="Caption" value="#{SettingsMenu:CameraSensitivity}"/>
-                 </Widget>
--                <Widget type="ScrollBar" skin="MW_HScroll" position="4 278 352 18" align="HStretch Bottom">
-+                <Widget type="ScrollBar" skin="MW_HScroll" position="4 282 352 18" align="HStretch Bottom">
-                     <Property key="Range" value="10000"/>
-                     <Property key="Page" value="300"/>
-                     <UserString key="SettingType" value="Slider"/>
-@@ -250,15 +250,15 @@
-                     <UserString key="SettingMin" value="0.2"/>
-                     <UserString key="SettingMax" value="5.0"/>
-                 </Widget>
--                <Widget type="TextBox" skin="SandText" position="4 302 352 18" align="Left Bottom">
-+                <Widget type="TextBox" skin="SandText" position="4 306 352 18" align="Left Bottom">
-                     <Property key="Caption" value="#{sLow}"/>
-                     <Property key="TextAlign" value="Left"/>
-                 </Widget>
--                <Widget type="TextBox" skin="SandText" position="4 302 352 18" align="Right Bottom">
-+                <Widget type="TextBox" skin="SandText" position="4 306 352 18" align="Right Bottom">
-                     <Property key="Caption" value="#{sHigh}"/>
-                     <Property key="TextAlign" value="Right"/>
-                 </Widget>
--                <Widget type="HBox" position="4 324 352 24" align="Left Bottom">
-+                <Widget type="HBox" position="4 328 352 28" align="Left Bottom">
-                     <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Bottom">
-                         <UserString key="SettingCategory" value="Input"/>
-                         <UserString key="SettingName" value="enable controller"/>
-@@ -270,11 +270,11 @@
-                 </Widget>
-             </Widget>
-             <Widget type="TabItem">
--                <Property key="Caption" value="  #{sVideo}  "/>
-+                <Property key="Caption" value=" #{sVideo} "/>
-                 <Widget type="TabControl" skin="TabControlInner" position="4 4 352 390" align="Stretch">
-                     <Property key="ButtonAutoWidth" value="true"/>
-                     <Widget type="TabItem">
--                        <Property key="Caption" value="  #{sVideo}  "/>
-+                        <Property key="Caption" value=" #{sVideo} "/>
-                         <Widget type="ListBox" skin="MW_List" position="0 4 185 215" align="Left Top" name="ResolutionList"/>
-                         <Widget type="TextBox" skin="NormalText" position="197 4 185 18" align="Left Top">
-                             <Property key="Caption" value="#{SettingsMenu:WindowMode}"/>
-@@ -286,7 +286,7 @@
-                                 <Property key="AddItem" value="#{SettingsMenu:WindowModeWindowed}"/>
-                             </Widget>
-                         </Widget>
--                        <Widget type="HBox" position="197 64 400 24">
-+                        <Widget type="HBox" position="197 58 400 28">
-                             <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top" name="VSyncButton">
-                                 <UserString key="SettingCategory" value="Video"/>
-                                 <UserString key="SettingName" value="vsync"/>
-@@ -296,7 +296,7 @@
-                                 <Property key="Caption" value="#{SettingsMenu:VSync}"/>
-                             </Widget>
-                         </Widget>
--                        <Widget type="HBox" position="197 94 300 24">
-+                        <Widget type="HBox" position="197 88 300 28">
-                             <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top" name="WindowBorderButton">
-                                 <UserString key="SettingCategory" value="Video"/>
-                                 <UserString key="SettingName" value="window border"/>
-@@ -306,7 +306,7 @@
-                                 <Property key="Caption" value="#{SettingsMenu:WindowBorder}"/>
-                             </Widget>
-                         </Widget>
--                        <Widget type="HBox" position="197 124 300 24">
-+                        <Widget type="HBox" position="197 118 300 28">
-                             <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top" name="WindowBorderButton">
-                                 <UserString key="SettingCategory" value="Post Processing"/>
-                                 <UserString key="SettingName" value="enabled"/>
-@@ -369,7 +369,7 @@
-                         </Widget>
-                     </Widget>
-                     <Widget type="TabItem">
--                        <Property key="Caption" value="  #{sDetail_Level}  "/>
-+                        <Property key="Caption" value=" #{sDetail_Level} "/>
- 
-                         <Widget type="AutoSizedTextBox" skin="NormalText" align="Left Top">
-                             <Property key="Caption" value="#{SettingsMenu:TextureFiltering}"/>
-@@ -432,7 +432,7 @@
- 
-                     </Widget>
-                     <Widget type="TabItem">
--                        <Property key="Caption" value="  #{SettingsMenu:Water}  "/>
-+                        <Property key="Caption" value=" #{SettingsMenu:Water} "/>
- 
-                         <Widget type="VBox" position_real="0 0 1 1" align="Stretch">
- 
-@@ -529,7 +529,7 @@
- 
-                     </Widget>
-                     <Widget type="TabItem">
--                        <Property key="Caption" value="  #{SettingsMenu:Lights}  "/>
-+                        <Property key="Caption" value=" #{SettingsMenu:Lights} "/>
-                         <!-- Lighting Method -->
-                         <Widget type="TextBox" skin="NormalText" position="0 4 250 18" align="Left Top">
-                             <Property key="Caption" value="#{SettingsMenu:LightingMethod}"/>
-@@ -637,7 +637,7 @@
-                 </Widget>
-             </Widget>
-             <Widget type="TabItem">
--                <Property key="Caption" value="  #{SettingsMenu:Scripts}  "/>
-+                <Property key="Caption" value=" #{SettingsMenu:Scripts} "/>
- 
-                 <Widget name="ScriptDisabled" type="EditBox" skin="SandText" position_real="0 0 1 1" align="HStretch Top">
-                     <Property key="Caption" value="#{SettingsMenu:ScriptsDisabled}"/>
-@@ -678,7 +678,7 @@
- 
-             </Widget>
-             <Widget type="TabItem">
--                <Property key="Caption" value="  #{SettingsMenu:Language}  "/>
-+                <Property key="Caption" value=" #{SettingsMenu:Language} "/>
-                 <Widget type="AutoSizedTextBox" skin="SandText" position="4 4 300 32" align="Left Top">
-                     <Property key="Caption" value="#{SettingsMenu:LanguageNote}"/>
-                 </Widget>
-diff --git a/files/data/mygui/openmw_stats_window.layout b/files/data/mygui/openmw_stats_window.layout
-index 77de3ac75308ee919998b101885d44dd77dca5a7..2fcede969f451a8e3492f817214e826d2fd95e16 100644
---- a/files/data/mygui/openmw_stats_window.layout
-+++ b/files/data/mygui/openmw_stats_window.layout
-@@ -21,7 +21,7 @@
-                     </Widget>
-                     <Widget type="ProgressBar" skin="MW_Progress_Red" position="74 0 130 18" name="HBar" align="Right Top">
-                         <Property key="NeedMouse" value="false"/>
--                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 14" name="HBarT" align="Right VCenter">
-+                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 12" name="HBarT" align="Right Top">
-                             <Property key="NeedMouse" value="false"/>
-                         </Widget>
-                     </Widget>
-@@ -41,7 +41,7 @@
- 
-                     <Widget type="ProgressBar" skin="MW_Progress_Blue" position="74 0 130 18" name="MBar" align="Right Top">
-                         <Property key="NeedMouse" value="false"/>
--                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 14" name="MBarT" align="Right VCenter">
-+                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 12" name="MBarT" align="Right VCenter">
-                             <Property key="NeedMouse" value="false"/>
-                         </Widget>
-                     </Widget>
-@@ -61,7 +61,7 @@
- 
-                     <Widget type="ProgressBar" skin="MW_Progress_Green" position="74 0 130 18" name="FBar" align="Right Top">
-                         <Property key="NeedMouse" value="false"/>
--                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 14" name="FBarT" align="Right VCenter">
-+                        <Widget type="TextBox" skin="ProgressText" position="0 0 130 12" name="FBarT" align="Right VCenter">
-                             <Property key="NeedMouse" value="false"/>
-                         </Widget>
-                     </Widget>
-diff --git a/files/data/mygui/openmw_text.skin.xml b/files/data/mygui/openmw_text.skin.xml
-index 5f96d0a57c838774e2c81bba7477759bb17454d8..00a69c486be8d9de27ab76beb384d9b5b260a813 100644
---- a/files/data/mygui/openmw_text.skin.xml
-+++ b/files/data/mygui/openmw_text.skin.xml
-@@ -149,18 +149,18 @@ color_misc=0,205,205 # ????
-     <Resource type="ResourceSkin" name="MW_DynamicStat_Red" size="204 18">
-         <Child type="TextBox" skin="SandText" offset="0 0 100 18" align="Left Top" name="Text"/>
-         <Child type="ProgressBar" skin="MW_Progress_Red" offset="74 0 130 18" align="Right Top" name="Bar"/>
--        <Child type="TextBox" skin="ProgressText" offset="74 0 130 14" align="Right Top" name="BarText"/>
-+        <Child type="TextBox" skin="ProgressText" offset="74 0 130 12" align="Right Top" name="BarText"/>
-     </Resource>
- 
-     <Resource type="ResourceSkin" name="MW_DynamicStat_Blue" size="204 18">
-         <Child type="TextBox" skin="SandText" offset="0 0 100 18" align="Left Top" name="Text"/>
-         <Child type="ProgressBar" skin="MW_Progress_Blue" offset="74 0 130 18" align="Right Top" name="Bar"/>
--        <Child type="TextBox" skin="ProgressText" offset="74 0 130 14" align="Right Top" name="BarText"/>
-+        <Child type="TextBox" skin="ProgressText" offset="74 0 130 12" align="Right Top" name="BarText"/>
-     </Resource>
- 
-     <Resource type="ResourceSkin" name="MW_DynamicStat_Green" size="204 18">
-         <Child type="TextBox" skin="SandText" offset="0 0 100 18" align="Left Top" name="Text"/>
-         <Child type="ProgressBar" skin="MW_Progress_Green" offset="74 0 130 18" align="Right Top" name="Bar"/>
--        <Child type="TextBox" skin="ProgressText" offset="74 0 130 14" align="Right Top" name="BarText"/>
-+        <Child type="TextBox" skin="ProgressText" offset="74 0 130 12" align="Right Top" name="BarText"/>
-     </Resource>
- </MyGUI>
-diff --git a/files/data/mygui/openmw_wait_dialog_progressbar.layout b/files/data/mygui/openmw_wait_dialog_progressbar.layout
-index 8147abbdfb9bc7730abe6070f501bc6bdee3d448..720bfa4327b4a1a4d4b75f56f7aee6d0c80d5e55 100644
---- a/files/data/mygui/openmw_wait_dialog_progressbar.layout
-+++ b/files/data/mygui/openmw_wait_dialog_progressbar.layout
-@@ -4,7 +4,7 @@
-     <Widget type="Window" skin="MW_Dialog" layer="Windows" position="0 0 219 40" align="Center" name="_Main">
- 
-         <Widget type="ProgressBar" skin="MW_Progress_Blue" position="5 6 199 20" name="ProgressBar">
--            <Widget type="TextBox" skin="ProgressText" position="0 0 199 16" name="ProgressText" align="Right VCenter">
-+            <Widget type="TextBox" skin="ProgressText" position="0 0 199 14" name="ProgressText" align="Right VCenter">
-                 <Property key="NeedMouse" value="false"/>
-             </Widget>
-         </Widget>
-diff --git a/files/openmw.cfg b/files/openmw.cfg
-index fb4cf70f5f58579ca2a8799928f32503460fe08f..4c25d6ed9849b66ea1edeafd1cef6e8d4fe8eb1a 100644
---- a/files/openmw.cfg
-+++ b/files/openmw.cfg
-@@ -71,9 +71,9 @@ fallback=Water_UnderwaterColor,012,030,037
- fallback=Water_UnderwaterColorWeight,0.85
- 
- # fonts
--fallback=Fonts_Font_0,Pelagiad
-+fallback=Fonts_Font_0,MysticCards
- fallback=Fonts_Font_1,DejaVuLGCSansMono
--fallback=Fonts_Font_2,OMWAyembedt
-+fallback=Fonts_Font_2,DemonicLetters
- fallback=FontColor_color_normal,202,165,96
- fallback=FontColor_color_normal_over,223,201,159
- fallback=FontColor_color_normal_pressed,243,237,221
-diff --git a/files/openmw.cfg.local b/files/openmw.cfg.local
-index cb05d5f22a43e9c50bd1c1597a4a62eef65f50c8..ee8bda8196f82df0aefe2850d95d011d91389bc1 100644
---- a/files/openmw.cfg.local
-+++ b/files/openmw.cfg.local
-@@ -71,9 +71,9 @@ fallback=Water_UnderwaterColor,012,030,037
- fallback=Water_UnderwaterColorWeight,0.85
- 
- # fonts
--fallback=Fonts_Font_0,Pelagiad
-+fallback=Fonts_Font_0,MysticCards
- fallback=Fonts_Font_1,DejaVuLGCSansMono
--fallback=Fonts_Font_2,OMWAyembedt
-+fallback=Fonts_Font_2,DemonicLetters
- fallback=FontColor_color_normal,202,165,96
- fallback=FontColor_color_normal_over,223,201,159
- fallback=FontColor_color_normal_pressed,243,237,221
-diff --git a/apps/openmw/mwgui/dialogue.cpp b/apps/openmw/mwgui/dialogue.cpp
-index 14c865f018399b1138f1096460d94c81368766e4..9acb043820e3befe5bc7ec157e64c6ff266242d1 100644
---- a/apps/openmw/mwgui/dialogue.cpp
-+++ b/apps/openmw/mwgui/dialogue.cpp
-@@ -7,6 +7,7 @@
- #include <MyGUI_Button.h>
- 
- #include <components/debug/debuglog.hpp>
-+#include <components/widgets/box.hpp>
- #include <components/widgets/list.hpp>
- #include <components/translation/translation.hpp>
- 
-@@ -25,6 +26,7 @@
- 
- #include "bookpage.hpp"
- #include "textcolours.hpp"
-+#include "tooltips.hpp"
- 
- #include "journalbooks.hpp" // to_utf8_span
- 
-@@ -59,6 +61,8 @@ namespace MWGui
-     PersuasionDialog::PersuasionDialog(std::unique_ptr<ResponseCallback> callback)
-         : WindowModal("openmw_persuasion_dialog.layout")
-         , mCallback(std::move(callback))
-+        , mInitialGoldLabelWidth(0)
-+        , mInitialMainWidgetWidth(0)
-     {
-         getWidget(mCancelButton, "CancelButton");
-         getWidget(mAdmireButton, "AdmireButton");
-@@ -68,6 +72,26 @@ namespace MWGui
-         getWidget(mBribe100Button, "Bribe100Button");
-         getWidget(mBribe1000Button, "Bribe1000Button");
-         getWidget(mGoldLabel, "GoldLabel");
-+        getWidget(mActionsBox, "ActionsBox");
-+
-+        int totalHeight = 3;
-+        adjustAction(mAdmireButton, totalHeight);
-+        adjustAction(mIntimidateButton, totalHeight);
-+        adjustAction(mTauntButton, totalHeight);
-+        adjustAction(mBribe10Button, totalHeight);
-+        adjustAction(mBribe100Button, totalHeight);
-+        adjustAction(mBribe1000Button, totalHeight);
-+        totalHeight += 3;
-+
-+        int diff = totalHeight - mActionsBox->getSize().height;
-+        if (diff > 0)
-+        {
-+            auto mainWidgetSize = mMainWidget->getSize();
-+            mMainWidget->setSize(mainWidgetSize.width, mainWidgetSize.height + diff);
-+        }
-+
-+        mInitialGoldLabelWidth = mActionsBox->getSize().width - mCancelButton->getSize().width - 8;
-+        mInitialMainWidgetWidth = mMainWidget->getSize().width;
- 
-         mCancelButton->eventMouseButtonClick += MyGUI::newDelegate(this, &PersuasionDialog::onCancel);
-         mAdmireButton->eventMouseButtonClick += MyGUI::newDelegate(this, &PersuasionDialog::onPersuade);
-@@ -78,6 +102,14 @@ namespace MWGui
-         mBribe1000Button->eventMouseButtonClick += MyGUI::newDelegate(this, &PersuasionDialog::onPersuade);
-     }
- 
-+    void PersuasionDialog::adjustAction(MyGUI::Widget* action, int& totalHeight)
++namespace
++{
++    void closeHandle(void* hdl)
 +    {
-+        const int lineHeight = MWBase::Environment::get().getWindowManager()->getFontHeight() + 2;
-+        auto currentCoords = action->getCoord();
-+        action->setCoord(currentCoords.left, totalHeight, currentCoords.width, lineHeight);
-+        totalHeight += lineHeight;
++        return Platform::File::close(static_cast<Platform::File::Handle>(reinterpret_cast<intptr_t>(hdl)));
++    }
++}
++
+ Files::IStreamPtr Bsa::BSAFile::getFile(const FileStruct *file)
+ {
+-    return Files::openConstrainedFileStream(mFilename, file->offset, file->fileSize);
++    std::lock_guard<std::mutex> lock(mCacheMutex);
++    const auto id = std::this_thread::get_id();
++    const auto it = mCache.lower_bound(id);
++    if (it != mCache.end() && it->first == id)
++        return Files::openConstrainedFileStreamWithSharedHandle(it->second, file->offset, file->fileSize);
++    else
++    {
++        std::shared_ptr<void> source((void*)(Platform::File::open(mFilename.c_str())), &closeHandle);
++        mCache.insert(it, std::pair<std::thread::id, std::shared_ptr<void>>(id, source));
++        return Files::openConstrainedFileStreamWithSharedHandle(source, file->offset, file->fileSize);
++    }
+ }
+ 
+ void Bsa::BSAFile::addFile(const std::string& filename, std::istream& file)
+diff --git a/components/bsa/bsa_file.hpp b/components/bsa/bsa_file.hpp
+index f6af2e3269ceae50302d0149a8b78f8b9a0134d1..800e132ab482ca4b64fa34382ae247861d3c355d 100644
+--- a/components/bsa/bsa_file.hpp
++++ b/components/bsa/bsa_file.hpp
+@@ -25,7 +25,10 @@
+ #define BSA_BSA_FILE_H
+ 
+ #include <cstdint>
++#include <map>
++#include <mutex>
+ #include <string>
++#include <thread>
+ #include <vector>
+ 
+ #include <components/files/istreamptr.hpp>
+@@ -94,6 +97,9 @@ protected:
+     virtual void readHeader();
+     virtual void writeHeader();
+ 
++    std::mutex mCacheMutex;
++    std::map<std::thread::id, std::shared_ptr<void>> mCache;
++
+ public:
+     /* -----------------------------------
+      * BSA management methods
+diff --git a/components/files/constrainedfilestream.cpp b/components/files/constrainedfilestream.cpp
+index a56ae01aa07f4dec260ecc389f3de0fe25f11608..15929f57bd2586b6e19c41b09fe1ed1a929be6c0 100644
+--- a/components/files/constrainedfilestream.cpp
++++ b/components/files/constrainedfilestream.cpp
+@@ -6,4 +6,10 @@ namespace Files
+     {
+         return std::make_unique<ConstrainedFileStream>(std::make_unique<ConstrainedFileStreamBuf>(filename, start, length));
+     }
++
++    IStreamPtr openConstrainedFileStreamWithSharedHandle(std::shared_ptr<void> hdl, std::size_t start, std::size_t length)
++    {
++        return std::make_unique<Files::StreamWithBuffer<Files::ConstrainedFileStreamBufWithSharedHandle>>(
++            std::make_unique<ConstrainedFileStreamBufWithSharedHandle>(hdl, start, length));
++    }
+ }
+diff --git a/components/files/constrainedfilestream.hpp b/components/files/constrainedfilestream.hpp
+index f00bd3a4883db1245dc32395e375f910f1f37468..9c428289eea8b20c10c54f812385da76c3171955 100644
+--- a/components/files/constrainedfilestream.hpp
++++ b/components/files/constrainedfilestream.hpp
+@@ -6,6 +6,7 @@
+ #include "istreamptr.hpp"
+ 
+ #include <limits>
++#include <memory>
+ #include <string>
+ 
+ namespace Files
+@@ -17,6 +18,9 @@ using ConstrainedFileStream = StreamWithBuffer<ConstrainedFileStreamBuf>;
+ IStreamPtr openConstrainedFileStream(const std::string& filename, std::size_t start = 0,
+     std::size_t length = std::numeric_limits<std::size_t>::max());
+ 
++IStreamPtr openConstrainedFileStreamWithSharedHandle(std::shared_ptr<void> hdl, std::size_t start = 0,
++    std::size_t length = std::numeric_limits<std::size_t>::max());
++
+ }
+ 
+ #endif
+diff --git a/components/files/constrainedfilestreambuf.cpp b/components/files/constrainedfilestreambuf.cpp
+index f5fd8ac3947911e40f8869d680e23504707a376a..8f18a55d62c647e5ed670961e5c6bfbd784b8e37 100644
+--- a/components/files/constrainedfilestreambuf.cpp
++++ b/components/files/constrainedfilestreambuf.cpp
+@@ -7,10 +7,10 @@ namespace Files
+ {
+     namespace File = Platform::File;
+     
+-    ConstrainedFileStreamBuf::ConstrainedFileStreamBuf(const std::string& fname, std::size_t start, std::size_t length)
+-        : mOrigin(start)
++    void ConstrainedFileStreamBufBase::init(File::Handle hdl, std::size_t start, std::size_t length)
+     {
+-        mFile = File::open(fname.c_str());
++        mOrigin = start;
++        mFile = hdl;
+         mSize  = length != std::numeric_limits<std::size_t>::max() ? length : File::size(mFile) - start;
+ 
+         if (start != 0)
+@@ -19,7 +19,7 @@ namespace Files
+         setg(nullptr, nullptr, nullptr);
+     }
+ 
+-    std::streambuf::int_type ConstrainedFileStreamBuf::underflow()
++    std::streambuf::int_type ConstrainedFileStreamBufBase::underflow()
+     {
+         if (gptr() == egptr())
+         {
+@@ -35,7 +35,7 @@ namespace Files
+         return traits_type::to_int_type(*gptr());
+     }
+ 
+-    std::streambuf::pos_type ConstrainedFileStreamBuf::seekoff(off_type offset, std::ios_base::seekdir whence, std::ios_base::openmode mode)
++    std::streambuf::pos_type ConstrainedFileStreamBufBase::seekoff(off_type offset, std::ios_base::seekdir whence, std::ios_base::openmode mode)
+     {
+         if ((mode & std::ios_base::out) || !(mode & std::ios_base::in))
+             return traits_type::eof();
+@@ -68,7 +68,7 @@ namespace Files
+         return newPos;
+     }
+ 
+-    std::streambuf::pos_type ConstrainedFileStreamBuf::seekpos(pos_type pos, std::ios_base::openmode mode)
++    std::streambuf::pos_type ConstrainedFileStreamBufBase::seekpos(pos_type pos, std::ios_base::openmode mode)
+     {
+         if ((mode & std::ios_base::out) || !(mode & std::ios_base::in))
+             return traits_type::eof();
+@@ -82,4 +82,16 @@ namespace Files
+         setg(nullptr, nullptr, nullptr);
+         return pos;
+     }
++
++    ConstrainedFileStreamBuf::ConstrainedFileStreamBuf(const std::string& fname, std::size_t start, std::size_t length)
++        : mFile(File::open(fname.c_str()))
++    {
++        init(mFile, start, length);
 +    }
 +
-     void PersuasionDialog::onCancel(MyGUI::Widget *sender)
-     {
-         setVisible(false);
-@@ -114,6 +146,13 @@ namespace MWGui
-         mBribe1000Button->setEnabled (playerGold >= 1000);
++    ConstrainedFileStreamBufWithSharedHandle::ConstrainedFileStreamBufWithSharedHandle(FileHandlePtr ptr, std::size_t start, std::size_t length)
++        : mFile(ptr)
++    {
++        init(static_cast<Platform::File::Handle>(reinterpret_cast<intptr_t>(mFile.get())), start, length);
++    }
+ }
+diff --git a/components/files/constrainedfilestreambuf.hpp b/components/files/constrainedfilestreambuf.hpp
+index bb9d6ca89effda70b64360f3231bc89c7dbe67fa..272c1a73e88b1e2655446d9462b1aa40c0517ec8 100644
+--- a/components/files/constrainedfilestreambuf.hpp
++++ b/components/files/constrainedfilestreambuf.hpp
+@@ -3,15 +3,15 @@
  
-         mGoldLabel->setCaptionWithReplacing("#{sGold}: " + MyGUI::utility::toString(playerGold));
+ #include <components/platform/file.hpp>
+ 
++#include <memory>
+ #include <streambuf>
+ 
+ namespace Files
+ {
+-    /// A file streambuf constrained to a specific region in the file, specified by the 'start' and 'length' parameters.
+-    class ConstrainedFileStreamBuf final : public std::streambuf
++    class ConstrainedFileStreamBufBase : public std::streambuf
+     {
+     public:
+-        ConstrainedFileStreamBuf(const std::string& fname, std::size_t start, std::size_t length);
++        void init(Platform::File::Handle hdl, std::size_t start, std::size_t length);
+ 
+         int_type underflow() final;
+ 
+@@ -22,9 +22,30 @@ namespace Files
+     private:
+         std::size_t mOrigin;
+         std::size_t mSize;
+-        Platform::File::ScopedHandle mFile;
++        Platform::File::Handle mFile;
+         char mBuffer[8192]{ 0 };
+     };
 +
-+        int diff = mGoldLabel->getRequestedSize().width - mInitialGoldLabelWidth;
-+        if (diff > 0)
-+            mMainWidget->setSize(mInitialMainWidgetWidth + diff, mMainWidget->getSize().height);
-+        else
-+            mMainWidget->setSize(mInitialMainWidgetWidth, mMainWidget->getSize().height);
++    /// A file streambuf constrained to a specific region in the file, specified by the 'start' and 'length' parameters.
++    class ConstrainedFileStreamBuf final : public ConstrainedFileStreamBufBase
++    {
++    public:
++        ConstrainedFileStreamBuf(const std::string& fname, std::size_t start, std::size_t length);
 +
-         WindowModal::onOpen();
-     }
-
-diff --git a/files/ui/advancedpage.ui b/files/ui/advancedpage.ui
-index 42b46080fdbe5292cdc77997414012629877fe6d..0f895ad65bb62819e9faaf6bc8ad7ed5f3c4d697 100644
---- a/files/ui/advancedpage.ui
-+++ b/files/ui/advancedpage.ui
-@@ -946,7 +946,7 @@
-             <number>12</number>
-            </property>
-            <property name="maximum">
--            <number>20</number>
-+            <number>18</number>
-            </property>
-            <property name="singleStep">
-             <number>1</number>
++    private:
++        Platform::File::ScopedHandle mFile;
++    };
++
++    class ConstrainedFileStreamBufWithSharedHandle final : public ConstrainedFileStreamBufBase
++    {
++    public:
++        using FileHandlePtr = std::shared_ptr<void>;
++
++        ConstrainedFileStreamBufWithSharedHandle(FileHandlePtr ptr, std::size_t start, std::size_t length);
++
++    private:
++        FileHandlePtr mFile;
++    };
+ }
+ 
+ #endif
