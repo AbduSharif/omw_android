@@ -1,3 +1,161 @@
+diff --git a/components/terrain/quadtreeworld.cpp b/components/terrain/quadtreeworld.cpp
+index 1476a7d3aac3c663081a7d2a985e55c65fee83cc..e66d32a0c819a2cd43b406bb9a6c1cab8287f267 100644
+--- a/components/terrain/quadtreeworld.cpp
++++ b/components/terrain/quadtreeworld.cpp
+@@ -378,6 +378,8 @@ namespace Terrain
+ 
+         if (vd->hasChanged())
+         {
++            vd->buildNodeIndex();
++
+             unsigned int ourVertexLod = getVertexLod(entry.mNode, mVertexLodMod);
+             // have to recompute the lodFlags in case a neighbour has changed LOD.
+             unsigned int lodFlags = getLodFlags(entry.mNode, ourVertexLod, mVertexLodMod, vd);
+@@ -499,7 +501,7 @@ namespace Terrain
+             updateWaterCullingView(mHeightCullCallback, vd, static_cast<osgUtil::CullVisitor*>(&nv),
+                 mStorage->getCellWorldSize(), !isGridEmpty());
+ 
+-        vd->setChanged(false);
++        vd->resetChanged();
+ 
+         double referenceTime = nv.getFrameStamp() ? nv.getFrameStamp()->getReferenceTime() : 0.0;
+         if (referenceTime != 0.0)
+@@ -579,6 +581,7 @@ namespace Terrain
+                 loadRenderingNode(entry, vd, cellWorldSize, grid, true);
+                 if (pass == 0)
+                     reporter.addProgress(entry.mNode->getSize());
++                vd->removeNodeFromIndex(entry.mNode);
+                 entry.mNode = nullptr; // Clear node lest we break the neighbours search for the next pass
+             }
+         }
+diff --git a/components/terrain/viewdata.cpp b/components/terrain/viewdata.cpp
+index 0de4090478c8214fa2b5675f28a43947950f9b5c..8e4a0511e1ba4d1f31b423e8794d4f11e626707e 100644
+--- a/components/terrain/viewdata.cpp
++++ b/components/terrain/viewdata.cpp
+@@ -2,6 +2,8 @@
+ 
+ #include "quadtreenode.hpp"
+ 
++#include <algorithm>
++
+ namespace Terrain
+ {
+ 
+@@ -25,6 +27,7 @@ namespace Terrain
+         mViewPoint = other.mViewPoint;
+         mActiveGrid = other.mActiveGrid;
+         mWorldUpdateRevision = other.mWorldUpdateRevision;
++        mNodes = other.mNodes;
+     }
+ 
+     void ViewData::add(QuadTreeNode* node)
+@@ -36,7 +39,10 @@ namespace Terrain
+ 
+         ViewDataEntry& entry = mEntries[index];
+         if (entry.set(node))
++        {
+             mChanged = true;
++            mNodes.clear();
++        }
+     }
+ 
+     void ViewData::setViewPoint(const osg::Vec3f& viewPoint)
+@@ -56,6 +62,7 @@ namespace Terrain
+         // reset index for next frame
+         mNumEntries = 0;
+         mChanged = false;
++        mNodes.clear();
+     }
+ 
+     void ViewData::clear()
+@@ -66,6 +73,7 @@ namespace Terrain
+         mLastUsageTimeStamp = 0;
+         mChanged = false;
+         mHasViewPoint = false;
++        mNodes.clear();
+     }
+ 
+     bool ViewData::suitableToUse(const osg::Vec4i& activeGrid) const
+@@ -73,12 +81,30 @@ namespace Terrain
+         return hasViewPoint() && activeGrid == mActiveGrid && getNumEntries();
+     }
+ 
+-    bool ViewData::contains(QuadTreeNode* node) const
++    bool ViewData::contains(const QuadTreeNode* node) const
++    {
++        return std::binary_search(mNodes.begin(), mNodes.end(), node);
++    }
++
++    void ViewData::buildNodeIndex()
++    {
++        if (!mNodes.empty())
++            return;
++
++        mNodes.reserve(mNumEntries);
++        for (std::size_t i = 0; i < mNumEntries; ++i)
++            if (const QuadTreeNode* node = mEntries[i].mNode)
++                mNodes.push_back(node);
++
++        std::sort(mNodes.begin(), mNodes.end());
++    }
++
++    void ViewData::removeNodeFromIndex(const QuadTreeNode* node)
+     {
+-        for (unsigned int i = 0; i < mNumEntries; ++i)
+-            if (mEntries[i].mNode == node)
+-                return true;
+-        return false;
++        const auto it = std::lower_bound(mNodes.begin(), mNodes.end(), node);
++        if (it == mNodes.end() || *it != node)
++            return;
++        mNodes.erase(it);
+     }
+ 
+     ViewDataEntry::ViewDataEntry()
+diff --git a/components/terrain/viewdata.hpp b/components/terrain/viewdata.hpp
+index eb9f2da5e904b7c9306658970c189e007d3006af..b8b0b8a1f921864d62e863515c05d80f2f97e9ca 100644
+--- a/components/terrain/viewdata.hpp
++++ b/components/terrain/viewdata.hpp
+@@ -39,7 +39,7 @@ namespace Terrain
+ 
+         void clear();
+ 
+-        bool contains(QuadTreeNode* node) const;
++        bool contains(const QuadTreeNode* node) const;
+ 
+         void copyFrom(const ViewData& other);
+ 
+@@ -53,7 +53,7 @@ namespace Terrain
+         /// @note Such changes may necessitate a revalidation of cached mRenderingNodes elsewhere depending
+         /// on the parameters that affect the creation of mRenderingNode.
+         bool hasChanged() const { return mChanged; }
+-        void setChanged(bool changed) { mChanged = changed; }
++        void resetChanged() { mChanged = false; }
+ 
+         bool hasViewPoint() const { return mHasViewPoint; }
+ 
+@@ -67,6 +67,7 @@ namespace Terrain
+                 mActiveGrid = grid;
+                 mEntries.clear();
+                 mNumEntries = 0;
++                mNodes.clear();
+             }
+         }
+         const osg::Vec4i& getActiveGrid() const { return mActiveGrid; }
+@@ -74,8 +75,13 @@ namespace Terrain
+         unsigned int getWorldUpdateRevision() const { return mWorldUpdateRevision; }
+         void setWorldUpdateRevision(int updateRevision) { mWorldUpdateRevision = updateRevision; }
+ 
++        void buildNodeIndex();
++
++        void removeNodeFromIndex(const QuadTreeNode* node);
++
+     private:
+         std::vector<ViewDataEntry> mEntries;
++        std::vector<const QuadTreeNode*> mNodes;
+         unsigned int mNumEntries;
+         double mLastUsageTimeStamp;
+         bool mChanged;
 diff --git a/components/bsa/bsa_file.cpp b/components/bsa/bsa_file.cpp
 index 9fc6448c2b5dfdab493f917f4a8ca6cc7aa02d6f..fd72fd151e6882f192f0afe1930d839287435111 100644
 --- a/components/bsa/bsa_file.cpp
