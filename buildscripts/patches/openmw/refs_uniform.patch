@@ -1,0 +1,26 @@
+diff --git a/apps/openmw/mwrender/renderingmanager.cpp b/apps/openmw/mwrender/renderingmanager.cpp
+index 5a88afd78b3f49ccbffda407bc863318d428c6ce..6a31259243c87c33caab32cfc581ca991864f688 100644
+--- a/apps/openmw/mwrender/renderingmanager.cpp
++++ b/apps/openmw/mwrender/renderingmanager.cpp
+@@ -172,6 +172,7 @@ namespace MWRender
+             stateset->addUniform(new osg::Uniform("far", 0.f));
+             stateset->addUniform(new osg::Uniform("skyBlendingStart", 0.f));
+             stateset->addUniform(new osg::Uniform("screenRes", osg::Vec2f{}));
++            stateset->addUniform(new osg::Uniform("isReflection", false));
+             if (mUsePlayerUniforms)
+             {
+                 stateset->addUniform(new osg::Uniform("windSpeed", 0.0f));
+diff --git a/apps/openmw/mwrender/water.cpp b/apps/openmw/mwrender/water.cpp
+index dd598e456f3799587c322acf5122da0c6b16af41..4f86ce5dc285d2b91871d444f4b1b671e0d0ac55 100644
+--- a/apps/openmw/mwrender/water.cpp
++++ b/apps/openmw/mwrender/water.cpp
+@@ -354,6 +354,9 @@ public:
+         camera->setName("ReflectionCamera");
+         camera->addCullCallback(new InheritViewPointCallback);
+ 
++        // Inform the shader that we're in a reflection
++        camera->getOrCreateStateSet()->addUniform(new osg::Uniform("isReflection", true));
++
+         // XXX: should really flip the FrontFace on each renderable instead of forcing clockwise.
+         osg::ref_ptr<osg::FrontFace> frontFace(new osg::FrontFace);
+         frontFace->setMode(osg::FrontFace::CLOCKWISE);
