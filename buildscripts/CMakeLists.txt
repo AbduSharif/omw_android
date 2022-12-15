@@ -692,10 +692,10 @@ set(OPENMW_COMMON
 	-DBUILD_MYGUI_PLUGIN=0
 	-DOPENMW_LTO_BUILD=ON
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
-#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-#	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-#	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
-#	-DOPENMW_GL4ES_MANUAL_INIT=ON
+	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
