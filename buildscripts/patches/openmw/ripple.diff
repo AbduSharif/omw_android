@@ -1,0 +1,984 @@
+diff --git a/apps/openmw/CMakeLists.txt b/apps/openmw/CMakeLists.txt
+index e9683cc40a67621fa293f5a2a250aa60063107bb..e21a12e385a76c4a6e93b4e20dc5786c9b254111 100644
+--- a/apps/openmw/CMakeLists.txt
++++ b/apps/openmw/CMakeLists.txt
+@@ -23,7 +23,7 @@ add_openmw_dir (mwrender
+     creatureanimation effectmanager util renderinginterface pathgrid rendermode weaponanimation screenshotmanager
+     bulletdebugdraw globalmap characterpreview camera localmap water terrainstorage ripplesimulation
+     renderbin actoranimation landmanager navmesh actorspaths recastmesh fogmanager objectpaging groundcover
+-    postprocessor pingpongcull luminancecalculator pingpongcanvas transparentpass navmeshmode precipitationocclusion
++    postprocessor pingpongcull luminancecalculator pingpongcanvas transparentpass navmeshmode precipitationocclusion ripples
+     )
+ 
+ add_openmw_dir (mwinput
+diff --git a/apps/openmw/mwrender/renderingmanager.cpp b/apps/openmw/mwrender/renderingmanager.cpp
+index b9c2c04571a07aa37b3a56c6a77e694c4b0285a7..d8152667682cf93f6de607957432001f93c34a95 100644
+--- a/apps/openmw/mwrender/renderingmanager.cpp
++++ b/apps/openmw/mwrender/renderingmanager.cpp
+@@ -915,11 +915,11 @@ namespace MWRender
+         float rainIntensity = mSky->getPrecipitationAlpha();
+         mWater->setRainIntensity(rainIntensity);
+ 
++        mWater->update(dt, paused);
+         if (!paused)
+         {
+             mEffectManager->update(dt);
+             mSky->update(dt);
+-            mWater->update(dt);
+ 
+             const MWWorld::Ptr& player = mPlayerAnimation->getPtr();
+             osg::Vec3f playerPos(player.getRefData().getPosition().asVec3());
+diff --git a/apps/openmw/mwrender/ripples.cpp b/apps/openmw/mwrender/ripples.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..31f2cc85c6bd860710f8b1375835f072b5acf9c8
+--- /dev/null
++++ b/apps/openmw/mwrender/ripples.cpp
+@@ -0,0 +1,312 @@
++#include "ripples.hpp"
++
++#include <osg/Geometry>
++#include <osg/Texture2D>
++#include <osgUtil/CullVisitor>
++
++#include <components/debug/debuglog.hpp>
++#include <components/resource/imagemanager.hpp>
++#include <components/resource/resourcesystem.hpp>
++#include <components/resource/scenemanager.hpp>
++#include <components/sceneutil/color.hpp>
++#include <components/sceneutil/depth.hpp>
++#include <components/shader/shadermanager.hpp>
++
++#include "../mwworld/ptr.hpp"
++
++#include "../mwmechanics/actorutil.hpp"
++
++#include "vismask.hpp"
++
++namespace MWRender
++{
++    RipplesSurface::RipplesSurface(Resource::ResourceSystem* resourceSystem)
++        : osg::Geometry()
++        , mResourceSystem(resourceSystem)
++        , mWaveStep(1.0 / std::clamp(Settings::Manager::getInt("ripples fps", "Water"), 1, 200))
++    {
++        setUseDisplayList(false);
++        setUseVertexBufferObjects(true);
++
++        osg::ref_ptr<osg::Vec3Array> verts = new osg::Vec3Array;
++        verts->push_back(osg::Vec3f(-1, -1, 0));
++        verts->push_back(osg::Vec3f(-1, 3, 0));
++        verts->push_back(osg::Vec3f(3, -1, 0));
++
++        setVertexArray(verts);
++
++        setCullingActive(false);
++
++        addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, 0, 3));
++
++        constexpr float MinimumVersionRequiredForCompute = 4.4;
++        osg::GLExtensions* exts = osg::GLExtensions::Get(0, false);
++        mUseCompute = exts->glVersion > MinimumVersionRequiredForCompute
++            && exts->glslLanguageVersion > MinimumVersionRequiredForCompute;
++
++#ifdef __APPLE__
++        // we can not trust Apple :)
++        mUseCompute = false;
++#endif
++
++        if (mUseCompute)
++            Log(Debug::Info) << "Initialized compute shader pipeline for water ripples";
++        else
++            Log(Debug::Info) << "Initialized fallback fragment shader pipeline for water ripples";
++
++        for (size_t i = 0; i < mState.size(); ++i)
++        {
++            osg::ref_ptr<osg::StateSet> stateset = new osg::StateSet;
++            // bindings are set in the compute shader
++            if (!mUseCompute)
++                stateset->addUniform(new osg::Uniform("imageIn", 0));
++            stateset->addUniform(new osg::Uniform("offset", osg::Vec2f()));
++            stateset->addUniform(new osg::Uniform("positionCount", 0));
++            stateset->addUniform(new osg::Uniform(osg::Uniform::Type::FLOAT_VEC3, "positions", 100));
++            stateset->setAttributeAndModes(new osg::Viewport(0, 0, RipplesSurface::mRTTSize, RipplesSurface::mRTTSize));
++            mState[i].mStateset = stateset;
++        }
++
++        for (size_t i = 0; i < mTextures.size(); ++i)
++        {
++            osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
++            texture->setSourceFormat(GL_RGBA);
++            texture->setSourceType(GL_FLOAT);
++            texture->setInternalFormat(GL_RGBA16F);
++            texture->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture::LINEAR);
++            texture->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture::LINEAR);
++            texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_BORDER);
++            texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_BORDER);
++            texture->setBorderColor(osg::Vec4(0, 0, 0, 0));
++            texture->setTextureSize(mRTTSize, mRTTSize);
++
++            mTextures[i] = texture;
++
++            mFBOs[i] = new osg::FrameBufferObject;
++            mFBOs[i]->setAttachment(osg::Camera::COLOR_BUFFER0, osg::FrameBufferAttachment(mTextures[i]));
++        }
++
++        if (mUseCompute)
++            setupComputePipeline();
++        else
++            setupFragmentPipeline();
++
++        setCullCallback(new osg::NodeCallback);
++        setUpdateCallback(new osg::NodeCallback);
++    }
++
++    void RipplesSurface::setupFragmentPipeline()
++    {
++        auto& shaderManager = mResourceSystem->getSceneManager()->getShaderManager();
++
++        Shader::ShaderManager::DefineMap defineMap = { { "ripple_map_size", std::to_string(mRTTSize) } };
++
++        osg::ref_ptr<osg::Shader> vertex
++            = shaderManager.getShader("fullscreen_tri_vertex.glsl", {}, osg::Shader::VERTEX);
++
++        mProgramBlobber = shaderManager.getProgram(
++            vertex, shaderManager.getShader("ripples_blobber_fragment.glsl", defineMap, osg::Shader::FRAGMENT));
++        mProgramSimulation = shaderManager.getProgram(
++            vertex, shaderManager.getShader("ripples_simulate_fragment.glsl", defineMap, osg::Shader::FRAGMENT));
++    }
++
++    void RipplesSurface::setupComputePipeline()
++    {
++        auto& shaderManager = mResourceSystem->getSceneManager()->getShaderManager();
++
++        mProgramBlobber = shaderManager.getProgram(
++            nullptr, shaderManager.getShader("ripples_blobber_compute.glsl", {}, osg::Shader::COMPUTE));
++        mProgramSimulation = shaderManager.getProgram(
++            nullptr, shaderManager.getShader("ripples_simulate_compute.glsl", {}, osg::Shader::COMPUTE));
++    }
++
++    void RipplesSurface::traverse(osg::NodeVisitor& nv)
++    {
++        if (!nv.getFrameStamp())
++            return;
++
++        size_t frameId = nv.getFrameStamp()->getFrameNumber() % 2;
++
++        if (nv.getVisitorType() == osg::NodeVisitor::UPDATE_VISITOR)
++        {
++            static float remainingWaveTime = 0;
++
++            static double lastFrameTime = 0.0;
++            float frameTime = (lastFrameTime != 0.0) ? nv.getFrameStamp()->getReferenceTime() - lastFrameTime : 0.0;
++
++            lastFrameTime = nv.getFrameStamp()->getReferenceTime();
++
++            frameTime = std::min(frameTime, 0.1f);
++
++            remainingWaveTime += frameTime;
++            mState[frameId].mTicks = remainingWaveTime / mWaveStep;
++            remainingWaveTime -= mState[frameId].mTicks * mWaveStep;
++        }
++        else if (nv.getVisitorType() == osg::NodeVisitor::CULL_VISITOR)
++        {
++            const ESM::Position& player = MWMechanics::getPlayer().getRefData().getPosition();
++
++            mCurrentPlayerPos = osg::Vec2f(
++                std::floor(player.pos[0] / mWorldScaleFactor), std::floor(player.pos[1] / mWorldScaleFactor));
++            osg::Vec2f offset = mCurrentPlayerPos - mLastPlayerPos;
++            mLastPlayerPos = mCurrentPlayerPos;
++            mState[frameId].mPaused = mPaused;
++            mState[frameId].mOffset = offset;
++            mState[frameId].mCount = mPositionCount;
++            mState[frameId].mStateset->getUniform("positionCount")->set(mPositionCount);
++
++            auto* positions = mState[frameId].mStateset->getUniform("positions");
++
++            for (size_t i = 0; i < mPositionCount; ++i)
++            {
++                osg::Vec3f pos = mPositions[i]
++                    - osg::Vec3f(
++                        mCurrentPlayerPos.x() * mWorldScaleFactor, mCurrentPlayerPos.y() * mWorldScaleFactor, 0.0)
++                    + osg::Vec3f(mRTTSize * mWorldScaleFactor / 2, mRTTSize * mWorldScaleFactor / 2, 0.0);
++                pos /= mWorldScaleFactor;
++                positions->setElement(i, pos);
++            }
++            positions->dirty();
++
++            mPositionCount = 0;
++        }
++        osg::Geometry::traverse(nv);
++    }
++
++    void RipplesSurface::drawImplementation(osg::RenderInfo& renderInfo) const
++    {
++        osg::State& state = *renderInfo.getState();
++        osg::GLExtensions& ext = *state.get<osg::GLExtensions>();
++        size_t contextID = state.getContextID();
++
++        size_t currentFrame = state.getFrameStamp()->getFrameNumber() % 2;
++        const State& frameState = mState[currentFrame];
++        if (frameState.mPaused)
++        {
++            return;
++        }
++
++        auto bindImage = [contextID, &state, &ext](osg::Texture2D* texture, GLuint index, GLenum access) {
++            osg::Texture::TextureObject* to = texture->getTextureObject(contextID);
++            if (!to || texture->isDirty(contextID))
++            {
++                state.applyTextureAttribute(index, texture);
++                to = texture->getTextureObject(contextID);
++            }
++            ext.glBindImageTexture(index, to->id(), 0, GL_FALSE, 0, access, GL_RGBA16F);
++        };
++
++        osg::Uniform* offset = frameState.mStateset->getUniform("offset");
++
++        // PASS: Blot in all ripple spawners
++        if (frameState.mCount > 0)
++        {
++            mProgramBlobber->apply(state);
++            state.apply(frameState.mStateset);
++
++            const osg::Program::PerContextProgram* pcp = mProgramBlobber->getPCP(state);
++            auto location = pcp->getUniformLocation(offset->getName());
++
++            for (int i = 0; i < frameState.mTicks; i++)
++            {
++                float delta = (static_cast<float>(i) / frameState.mTicks);
++                offset->set(frameState.mOffset - osg::Vec2f(delta, delta));
++                offset->dirty();
++                offset->apply(&ext, location);
++
++                if (mUseCompute)
++                {
++                    bindImage(mTextures[simulationTick % 2], 0, GL_WRITE_ONLY_ARB);
++                    bindImage(mTextures[(simulationTick + 1) % 2], 1, GL_READ_ONLY_ARB);
++                    ext.glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
++                    ext.glDispatchCompute(mRTTSize / 16, mRTTSize / 16, 1);
++                }
++                else
++                {
++                    mFBOs[simulationTick % 2]->apply(state, osg::FrameBufferObject::DRAW_FRAMEBUFFER);
++                    state.applyTextureAttribute(0, mTextures[(simulationTick + 1) % 2]);
++                    osg::Geometry::drawImplementation(renderInfo);
++                }
++                simulationTick++;
++            }
++        }
++
++        // PASS: Wave simulation
++        mProgramSimulation->apply(state);
++        state.apply(frameState.mStateset);
++
++        const osg::Program::PerContextProgram* pcp = mProgramSimulation->getPCP(state);
++        auto location = pcp->getUniformLocation(offset->getName());
++
++        for (int i = 0; i < frameState.mTicks; i++)
++        {
++            offset->set(frameState.mOffset * (i + 1 / frameState.mTicks));
++            offset->dirty();
++            offset->apply(&ext, location);
++
++            if (mUseCompute)
++            {
++                bindImage(mTextures[simulationTick % 2], 0, GL_WRITE_ONLY_ARB);
++                bindImage(mTextures[(simulationTick + 1) % 2], 1, GL_READ_ONLY_ARB);
++                ext.glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
++                ext.glDispatchCompute(mRTTSize / 16, mRTTSize / 16, 1);
++            }
++            else
++            {
++                mFBOs[simulationTick % 2]->apply(state, osg::FrameBufferObject::DRAW_FRAMEBUFFER);
++                state.applyTextureAttribute(0, mTextures[(simulationTick + 1) % 2]);
++                osg::Geometry::drawImplementation(renderInfo);
++            }
++            simulationTick++;
++        }
++    }
++
++    osg::Texture* RipplesSurface::getColorTexture(size_t frame)
++    {
++        return mTextures[1];
++    }
++
++    void RipplesSurface::emit(const osg::Vec3f pos, float sizeInCellUnits)
++    {
++        // Emitted positions are reset every simulation tick, don't waste time wrapping around when out of buffer space
++        if (mPositionCount + 1 >= mPositions.size())
++        {
++            return;
++        }
++
++        mPositions[mPositionCount] = osg::Vec3f(pos.x(), pos.y(), sizeInCellUnits);
++
++        mPositionCount++;
++    }
++
++    Ripples::Ripples(Resource::ResourceSystem* resourceSystem)
++        : osg::Camera()
++        , mRipples(new RipplesSurface(resourceSystem))
++    {
++        getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
++        getOrCreateStateSet()->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
++        setRenderOrder(osg::Camera::PRE_RENDER);
++        setReferenceFrame(osg::Camera::ABSOLUTE_RF);
++        setNodeMask(Mask_RenderToTexture);
++        setClearMask(GL_NONE);
++        setViewport(0, 0, RipplesSurface::mRTTSize, RipplesSurface::mRTTSize);
++        addChild(mRipples);
++        setCullingActive(false);
++        setImplicitBufferAttachmentMask(0, 0);
++    }
++
++    osg::Texture* Ripples::getColorTexture(size_t frame)
++    {
++        return mRipples->getColorTexture(frame);
++    }
++
++    void Ripples::emit(const osg::Vec3f pos, float sizeInCellUnits)
++    {
++        mRipples->emit(pos, sizeInCellUnits);
++    }
++
++    void Ripples::setPaused(bool paused)
++    {
++        mRipples->setPaused(paused);
++    }
++}
+\ No newline at end of file
+diff --git a/apps/openmw/mwrender/ripples.hpp b/apps/openmw/mwrender/ripples.hpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..c7b3fe6b5029b0f1661fa255c0674738e184562c
+--- /dev/null
++++ b/apps/openmw/mwrender/ripples.hpp
+@@ -0,0 +1,106 @@
++#ifndef OPENMW_MWRENDER_RIPPLES_H
++#define OPENMW_MWRENDER_RIPPLES_H
++
++#include <array>
++
++#include <osg/Camera>
++#include <osg/Geometry>
++
++#include <components/sceneutil/rtt.hpp>
++#include <components/sceneutil/statesetupdater.hpp>
++
++namespace Resource
++{
++    class ResourceSystem;
++}
++
++namespace osg
++{
++    class Camera;
++    class Geometry;
++    class Program;
++    class Texture;
++    class StateSet;
++    class NodeVisitor;
++    class Texture;
++    class Texture2D;
++    class FrameBufferObject;
++}
++
++namespace MWRender
++{
++    class RipplesSurface : public osg::Geometry
++    {
++    public:
++        RipplesSurface(Resource::ResourceSystem* resourceSystem);
++
++        osg::Texture* getColorTexture(size_t frame = 0);
++
++        void emit(const osg::Vec3f pos, float sizeInCellUnits = 12.0);
++
++        void drawImplementation(osg::RenderInfo& renderInfo) const override;
++
++        void setPaused(bool paused) { mPaused = paused; }
++
++        void traverse(osg::NodeVisitor& nv) override;
++
++        static constexpr size_t mRTTSize = 1024;
++        // e.g. 1 pixel in render target === 2.5 cell units
++        static constexpr float mWorldScaleFactor = 2.5;
++
++        Resource::ResourceSystem* mResourceSystem;
++
++        struct State
++        {
++            osg::Vec2f mOffset;
++            osg::ref_ptr<osg::StateSet> mStateset;
++            bool mPaused = true;
++
++            size_t mTicks = 0;
++            size_t mCount = 0;
++        };
++
++        int mPositionCount = 0;
++        std::array<osg::Vec3f, 100> mPositions;
++
++        std::array<State, 2> mState;
++
++    private:
++        void setupFragmentPipeline();
++        void setupComputePipeline();
++
++        osg::Vec2f mCurrentPlayerPos;
++        osg::Vec2f mLastPlayerPos;
++
++        std::array<osg::ref_ptr<osg::Texture2D>, 2> mTextures;
++        std::array<osg::ref_ptr<osg::FrameBufferObject>, 2> mFBOs;
++
++        osg::ref_ptr<osg::Program> mProgramBlobber;
++        osg::ref_ptr<osg::Program> mProgramSimulation;
++
++        bool mPaused = false;
++        size_t mLastFrame = 0;
++        float mWaveStep = 1.0 / 60.0;
++
++        // Safe to read write in draw only
++        mutable size_t simulationTick = 0;
++
++        bool mUseCompute = false;
++    };
++
++    class Ripples : public osg::Camera
++    {
++    public:
++        Ripples(Resource::ResourceSystem* resourceSystem);
++
++        osg::Texture* getColorTexture(size_t frame);
++
++        void emit(const osg::Vec3f pos, float sizeInCellUnits = 12.0);
++
++        void setPaused(bool paused);
++
++        osg::ref_ptr<RipplesSurface> mRipples;
++    };
++}
++
++#endif
+diff --git a/apps/openmw/mwrender/ripplesimulation.cpp b/apps/openmw/mwrender/ripplesimulation.cpp
+index 306cf7a34a31ce5c6b6f5da348727413b028e741..9dc0e1afcc36225c136492206fac7a55ee558066 100644
+--- a/apps/openmw/mwrender/ripplesimulation.cpp
++++ b/apps/openmw/mwrender/ripplesimulation.cpp
+@@ -210,10 +210,17 @@ namespace MWRender
+     {
+         if (std::abs(pos.z() - mParticleNode->getPosition().z()) < 20)
+         {
+-            osgParticle::ParticleSystem::ScopedWriteLock lock(*mParticleSystem->getReadWriteMutex());
+-            osgParticle::Particle* p = mParticleSystem->createParticle(nullptr);
+-            p->setPosition(osg::Vec3f(pos.x(), pos.y(), 0.f));
+-            p->setAngle(osg::Vec3f(0, 0, Misc::Rng::rollProbability() * osg::PI * 2 - osg::PI));
++            if (mRipples)
++            {
++                mRipples->emit(osg::Vec3f(pos.x(), pos.y(), 0.f));
++            }
++            else
++            {
++                osgParticle::ParticleSystem::ScopedWriteLock lock(*mParticleSystem->getReadWriteMutex());
++                osgParticle::Particle* p = mParticleSystem->createParticle(nullptr);
++                p->setPosition(osg::Vec3f(pos.x(), pos.y(), 0.f));
++                p->setAngle(osg::Vec3f(0, 0, Misc::Rng::rollProbability() * osg::PI * 2 - osg::PI));
++            }
+         }
+     }
+ 
+diff --git a/apps/openmw/mwrender/ripplesimulation.hpp b/apps/openmw/mwrender/ripplesimulation.hpp
+index bc2eb913812e0abcab4883136bf351b14d3c7b4b..1f09797bf47770dbf590e4513766c37b284486f8 100644
+--- a/apps/openmw/mwrender/ripplesimulation.hpp
++++ b/apps/openmw/mwrender/ripplesimulation.hpp
+@@ -5,6 +5,8 @@
+ 
+ #include "../mwworld/ptr.hpp"
+ 
++#include "ripples.hpp"
++
+ namespace osg
+ {
+     class Group;
+@@ -61,6 +63,8 @@ namespace MWRender
+         /// Remove all active ripples
+         void clear();
+ 
++        void setRipples(Ripples* ripples) { mRipples = ripples; }
++
+     private:
+         osg::ref_ptr<osg::Group> mParent;
+ 
+@@ -68,6 +72,8 @@ namespace MWRender
+         osg::ref_ptr<osg::PositionAttitudeTransform> mParticleNode;
+ 
+         std::vector<Emitter> mEmitters;
++
++        Ripples* mRipples = nullptr;
+     };
+ 
+ }
+diff --git a/apps/openmw/mwrender/water.cpp b/apps/openmw/mwrender/water.cpp
+index 513b0eb26155c2eab9f3f4e0889b0ac6b78efe91..a585ba0592cfc12793f994b2e5169b95c9f62070 100644
+--- a/apps/openmw/mwrender/water.cpp
++++ b/apps/openmw/mwrender/water.cpp
+@@ -43,7 +43,10 @@
+ 
+ #include "../mwworld/cellstore.hpp"
+ 
++#include "../mwmechanics/actorutil.hpp"
++
+ #include "renderbin.hpp"
++#include "ripples.hpp"
+ #include "ripplesimulation.hpp"
+ #include "vismask.hpp"
+ 
+@@ -537,6 +540,12 @@ namespace MWRender
+             mParent->removeChild(mRefraction);
+             mRefraction = nullptr;
+         }
++        if (mRipples)
++        {
++            mParent->removeChild(mRipples);
++            mRipples = nullptr;
++            mSimulation->setRipples(nullptr);
++        }
+ 
+         mWaterNode->setStateSet(nullptr);
+         mWaterGeom->setStateSet(nullptr);
+@@ -563,9 +572,13 @@ namespace MWRender
+                 mParent->addChild(mRefraction);
+             }
+ 
++            mRipples = new Ripples(mResourceSystem);
++            mSimulation->setRipples(mRipples);
++            mParent->addChild(mRipples);
++
+             showWorld(mShowWorld);
+ 
+-            createShaderWaterStateSet(mWaterNode, mReflection, mRefraction);
++            createShaderWaterStateSet(mWaterNode);
+         }
+         else
+             createSimpleWaterStateSet(mWaterGeom, Fallback::Map::getFloat("Water_World_Alpha"));
+@@ -635,11 +648,12 @@ namespace MWRender
+     class ShaderWaterStateSetUpdater : public SceneUtil::StateSetUpdater
+     {
+     public:
+-        ShaderWaterStateSetUpdater(Water* water, Reflection* reflection, Refraction* refraction,
++        ShaderWaterStateSetUpdater(Water* water, Reflection* reflection, Refraction* refraction, Ripples* ripples,
+             osg::ref_ptr<osg::Program> program, osg::ref_ptr<osg::Texture2D> normalMap)
+             : mWater(water)
+             , mReflection(reflection)
+             , mRefraction(refraction)
++            , mRipples(ripples)
+             , mProgram(program)
+             , mNormalMap(normalMap)
+         {
+@@ -667,6 +681,11 @@ namespace MWRender
+                 depth->setWriteMask(false);
+                 stateset->setAttributeAndModes(depth, osg::StateAttribute::ON);
+             }
++            if (mRipples)
++            {
++                stateset->addUniform(new osg::Uniform("rippleMap", 4));
++                stateset->addUniform(new osg::Uniform("playerPos", osg::Vec2f()));
++            }
+             stateset->addUniform(new osg::Uniform("nodePosition", osg::Vec3f(mWater->getPosition())));
+         }
+ 
+@@ -680,6 +699,14 @@ namespace MWRender
+                 stateset->setTextureAttributeAndModes(2, mRefraction->getColorTexture(cv), osg::StateAttribute::ON);
+                 stateset->setTextureAttributeAndModes(3, mRefraction->getDepthTexture(cv), osg::StateAttribute::ON);
+             }
++            if (mRipples)
++            {
++                stateset->setTextureAttributeAndModes(
++                    4, mRipples->getColorTexture(cv->getFrameStamp()->getFrameNumber()), osg::StateAttribute::ON);
++
++                const ESM::Position& player = MWMechanics::getPlayer().getRefData().getPosition();
++                stateset->getUniform("playerPos")->set(osg::Vec2f(player.pos[0], player.pos[1]));
++            }
+             stateset->getUniform("nodePosition")->set(osg::Vec3f(mWater->getPosition()));
+         }
+ 
+@@ -687,17 +714,20 @@ namespace MWRender
+         Water* mWater;
+         Reflection* mReflection;
+         Refraction* mRefraction;
++        Ripples* mRipples;
+         osg::ref_ptr<osg::Program> mProgram;
+         osg::ref_ptr<osg::Texture2D> mNormalMap;
+     };
+ 
+-    void Water::createShaderWaterStateSet(osg::Node* node, Reflection* reflection, Refraction* refraction)
++    void Water::createShaderWaterStateSet(osg::Node* node)
+     {
+         // use a define map to conditionally compile the shader
+         std::map<std::string, std::string> defineMap;
+         defineMap["refraction_enabled"] = std::string(mRefraction ? "1" : "0");
+         const auto rippleDetail = std::clamp(Settings::Manager::getInt("rain ripple detail", "Water"), 0, 2);
+         defineMap["rain_ripple_detail"] = std::to_string(rippleDetail);
++        defineMap["ripple_map_world_scale"] = std::to_string(RipplesSurface::mWorldScaleFactor);
++        defineMap["ripple_map_size"] = std::to_string(RipplesSurface::mRTTSize);
+ 
+         Stereo::Manager::instance().shaderStereoDefines(defineMap);
+ 
+@@ -723,7 +753,7 @@ namespace MWRender
+         node->setUpdateCallback(mRainIntensityUpdater);
+ 
+         mShaderWaterStateSetUpdater
+-            = new ShaderWaterStateSetUpdater(this, mReflection, mRefraction, program, normalMap);
++            = new ShaderWaterStateSetUpdater(this, mReflection, mRefraction, mRipples, program, normalMap);
+         node->addCullCallback(mShaderWaterStateSetUpdater);
+     }
+ 
+@@ -746,6 +776,12 @@ namespace MWRender
+             mParent->removeChild(mRefraction);
+             mRefraction = nullptr;
+         }
++        if (mRipples)
++        {
++            mParent->removeChild(mRipples);
++            mRipples = nullptr;
++            mSimulation->setRipples(nullptr);
++        }
+     }
+ 
+     void Water::listAssetsToPreload(std::vector<std::string>& textures)
+@@ -806,9 +842,17 @@ namespace MWRender
+             mRainIntensityUpdater->setRainIntensity(rainIntensity);
+     }
+ 
+-    void Water::update(float dt)
++    void Water::update(float dt, bool paused)
+     {
+-        mSimulation->update(dt);
++        if (!paused)
++        {
++            mSimulation->update(dt);
++        }
++
++        if (mRipples)
++        {
++            mRipples->setPaused(paused);
++        }
+     }
+ 
+     void Water::updateVisible()
+@@ -819,6 +863,8 @@ namespace MWRender
+             mRefraction->setNodeMask(visible ? Mask_RenderToTexture : 0u);
+         if (mReflection)
+             mReflection->setNodeMask(visible ? Mask_RenderToTexture : 0u);
++        if (mRipples)
++            mRipples->setNodeMask(visible ? Mask_RenderToTexture : 0u);
+     }
+ 
+     bool Water::toggle()
+diff --git a/apps/openmw/mwrender/water.hpp b/apps/openmw/mwrender/water.hpp
+index cfd311300d30b531ec8f441c4e255b4dc0b832f2..3d06b840911670975adbe3f64f91ecd720f270e4 100644
+--- a/apps/openmw/mwrender/water.hpp
++++ b/apps/openmw/mwrender/water.hpp
+@@ -47,6 +47,7 @@ namespace MWRender
+     class Reflection;
+     class RippleSimulation;
+     class RainIntensityUpdater;
++    class Ripples;
+ 
+     /// Water rendering
+     class Water
+@@ -64,6 +65,7 @@ namespace MWRender
+ 
+         osg::ref_ptr<Refraction> mRefraction;
+         osg::ref_ptr<Reflection> mReflection;
++        osg::ref_ptr<Ripples> mRipples;
+ 
+         const std::filesystem::path mResourcePath;
+ 
+@@ -81,9 +83,7 @@ namespace MWRender
+ 
+         void createSimpleWaterStateSet(osg::Node* node, float alpha);
+ 
+-        /// @param reflection the reflection camera (required)
+-        /// @param refraction the refraction camera (optional)
+-        void createShaderWaterStateSet(osg::Node* node, Reflection* reflection, Refraction* refraction);
++        void createShaderWaterStateSet(osg::Node* node);
+ 
+         void updateWaterMaterial();
+ 
+@@ -116,7 +116,7 @@ namespace MWRender
+         void setHeight(const float height);
+         void setRainIntensity(const float rainIntensity);
+ 
+-        void update(float dt);
++        void update(float dt, bool paused);
+ 
+         osg::Node* getReflectionNode();
+         osg::Node* getRefractionNode();
+diff --git a/docs/source/reference/modding/settings/water.rst b/docs/source/reference/modding/settings/water.rst
+index 50578703536ec72d3478a1c6991f10247ea67921..386eab448fac38dab5746880c499db3911962208 100644
+--- a/docs/source/reference/modding/settings/water.rst
++++ b/docs/source/reference/modding/settings/water.rst
+@@ -92,6 +92,19 @@ Controls how detailed the raindrop ripples on water are.
+ 
+ This setting can be changed ingame with the "Rain ripple detail/density" dropdown under the Water tab of the Video panel in the Options menu.
+ 
++ripples fps
++-----------------
++
++:Type:		integer
++:Range:		1 to 200
++:Default:	100
++
++Controls the framerate at which ripples simulation will play.
++Effects all ripples except those caused by rain in water.
++
++Has no effect if the water shader is disabled.
++
++
+ small feature culling pixel size
+ --------------------------------
+ 
+diff --git a/files/data/CMakeLists.txt b/files/data/CMakeLists.txt
+index d95e2297dcb011cf60d8ff39f5f20e85adbdf459..c70da2ab6d8a1de557cd09f679da9173b7ea43d5 100644
+--- a/files/data/CMakeLists.txt
++++ b/files/data/CMakeLists.txt
+@@ -9,6 +9,7 @@ set(BUILTIN_DATA_FILES
+     textures/omw_menu_scroll_right.dds
+     textures/omw_menu_scroll_center_h.dds
+     textures/omw_menu_scroll_center_v.dds
++    textures/omw_ripple_blob.png
+ 
+     fonts/DejaVuFontLicense.txt
+     fonts/DejaVuLGCSansMono.ttf
+diff --git a/files/data/textures/omw_ripple_blob.png b/files/data/textures/omw_ripple_blob.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..c92b7a1357086f560821a41e95d93e02f949fa1d
+Binary files /dev/null and b/files/data/textures/omw_ripple_blob.png differ
+diff --git a/files/settings-default.cfg b/files/settings-default.cfg
+index e052aefcf2100116771dce08484cc1664ee9ede7..6e93aee31e6f2509016b9814296dd8816c73adbb 100644
+--- a/files/settings-default.cfg
++++ b/files/settings-default.cfg
+@@ -664,6 +664,9 @@ small feature culling pixel size = 20.0
+ # By what factor water downscales objects. Only works with water shader and refractions on.
+ refraction scale = 1.0
+ 
++# FPS at which ripple simulation will play at
++ripples fps = 100
++
+ [Windows]
+ 
+ # Location and sizes of windows as a fraction of the OpenMW window or
+diff --git a/files/shaders/CMakeLists.txt b/files/shaders/CMakeLists.txt
+index 9215f78da02c6d1d46ca87df97fa7e956fdc8eff..05d37e327afa00c63f65d06127ae376e1b85f372 100644
+--- a/files/shaders/CMakeLists.txt
++++ b/files/shaders/CMakeLists.txt
+@@ -57,6 +57,11 @@ set(SHADER_FILES
+     fog.glsl
+     precipitation_vertex.glsl
+     precipitation_fragment.glsl
++    ripples.glsl
++    ripples_blobber_compute.glsl
++    ripples_simulate_compute.glsl
++    ripples_blobber_fragment.glsl
++    ripples_simulate_fragment.glsl
+ )
+ 
+ copy_all_resource_files(${CMAKE_CURRENT_SOURCE_DIR} ${OPENMW_RESOURCES_ROOT} ${DDIRRELATIVE} "${SHADER_FILES}")
+diff --git a/files/shaders/ripples.glsl b/files/shaders/ripples.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..3138bd27b004ba975e0c8fcde85cfc82ba41607a
+--- /dev/null
++++ b/files/shaders/ripples.glsl
+@@ -0,0 +1,10 @@
++vec4 applySprings(in vec4 sampleData, in vec4 clusterA, in vec4 clusterB)
++{
++    vec4 value = vec4(0.0, sampleData.r, 0.0, 0.0);
++
++    float nsum = clusterA.x + clusterA.y + clusterA.z + clusterA.w;
++    value.r = 0.14 * nsum + (1.96 - 0.56) * sampleData.r - 0.98 * sampleData.g;
++    value.ba = 2.0 * (clusterA.xy - clusterA.zw) + 0.5 * (clusterB.xy - clusterB.zw);
++
++    return value;
++}
+\ No newline at end of file
+diff --git a/files/shaders/ripples_blobber_compute.glsl b/files/shaders/ripples_blobber_compute.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..95188c576980c1bda5d4154bf1b9975ff7fed2a5
+--- /dev/null
++++ b/files/shaders/ripples_blobber_compute.glsl
+@@ -0,0 +1,28 @@
++#version 440 core
++
++layout (binding = 0, rgba16f) restrict writeonly uniform image2D imageOut;
++layout (binding = 1, rgba16f) restrict readonly uniform image2D imageIn;
++
++layout (local_size_x=16, local_size_y=16) in;
++
++#define MAX_POSITIONS 100
++uniform vec3 positions[MAX_POSITIONS];
++uniform int positionCount;
++
++uniform float osg_SimulationTime;
++uniform vec2 offset;
++
++void main()
++{
++    ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
++
++    vec4 color = imageLoad(imageIn, texel);
++    float wavesizeMultiplier = 1.0 + 0.055 * sin(16 * osg_SimulationTime) + 0.065 * sin(12.87645 * osg_SimulationTime);;
++    for (int i = 0; i < positionCount; ++i) {
++        float wavesize = wavesizeMultiplier * positions[i].z;
++        float displace = clamp(2.0 * abs(length((positions[i].xy + offset) - vec2(gl_GlobalInvocationID.xy)) / wavesize - 1.0), 0.0, 1.0);
++        color.rg = mix(vec2(-1.0), color.rg, displace);
++    }
++
++    imageStore(imageOut, texel, color);
++}
+\ No newline at end of file
+diff --git a/files/shaders/ripples_blobber_fragment.glsl b/files/shaders/ripples_blobber_fragment.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..3ca2bc1262ea0bb0bfc979e5fc21686add35f182
+--- /dev/null
++++ b/files/shaders/ripples_blobber_fragment.glsl
+@@ -0,0 +1,25 @@
++#version 120
++
++uniform sampler2D imageIn;
++
++#define MAX_POSITIONS 100
++uniform vec3 positions[MAX_POSITIONS];
++uniform int positionCount;
++
++uniform float osg_SimulationTime;
++varying vec2 offset;
++
++void main()
++{
++    vec2 uv = (gl_FragCoord.xy + offset) / @ripple_map_size;
++
++    vec4 color = texture2D(imageIn, uv);
++    float wavesizeMultiplier = 1.0 + 0.055 * sin(16.0 * osg_SimulationTime) + 0.065 * sin(12.87645 * osg_SimulationTime);;
++    for (int i = 0; i < positionCount; ++i) {
++        float wavesize = wavesizeMultiplier * positions[i].z;
++        float displace = clamp(2.0 * abs(length((positions[i].xy + offset) - gl_FragCoord.xy) / wavesize - 1.0), 0.0, 1.0);
++        color.rg = mix(vec2(-1.0), color.rg, displace);
++    }
++
++    gl_FragColor = color;
++}
+\ No newline at end of file
+diff --git a/files/shaders/ripples_simulate_compute.glsl b/files/shaders/ripples_simulate_compute.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..28c22b63fa8cb52d9823b68cffd07383e59e7e9e
+--- /dev/null
++++ b/files/shaders/ripples_simulate_compute.glsl
+@@ -0,0 +1,33 @@
++#version 440 core
++
++layout (binding = 0, rgba16f) restrict writeonly uniform image2D imageOut;
++layout (binding = 1, rgba16f) restrict readonly uniform image2D imageIn;
++
++layout (local_size_x=16, local_size_y=16) in;
++
++#include "ripples.glsl"
++
++uniform vec2 offset;
++
++void main()
++{
++    ivec2 texel = ivec2(gl_GlobalInvocationID.xy + offset);
++
++    vec4 n = vec4(
++        imageLoad(imageIn, texel + ivec2(1, 0)).r,
++        imageLoad(imageIn, texel + ivec2(-1, 0)).r,
++        imageLoad(imageIn, texel + ivec2(0, 1)).r,
++        imageLoad(imageIn, texel + ivec2(0, -1)).r
++    );
++
++    vec4 n2 = vec4(
++        imageLoad(imageIn, texel + ivec2(2, 0)).r,
++        imageLoad(imageIn, texel + ivec2(-2, 0)).r,
++        imageLoad(imageIn, texel + ivec2(0, 2)).r,
++        imageLoad(imageIn, texel + ivec2(0, -2)).r
++    );
++
++    vec4 color = imageLoad(imageIn, texel);
++
++    imageStore(imageOut, ivec2(gl_GlobalInvocationID.xy), applySprings(color, n, n2));
++}
+\ No newline at end of file
+diff --git a/files/shaders/ripples_simulate_fragment.glsl b/files/shaders/ripples_simulate_fragment.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..8c9de07e496941d977b95b656dfd3153b077bcd6
+--- /dev/null
++++ b/files/shaders/ripples_simulate_fragment.glsl
+@@ -0,0 +1,35 @@
++#version 120
++
++uniform sampler2D imageIn;
++uniform vec2 offset;
++
++#include "ripples.glsl"
++
++void main()
++{
++    vec2 uv = (gl_FragCoord.xy + offset) / @ripple_map_size;
++
++    float pixelSize = 1.0 / @ripple_map_size;
++
++    float oneOffset = pixelSize;
++    float oneAndHalfOffset = 1.5 * pixelSize;
++
++    vec4 n = vec4(
++        texture2D(imageIn, uv + vec2(oneOffset, 0.0)).r,
++        texture2D(imageIn, uv + vec2(-oneOffset, 0.0)).r,
++        texture2D(imageIn, uv + vec2(0.0, oneOffset)).r,
++        texture2D(imageIn, uv + vec2(0.0, -oneOffset)).r
++    );
++
++    vec4 n2 = vec4(
++        texture2D(imageIn, uv + vec2(oneAndHalfOffset, 0.0)).r,
++        texture2D(imageIn, uv + vec2(-oneAndHalfOffset, 0.0)).r,
++        texture2D(imageIn, uv + vec2(0.0, oneAndHalfOffset)).r,
++        texture2D(imageIn, uv + vec2(0.0, -oneAndHalfOffset)).r
++    );
++
++
++    vec4 color = texture2D(imageIn, uv);
++
++    gl_FragColor = applySprings(color, n, n2);
++}
+\ No newline at end of file
+diff --git a/files/shaders/water_fragment.glsl b/files/shaders/water_fragment.glsl
+index f60ec765b1db130ffb27f8383b849024e4c5cccf..ccd5367c78eebbce8e63704903707dde840fbe1a 100644
+--- a/files/shaders/water_fragment.glsl
++++ b/files/shaders/water_fragment.glsl
+@@ -236,6 +236,9 @@ float linearizeDepth(float depth)
+   return depth;
+ }
+ 
++uniform sampler2D rippleMap;
++uniform vec2 playerPos;
++
+ void main(void)
+ {
+     frustumDepth = abs(far - near);
+@@ -265,6 +268,9 @@ void main(void)
+ 
+     vec3 rippleAdd = rainRipple.xyz * 10.0;
+ 
++    vec2 uv = (worldPos.xy - playerPos + (@ripple_map_size * @ripple_map_world_scale / 2)) / @ripple_map_size / @ripple_map_world_scale;
++    vec3 ripples = vec3(texture2D(rippleMap, uv).ba, 0.0);
++
+     vec2 bigWaves = vec2(BIG_WAVES_X,BIG_WAVES_Y);
+     vec2 midWaves = mix(vec2(MID_WAVES_X,MID_WAVES_Y),vec2(MID_WAVES_RAIN_X,MID_WAVES_RAIN_Y),rainIntensity);
+     vec2 smallWaves = mix(vec2(SMALL_WAVES_X,SMALL_WAVES_Y),vec2(SMALL_WAVES_RAIN_X,SMALL_WAVES_RAIN_Y),rainIntensity);
+@@ -272,7 +278,7 @@ void main(void)
+ 
+     vec3 normal = (normal0 * bigWaves.x + normal1 * bigWaves.y + normal2 * midWaves.x +
+                    normal3 * midWaves.y + normal4 * smallWaves.x + normal5 * smallWaves.y + rippleAdd);
+-    normal = normalize(vec3(-normal.x * bump, -normal.y * bump, normal.z));
++    normal = normalize(vec3(-normal.x * bump, -normal.y * bump, normal.z) + ripples);
+ 
+     vec3 lVec = normalize((gl_ModelViewMatrixInverse * vec4(lcalcPosition(0).xyz, 0.0)).xyz);
+     vec3 cameraPos = (gl_ModelViewMatrixInverse * vec4(0,0,0,1)).xyz;
