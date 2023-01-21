@@ -30,7 +30,7 @@ index b9c2c04571a07aa37b3a56c6a77e694c4b0285a7..d8152667682cf93f6de607957432001f
              osg::Vec3f playerPos(player.getRefData().getPosition().asVec3());
 diff --git a/apps/openmw/mwrender/ripples.cpp b/apps/openmw/mwrender/ripples.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..31f2cc85c6bd860710f8b1375835f072b5acf9c8
+index 0000000000000000000000000000000000000000..dab987fbb7310e97a98fdeb953417faaed1aa060
 --- /dev/null
 +++ b/apps/openmw/mwrender/ripples.cpp
 @@ -0,0 +1,312 @@
@@ -189,7 +189,7 @@ index 0000000000000000000000000000000000000000..31f2cc85c6bd860710f8b1375835f072
 +            mState[frameId].mPaused = mPaused;
 +            mState[frameId].mOffset = offset;
 +            mState[frameId].mCount = mPositionCount;
-+            mState[frameId].mStateset->getUniform("positionCount")->set(mPositionCount);
++            mState[frameId].mStateset->getUniform("positionCount")->set(static_cast<int>(mPositionCount));
 +
 +            auto* positions = mState[frameId].mStateset->getUniform("positions");
 +
@@ -243,7 +243,7 @@ index 0000000000000000000000000000000000000000..31f2cc85c6bd860710f8b1375835f072
 +            const osg::Program::PerContextProgram* pcp = mProgramBlobber->getPCP(state);
 +            auto location = pcp->getUniformLocation(offset->getName());
 +
-+            for (int i = 0; i < frameState.mTicks; i++)
++            for (size_t i = 0; i < frameState.mTicks; i++)
 +            {
 +                float delta = (static_cast<float>(i) / frameState.mTicks);
 +                offset->set(frameState.mOffset - osg::Vec2f(delta, delta));
@@ -274,7 +274,7 @@ index 0000000000000000000000000000000000000000..31f2cc85c6bd860710f8b1375835f072
 +        const osg::Program::PerContextProgram* pcp = mProgramSimulation->getPCP(state);
 +        auto location = pcp->getUniformLocation(offset->getName());
 +
-+        for (int i = 0; i < frameState.mTicks; i++)
++        for (size_t i = 0; i < frameState.mTicks; i++)
 +        {
 +            offset->set(frameState.mOffset * (i + 1 / frameState.mTicks));
 +            offset->dirty();
@@ -349,7 +349,7 @@ index 0000000000000000000000000000000000000000..31f2cc85c6bd860710f8b1375835f072
 \ No newline at end of file
 diff --git a/apps/openmw/mwrender/ripples.hpp b/apps/openmw/mwrender/ripples.hpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..c7b3fe6b5029b0f1661fa255c0674738e184562c
+index 0000000000000000000000000000000000000000..d8c55fbe323766e80450371cad0a63af306aa410
 --- /dev/null
 +++ b/apps/openmw/mwrender/ripples.hpp
 @@ -0,0 +1,106 @@
@@ -415,7 +415,7 @@ index 0000000000000000000000000000000000000000..c7b3fe6b5029b0f1661fa255c0674738
 +            size_t mCount = 0;
 +        };
 +
-+        int mPositionCount = 0;
++        size_t mPositionCount = 0;
 +        std::array<osg::Vec3f, 100> mPositions;
 +
 +        std::array<State, 2> mState;
@@ -950,7 +950,7 @@ index 0000000000000000000000000000000000000000..8c9de07e496941d977b95b656dfd3153
 +}
 \ No newline at end of file
 diff --git a/files/shaders/water_fragment.glsl b/files/shaders/water_fragment.glsl
-index f60ec765b1db130ffb27f8383b849024e4c5cccf..ccd5367c78eebbce8e63704903707dde840fbe1a 100644
+index f60ec765b1db130ffb27f8383b849024e4c5cccf..314d3a205d0272f6d6693596f21dca5a555ba056 100644
 --- a/files/shaders/water_fragment.glsl
 +++ b/files/shaders/water_fragment.glsl
 @@ -236,6 +236,9 @@ float linearizeDepth(float depth)
@@ -968,17 +968,8 @@ index f60ec765b1db130ffb27f8383b849024e4c5cccf..ccd5367c78eebbce8e63704903707dde
      vec3 rippleAdd = rainRipple.xyz * 10.0;
  
 +    vec2 uv = (worldPos.xy - playerPos + (@ripple_map_size * @ripple_map_world_scale / 2)) / @ripple_map_size / @ripple_map_world_scale;
-+    vec3 ripples = vec3(texture2D(rippleMap, uv).ba, 0.0);
++    rippleAdd += vec3(texture2D(rippleMap, uv).ba, 1.0) * 1.9;
 +
      vec2 bigWaves = vec2(BIG_WAVES_X,BIG_WAVES_Y);
      vec2 midWaves = mix(vec2(MID_WAVES_X,MID_WAVES_Y),vec2(MID_WAVES_RAIN_X,MID_WAVES_RAIN_Y),rainIntensity);
      vec2 smallWaves = mix(vec2(SMALL_WAVES_X,SMALL_WAVES_Y),vec2(SMALL_WAVES_RAIN_X,SMALL_WAVES_RAIN_Y),rainIntensity);
-@@ -272,7 +278,7 @@ void main(void)
- 
-     vec3 normal = (normal0 * bigWaves.x + normal1 * bigWaves.y + normal2 * midWaves.x +
-                    normal3 * midWaves.y + normal4 * smallWaves.x + normal5 * smallWaves.y + rippleAdd);
--    normal = normalize(vec3(-normal.x * bump, -normal.y * bump, normal.z));
-+    normal = normalize(vec3(-normal.x * bump, -normal.y * bump, normal.z) + ripples);
- 
-     vec3 lVec = normalize((gl_ModelViewMatrixInverse * vec4(lcalcPosition(0).xyz, 0.0)).xyz);
-     vec3 cameraPos = (gl_ModelViewMatrixInverse * vec4(0,0,0,1)).xyz;
