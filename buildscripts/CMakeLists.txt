@@ -227,8 +227,8 @@ ExternalProject_Add(openal
 	-DCMAKE_DEBUG_POSTFIX=
 	-DCMAKE_INSTALL_PREFIX=${prefix}
 	-DCMAKE_FIND_ROOT_PATH=${prefix}
-	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
- 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+#	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
+# 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	-DALSOFT_EXAMPLES=OFF
 	-DALSOFT_TESTS=OFF
 	-DALSOFT_UTILS=OFF
@@ -261,7 +261,7 @@ ExternalProject_Add(boost
 	--with-program_options
 	--with-system
 	--with-iostreams
-#	--with-regex
+	--with-regex
 	--ignore-site-config
 	toolset=clang-android
 	architecture=${BOOST_ARCH}
@@ -388,8 +388,8 @@ ExternalProject_Add(bullet
 	-DCMAKE_DEBUG_POSTFIX=
 	-DCMAKE_INSTALL_PREFIX=${prefix}
 	-DCMAKE_FIND_ROOT_PATH=${prefix}
-	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
- 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+#	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
+# 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	-DBUILD_BULLET2_DEMOS=OFF
 	-DBUILD_CPU_DEMOS=OFF
 	-DBUILD_UNIT_TESTS=OFF
@@ -426,8 +426,8 @@ ExternalProject_Add(mygui
 	-DCMAKE_DEBUG_POSTFIX=
 	-DCMAKE_INSTALL_PREFIX=${prefix}
 	-DCMAKE_FIND_ROOT_PATH=${prefix}
-	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
- 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+#	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
+# 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
@@ -664,8 +664,8 @@ ExternalProject_Add(osg
 	-DCMAKE_DEBUG_POSTFIX=
 	-DCMAKE_INSTALL_PREFIX=${prefix}
 	-DCMAKE_FIND_ROOT_PATH=${prefix}
-	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
-	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+#	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
+#	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	${OSG_COMMON}
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE)
@@ -690,7 +690,7 @@ set(OPENMW_COMMON
 	-DBUILD_DOCS=0
 	-DBUILD_UNITTESTS=0
 	-DBUILD_MYGUI_PLUGIN=0
-	-DOPENMW_LTO_BUILD=ON
+#	-DOPENMW_LTO_BUILD=ON
 	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
 	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
 	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
@@ -701,7 +701,7 @@ set(OPENMW_COMMON
 	-DOPENMW_USE_SYSTEM_YAML_CPP=OFF
 	-DOPENMW_USE_SYSTEM_ICU=OFF
 	-DOPENMW_ICU_HOST_BUILD_DIR=/home/runner/icu-build/
-	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=TRUE
+#	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=TRUE
 	-DOSG_STATIC=TRUE
 	-DMyGUI_LIBRARY=${prefix}/lib/libMyGUIEngineStatic.a
 )
@@ -710,18 +710,18 @@ set(OPENMW_PATCH
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/ripple.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma.patch &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/gamma2.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0001-loadingscreen-disable-for-now.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0009-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0010-android-fix-context-being-lost-on-app-minimize.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0001-loadingscreen-disable-for-now.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0009-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0010-android-fix-context-being-lost-on-app-minimize.patch &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0014-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/0012-components-misc-stringops-use-boost-format-instead-o.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/fix-build.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/psa.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb2.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/tcb_range_limit.diff &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/psa.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/old_tcb2.patch &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/tcb_range_limit.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/soft_particles_mr.diff &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/localmap.diff &&
+#	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/localmap.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/simple_shadows.diff &&
 #	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/shader_fixes.diff &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/highp.diff &&
@@ -735,8 +735,8 @@ set(OPENMW_PATCH
 ExternalProject_Add(openmw
 	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit icu
 
-	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
-#	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+#	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/glassmancody.info/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/Capostrophic/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL_HASH ${OPENMW_HASH}
@@ -758,8 +758,8 @@ ExternalProject_Add(openmw
 	-DCMAKE_DEBUG_POSTFIX=
 	-DCMAKE_INSTALL_PREFIX=${prefix}
 	-DCMAKE_FIND_ROOT_PATH=${prefix}
-	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
- 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+#	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
+# 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 	${OPENMW_COMMON}
 
 	BUILD_COMMAND $(MAKE)
