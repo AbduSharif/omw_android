@@ -1,0 +1,24 @@
+diff --git a/apps/openmw/engine.cpp b/apps/openmw/engine.cpp
+index 7be3cd8bf35b5506dfecea6d771a13365ae3fbe2..814f033f7dd6b3f9403313c8a47057b12a390269 100644
+--- a/apps/openmw/engine.cpp
++++ b/apps/openmw/engine.cpp
+@@ -1125,14 +1125,16 @@ void OMW::Engine::go()
+ 
+         if (stats)
+         {
++            constexpr unsigned statsReportDelay = 3;
+             const auto frameNumber = mViewer->getFrameStamp()->getFrameNumber();
+-            if (frameNumber >= 2)
++            if (frameNumber >= statsReportDelay)
+             {
+-                mViewer->getViewerStats()->report(stats, frameNumber - 2);
++                const unsigned reportFrameNumber = frameNumber - statsReportDelay;
++                mViewer->getViewerStats()->report(stats, reportFrameNumber);
+                 osgViewer::Viewer::Cameras cameras;
+                 mViewer->getCameras(cameras);
+                 for (auto camera : cameras)
+-                    camera->getStats()->report(stats, frameNumber - 2);
++                    camera->getStats()->report(stats, reportFrameNumber);
+             }
+         }
+ 

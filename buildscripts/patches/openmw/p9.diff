@@ -1,0 +1,23 @@
+diff --git a/apps/openmw/mwphysics/mtphysics.cpp b/apps/openmw/mwphysics/mtphysics.cpp
+index 7c01e13c631f1f818375fb9e58208099b6c2fbc4..e43b3bfe5f1f63054fbf7a06db7fd347969a2446 100644
+--- a/apps/openmw/mwphysics/mtphysics.cpp
++++ b/apps/openmw/mwphysics/mtphysics.cpp
+@@ -322,8 +322,8 @@ namespace MWPhysics
+                 case LockingPolicy::ExclusiveLocksOnly:
+                     return 1;
+                 case LockingPolicy::AllowSharedLocks:
+-                    return static_cast<unsigned>(std::max(
+-                        getMaxBulletSupportedThreads(), Settings::Manager::getInt("async num threads", "Physics")));
++                    return static_cast<unsigned>(std::clamp(
++                        Settings::Manager::getInt("async num threads", "Physics"), 0, getMaxBulletSupportedThreads()));
+             }
+ 
+             throw std::runtime_error("Unsupported LockingPolicy: "
+@@ -363,6 +363,7 @@ namespace MWPhysics
+     {
+         if (mNumThreads >= 1)
+         {
++            Log(Debug::Info) << "Using " << mNumThreads << " async physics threads";
+             for (unsigned i = 0; i < mNumThreads; ++i)
+                 mThreads.emplace_back([&] { worker(); } );
+         }

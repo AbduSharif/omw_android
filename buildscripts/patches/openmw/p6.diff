@@ -1,0 +1,1383 @@
+diff --git a/apps/openmw/CMakeLists.txt b/apps/openmw/CMakeLists.txt
+index 13fb71714733929248e12021f7cf44fa54d3491a..65fbea3fcf42edaec588a75c3f817bd48e2cd61d 100644
+--- a/apps/openmw/CMakeLists.txt
++++ b/apps/openmw/CMakeLists.txt
+@@ -60,7 +60,7 @@ add_openmw_dir (mwscript
+ 
+ add_openmw_dir (mwlua
+     luamanagerimp object worldview userdataserializer eventqueue
+-    luabindings localscripts playerscripts objectbindings cellbindings asyncbindings
++    luabindings localscripts playerscripts objectbindings cellbindings
+     camerabindings uibindings inputbindings nearbybindings postprocessingbindings stats debugbindings
+     types/types types/door types/actor types/container types/weapon types/npc types/creature types/activator types/book types/lockpick types/probe types/apparatus types/potion types/ingredient types/misc types/repair
+     )
+diff --git a/apps/openmw/mwlua/asyncbindings.cpp b/apps/openmw/mwlua/asyncbindings.cpp
+deleted file mode 100644
+index 968920ab7fc671301f453162809eac85197a7137..0000000000000000000000000000000000000000
+--- a/apps/openmw/mwlua/asyncbindings.cpp
++++ /dev/null
+@@ -1,69 +0,0 @@
+-#include "luabindings.hpp"
+-
+-#include "luamanagerimp.hpp"
+-
+-namespace sol
+-{
+-    template <>
+-    struct is_automagical<MWLua::AsyncPackageId> : std::false_type {};
+-
+-    template <>
+-    struct is_automagical<LuaUtil::Callback> : std::false_type {};
+-}
+-
+-namespace MWLua
+-{
+-
+-    struct TimerCallback
+-    {
+-        AsyncPackageId mAsyncId;
+-        std::string mName;
+-    };
+-
+-    sol::function getAsyncPackageInitializer(const Context& context)
+-    {
+-        using TimerType = LuaUtil::ScriptsContainer::TimerType;
+-        sol::usertype<AsyncPackageId> api = context.mLua->sol().new_usertype<AsyncPackageId>("AsyncPackage");
+-        api["registerTimerCallback"]
+-            = [](const AsyncPackageId& asyncId, std::string_view name, sol::main_protected_function callback) {
+-                  asyncId.mContainer->registerTimerCallback(asyncId.mScriptId, name, std::move(callback));
+-                  return TimerCallback{ asyncId, std::string(name) };
+-              };
+-        api["newSimulationTimer"] = [world = context.mWorldView](const AsyncPackageId&, double delay,
+-                                        const TimerCallback& callback, sol::main_object callbackArg) {
+-            callback.mAsyncId.mContainer->setupSerializableTimer(TimerType::SIMULATION_TIME,
+-                world->getSimulationTime() + delay, callback.mAsyncId.mScriptId, callback.mName,
+-                std::move(callbackArg));
+-        };
+-        api["newGameTimer"] = [world = context.mWorldView](const AsyncPackageId&, double delay,
+-                                  const TimerCallback& callback, sol::main_object callbackArg) {
+-            callback.mAsyncId.mContainer->setupSerializableTimer(TimerType::GAME_TIME, world->getGameTime() + delay,
+-                callback.mAsyncId.mScriptId, callback.mName, std::move(callbackArg));
+-        };
+-        api["newUnsavableSimulationTimer"] = [world = context.mWorldView](const AsyncPackageId& asyncId, double delay,
+-                                                 sol::main_protected_function callback) {
+-            asyncId.mContainer->setupUnsavableTimer(
+-                TimerType::SIMULATION_TIME, world->getSimulationTime() + delay, asyncId.mScriptId, std::move(callback));
+-        };
+-        api["newUnsavableGameTimer"] = [world = context.mWorldView](const AsyncPackageId& asyncId, double delay,
+-                                           sol::main_protected_function callback) {
+-            asyncId.mContainer->setupUnsavableTimer(
+-                TimerType::GAME_TIME, world->getGameTime() + delay, asyncId.mScriptId, std::move(callback));
+-        };
+-        api["callback"] = [](const AsyncPackageId& asyncId, sol::main_protected_function fn) -> LuaUtil::Callback {
+-            return LuaUtil::Callback{ std::move(fn), asyncId.mHiddenData };
+-        };
+-
+-        sol::usertype<LuaUtil::Callback> callbackType = context.mLua->sol().new_usertype<LuaUtil::Callback>("Callback");
+-        callbackType[sol::meta_function::call] =
+-            [](const LuaUtil::Callback& callback, sol::variadic_args va) { return callback.call(sol::as_args(va)); };
+-
+-        auto initializer = [](sol::table hiddenData)
+-        {
+-            LuaUtil::ScriptsContainer::ScriptId id = hiddenData[LuaUtil::ScriptsContainer::sScriptIdKey];
+-            return AsyncPackageId{id.mContainer, id.mIndex, hiddenData};
+-        };
+-        return sol::make_object(context.mLua->sol(), initializer);
+-    }
+-
+-}
+diff --git a/apps/openmw/mwlua/luabindings.hpp b/apps/openmw/mwlua/luabindings.hpp
+index 5760a383ec16d8c22a96edf7ce39eba59231ae7b..8c0a7b94c4c0225b0b061b2282f57fb46e8d2332 100644
+--- a/apps/openmw/mwlua/luabindings.hpp
++++ b/apps/openmw/mwlua/luabindings.hpp
+@@ -38,15 +38,6 @@ namespace MWLua
+     void initCellBindingsForLocalScripts(const Context&);
+     void initCellBindingsForGlobalScripts(const Context&);
+ 
+-    // Implemented in asyncbindings.cpp
+-    struct AsyncPackageId
+-    {
+-        LuaUtil::ScriptsContainer* mContainer;
+-        int mScriptId;
+-        sol::table mHiddenData;
+-    };
+-    sol::function getAsyncPackageInitializer(const Context&);
+-
+     // Implemented in camerabindings.cpp
+     sol::table initCameraPackage(const Context&);
+ 
+diff --git a/apps/openmw/mwlua/luamanagerimp.cpp b/apps/openmw/mwlua/luamanagerimp.cpp
+index d98bb557b41e3da6079a25a4ab693a3d78cd670e..458fc73ce1d927f62a2e46e12c8d63efe274f519 100644
+--- a/apps/openmw/mwlua/luamanagerimp.cpp
++++ b/apps/openmw/mwlua/luamanagerimp.cpp
+@@ -12,6 +12,7 @@
+ 
+ #include <components/settings/settings.hpp>
+ 
++#include <components/lua/asyncpackage.hpp>
+ #include <components/lua/utilpackage.hpp>
+ 
+ #include <components/lua_ui/util.hpp>
+@@ -86,7 +87,10 @@ namespace MWLua
+         LocalScripts::initializeSelfPackage(localContext);
+         LuaUtil::LuaStorage::initLuaBindings(mLua.sol());
+ 
+-        mLua.addCommonPackage("openmw.async", getAsyncPackageInitializer(context));
++        mLua.addCommonPackage("openmw.async",
++            LuaUtil::getAsyncPackageInitializer(
++                mLua.sol(), [this] { return mWorldView.getSimulationTime(); },
++                [this] { return mWorldView.getGameTime(); }));
+         mLua.addCommonPackage("openmw.util", LuaUtil::initUtilPackage(mLua.sol()));
+         mLua.addCommonPackage("openmw.core", initCorePackage(context));
+         mLua.addCommonPackage("openmw.types", initTypesPackage(context));
+diff --git a/apps/openmw/mwlua/nearbybindings.cpp b/apps/openmw/mwlua/nearbybindings.cpp
+index ce10a19e47bb1e47a54c759549ecd60a9bd6c1a5..ee9a879bcfba011a121a88fb9fd8ae67dc575cf6 100644
+--- a/apps/openmw/mwlua/nearbybindings.cpp
++++ b/apps/openmw/mwlua/nearbybindings.cpp
+@@ -109,9 +109,9 @@ namespace MWLua
+             MWBase::Environment::get().getWorld()->castRenderingRay(res, from, to, false, false);
+             return res;
+         };
+-        api["asyncCastRenderingRay"] = [context](const LuaUtil::Callback& callback, const osg::Vec3f& from,
+-                                           const osg::Vec3f& to) {
+-            context.mLuaManager->addAction([context, callback, from, to] {
++        api["asyncCastRenderingRay"] = [context](
++                                           const sol::table& callback, const osg::Vec3f& from, const osg::Vec3f& to) {
++            context.mLuaManager->addAction([context, callback = LuaUtil::Callback::fromLua(callback), from, to] {
+                 MWPhysics::RayCastingResult res;
+                 MWBase::Environment::get().getWorld()->castRenderingRay(res, from, to, false, false);
+                 context.mLuaManager->queueCallback(callback, sol::main_object(context.mLua->sol(), sol::in_place, res));
+diff --git a/apps/openmw/mwlua/uibindings.cpp b/apps/openmw/mwlua/uibindings.cpp
+index eec6509034afa7e29b4920bd78f67bd29203afb7..37351549efafb7d6f66082fba3b972bd8617bdf7 100644
+--- a/apps/openmw/mwlua/uibindings.cpp
++++ b/apps/openmw/mwlua/uibindings.cpp
+@@ -89,69 +89,6 @@ namespace MWLua
+ 
+     sol::table initUserInterfacePackage(const Context& context)
+     {
+-        auto uiContent = context.mLua->sol().new_usertype<LuaUi::Content>("UiContent");
+-        uiContent[sol::meta_function::length] = [](const LuaUi::Content& content)
+-        {
+-            return content.size();
+-        };
+-        uiContent[sol::meta_function::index] = sol::overload(
+-            [](const LuaUi::Content& content, size_t index)
+-            {
+-                return content.at(fromLuaIndex(index));
+-            },
+-            [](const LuaUi::Content& content, std::string_view name)
+-            {
+-                return content.at(name);
+-            });
+-        uiContent[sol::meta_function::new_index] = sol::overload(
+-            [](LuaUi::Content& content, size_t index, const sol::table& table)
+-            {
+-                content.assign(fromLuaIndex(index), table);
+-            },
+-            [](LuaUi::Content& content, size_t index, sol::nil_t nil)
+-            {
+-                content.remove(fromLuaIndex(index));
+-            },
+-            [](LuaUi::Content& content, std::string_view name, const sol::table& table)
+-            {
+-                content.assign(name, table);
+-            },
+-            [](LuaUi::Content& content, std::string_view name, sol::nil_t nil)
+-            {
+-                content.remove(name);
+-            });
+-        uiContent["insert"] = [](LuaUi::Content& content, size_t index, const sol::table& table)
+-        {
+-            content.insert(fromLuaIndex(index), table);
+-        };
+-        uiContent["add"] = [](LuaUi::Content& content, const sol::table& table)
+-        {
+-            content.insert(content.size(), table);
+-        };
+-        uiContent["indexOf"] = [](LuaUi::Content& content, const sol::table& table) -> sol::optional<size_t>
+-        {
+-            size_t index = content.indexOf(table);
+-            if (index < content.size())
+-                return toLuaIndex(index);
+-            else
+-                return sol::nullopt;
+-        };
+-        {
+-            auto pairs = [](LuaUi::Content& content)
+-            {
+-                auto next = [](LuaUi::Content& content, size_t i) -> sol::optional<std::tuple<size_t, sol::table>>
+-                {
+-                    if (i < content.size())
+-                        return std::make_tuple(i + 1, content.at(i));
+-                    else
+-                        return sol::nullopt;
+-                };
+-                return std::make_tuple(next, content, 0);
+-            };
+-            uiContent[sol::meta_function::ipairs] = pairs;
+-            uiContent[sol::meta_function::pairs] = pairs;
+-        }
+-
+         auto element = context.mLua->sol().new_usertype<LuaUi::Element>("Element");
+         element["layout"] = sol::property(
+             [](LuaUi::Element& element)
+@@ -210,12 +147,8 @@ namespace MWLua
+                 luaManager->addAction([wm, obj=obj.as<LObject>()]{ wm->setConsoleSelectedObject(obj.ptr()); });
+             }
+         };
+-        api["content"] = [](const sol::table& table)
+-        {
+-            return LuaUi::Content(table);
+-        };
+-        api["create"] = [context](const sol::table& layout)
+-        {
++        api["content"] = LuaUi::loadContentConstructor(context.mLua);
++        api["create"] = [context](const sol::table& layout) {
+             auto element = LuaUi::Element::make(layout);
+             context.mLuaManager->addAction(std::make_unique<UiAction>(UiAction::CREATE, element, context.mLua));
+             return element;
+diff --git a/apps/openmw_test_suite/lua/test_async.cpp b/apps/openmw_test_suite/lua/test_async.cpp
+index c1e1fd6c865a87ddce5684ed60d79da1d8c341b6..56f7a09be1515c1b0db9956a92b827ced8f96e86 100644
+--- a/apps/openmw_test_suite/lua/test_async.cpp
++++ b/apps/openmw_test_suite/lua/test_async.cpp
+@@ -1,8 +1,8 @@
+ #include "gmock/gmock.h"
+ #include <gtest/gtest.h>
+ 
++#include <components/lua/asyncpackage.hpp>
+ #include <components/lua/luastate.hpp>
+-#include <components/lua/scriptscontainer.hpp>
+ 
+ #include "../testing_util.hpp"
+ 
+diff --git a/apps/openmw_test_suite/lua/test_scriptscontainer.cpp b/apps/openmw_test_suite/lua/test_scriptscontainer.cpp
+index 84b632913cbd824f7ee3d8c43a60ce8fa05d6062..ef3ddc692b518efaa54091eb5bd785f04a639cf0 100644
+--- a/apps/openmw_test_suite/lua/test_scriptscontainer.cpp
++++ b/apps/openmw_test_suite/lua/test_scriptscontainer.cpp
+@@ -3,6 +3,7 @@
+ 
+ #include <components/esm/luascripts.hpp>
+ 
++#include <components/lua/asyncpackage.hpp>
+ #include <components/lua/luastate.hpp>
+ #include <components/lua/scriptscontainer.hpp>
+ 
+diff --git a/apps/openmw_test_suite/lua/test_storage.cpp b/apps/openmw_test_suite/lua/test_storage.cpp
+index e4c80e239cb700271b1db606530593c5b04193e2..7acd3d482150583ae58e1314f7a5113c11caf421 100644
+--- a/apps/openmw_test_suite/lua/test_storage.cpp
++++ b/apps/openmw_test_suite/lua/test_storage.cpp
+@@ -4,7 +4,7 @@
+ #include <boost/filesystem/operations.hpp>
+ #include <boost/filesystem/path.hpp>
+ 
+-#include <components/lua/scriptscontainer.hpp>
++#include <components/lua/asyncpackage.hpp>
+ #include <components/lua/storage.hpp>
+ 
+ namespace
+@@ -24,17 +24,16 @@ namespace
+         LuaUtil::LuaStorage storage(mLua);
+ 
+         std::vector<std::string> callbackCalls;
+-        LuaUtil::Callback callback{
+-            sol::make_object(mLua, [&](const std::string& section, const sol::optional<std::string>& key)
+-            {
+-                if (key)
+-                    callbackCalls.push_back(section + "_" + *key);
+-                else
+-                    callbackCalls.push_back(section + "_*");
+-            }),
+-            sol::table(mLua, sol::create)
++        sol::table callbackHiddenData(mLua, sol::create);
++        callbackHiddenData[LuaUtil::ScriptsContainer::sScriptIdKey] = LuaUtil::ScriptsContainer::ScriptId{};
++        sol::table callback(mLua, sol::create);
++        callback[1] = [&](const std::string& section, const sol::optional<std::string>& key) {
++            if (key)
++                callbackCalls.push_back(section + "_" + *key);
++            else
++                callbackCalls.push_back(section + "_*");
+         };
+-        callback.mHiddenData[LuaUtil::ScriptsContainer::sScriptIdKey] = "fakeId";
++        callback[2] = LuaUtil::AsyncPackageId{ nullptr, 0, callbackHiddenData };
+ 
+         mLua["mutable"] = storage.getMutableSection("test");
+         mLua["ro"] = storage.getReadOnlySection("test");
+diff --git a/apps/openmw_test_suite/lua/test_ui_content.cpp b/apps/openmw_test_suite/lua/test_ui_content.cpp
+index f478c618dc404616d756e37900498f76874408a9..01a5cdd370564e86a001ce46df56f82466d89579 100644
+--- a/apps/openmw_test_suite/lua/test_ui_content.cpp
++++ b/apps/openmw_test_suite/lua/test_ui_content.cpp
+@@ -1,62 +1,105 @@
+ #include <gtest/gtest.h>
+ #include <sol/sol.hpp>
+ 
++#include <components/lua/luastate.hpp>
+ #include <components/lua_ui/content.hpp>
+ 
+ namespace
+ {
+     using namespace testing;
+ 
+-    sol::state state;
++    struct LuaUiContentTest : Test
++    {
++        LuaUtil::LuaState mLuaState{ nullptr, nullptr };
++        sol::protected_function mNew;
++        LuaUiContentTest()
++        {
++            mLuaState.addInternalLibSearchPath("resources/lua_libs");
++            mNew = LuaUi::loadContentConstructor(&mLuaState);
++        }
++
++        LuaUi::ContentView makeContent(sol::table source)
++        {
++            auto result = mNew.call(source);
++            if (result.get_type() != sol::type::table)
++                throw std::logic_error("Expected table");
++            return LuaUi::ContentView(result.get<sol::table>());
++        }
++
++        sol::table makeTable() { return sol::table(mLuaState.sol(), sol::create); }
+ 
+-    sol::table makeTable()
++        sol::table makeTable(std::string name)
++        {
++            auto result = makeTable();
++            result["name"] = name;
++            return result;
++        }
++    };
++
++    TEST_F(LuaUiContentTest, ProtectedMetatable)
+     {
+-        return sol::table(state, sol::create);
++        mLuaState.sol()["makeContent"] = mNew;
++        mLuaState.sol()["M"] = makeContent(makeTable()).getMetatable();
++        std::string testScript = R"(
++            assert(not pcall(function() setmetatable(makeContent{}, {}) end), 'Metatable is not protected')
++            assert(getmetatable(makeContent{}) == false, 'Metatable is not protected')
++        )";
++        EXPECT_NO_THROW(mLuaState.sol().safe_script(testScript));
+     }
+ 
+-    sol::table makeTable(std::string name)
++    TEST_F(LuaUiContentTest, Create)
+     {
+-        auto result = makeTable();
+-        result["name"] = name;
+-        return result;
++        auto table = makeTable();
++        table.add(makeTable());
++        table.add(makeTable());
++        table.add(makeTable());
++        LuaUi::ContentView content = makeContent(table);
++        EXPECT_EQ(content.size(), 3);
+     }
+ 
+-    TEST(LuaUiContentTest, Create)
++    TEST_F(LuaUiContentTest, Insert)
+     {
+         auto table = makeTable();
+         table.add(makeTable());
+         table.add(makeTable());
+         table.add(makeTable());
+-        LuaUi::Content content(table);
+-        EXPECT_EQ(content.size(), 3);
++        LuaUi::ContentView content = makeContent(table);
++        content.insert(2, makeTable("inserted"));
++        EXPECT_EQ(content.size(), 4);
++        auto inserted = content.at("inserted");
++        auto index = content.indexOf(inserted);
++        EXPECT_TRUE(index.has_value());
++        EXPECT_EQ(index.value(), 2);
+     }
+ 
+-    TEST(LuaUiContentTest, CreateWithHole)
++    TEST_F(LuaUiContentTest, MakeHole)
+     {
+         auto table = makeTable();
+         table.add(makeTable());
+         table.add(makeTable());
+-        table[4] = makeTable();
+-        EXPECT_ANY_THROW(LuaUi::Content content(table));
++        LuaUi::ContentView content = makeContent(table);
++        sol::table t = makeTable();
++        EXPECT_ANY_THROW(content.assign(3, t));
+     }
+ 
+-    TEST(LuaUiContentTest, WrongType)
++    TEST_F(LuaUiContentTest, WrongType)
+     {
+         auto table = makeTable();
+         table.add(makeTable());
+         table.add("a");
+         table.add(makeTable());
+-        EXPECT_ANY_THROW(LuaUi::Content content(table));
++        EXPECT_ANY_THROW(makeContent(table));
+     }
+ 
+-    TEST(LuaUiContentTest, NameAccess)
++    TEST_F(LuaUiContentTest, NameAccess)
+     {
+         auto table = makeTable();
+         table.add(makeTable());
+         table.add(makeTable("a"));
+-        LuaUi::Content content(table);
++        LuaUi::ContentView content = makeContent(table);
+         EXPECT_NO_THROW(content.at("a"));
+         content.remove("a");
++        EXPECT_EQ(content.size(), 1);
+         content.assign(content.size(), makeTable("b"));
+         content.assign("b", makeTable());
+         EXPECT_ANY_THROW(content.at("b"));
+@@ -67,31 +110,35 @@ namespace
+         EXPECT_ANY_THROW(content.at("c"));
+     }
+ 
+-    TEST(LuaUiContentTest, IndexOf)
++    TEST_F(LuaUiContentTest, IndexOf)
+     {
+         auto table = makeTable();
+         table.add(makeTable());
+         table.add(makeTable());
+         table.add(makeTable());
+-        LuaUi::Content content(table);
++        LuaUi::ContentView content = makeContent(table);
+         auto child = makeTable();
+         content.assign(2, child);
+-        EXPECT_EQ(content.indexOf(child), 2);
+-        EXPECT_EQ(content.indexOf(makeTable()), content.size());
++        EXPECT_EQ(content.indexOf(child).value(), 2);
++        EXPECT_TRUE(!content.indexOf(makeTable()).has_value());
+     }
+ 
+-    TEST(LuaUiContentTest, BoundsChecks)
++    TEST_F(LuaUiContentTest, BoundsChecks)
+     {
+         auto table = makeTable();
+-        LuaUi::Content content(table);
++        LuaUi::ContentView content = makeContent(table);
+         EXPECT_ANY_THROW(content.at(0));
++        EXPECT_EQ(content.size(), 0);
+         content.assign(content.size(), makeTable());
++        EXPECT_EQ(content.size(), 1);
+         content.assign(content.size(), makeTable());
++        EXPECT_EQ(content.size(), 2);
+         content.assign(content.size(), makeTable());
++        EXPECT_EQ(content.size(), 3);
+         EXPECT_ANY_THROW(content.at(3));
+         EXPECT_ANY_THROW(content.remove(3));
+-        EXPECT_NO_THROW(content.remove(1));
+-        EXPECT_NO_THROW(content.at(1));
++        content.remove(2);
+         EXPECT_EQ(content.size(), 2);
++        EXPECT_ANY_THROW(content.at(2));
+     }
+ }
+diff --git a/components/CMakeLists.txt b/components/CMakeLists.txt
+index 29940cef6f182e6d5ea3f60e4f29871c054ddaf4..0b0a39ef92625f98db728534ee40620acc37a12a 100644
+--- a/components/CMakeLists.txt
++++ b/components/CMakeLists.txt
+@@ -1,5 +1,10 @@
+ project (Components)
+ 
++if(APPLE)
++    set(BUNDLE_RESOURCES_DIR "${APP_BUNDLE_DIR}/Contents/Resources")
++    set(OPENMW_RESOURCES_ROOT ${BUNDLE_RESOURCES_DIR})
++endif(APPLE)
++
+ # Version file
+ set (VERSION_IN_FILE "${OpenMW_SOURCE_DIR}/files/version.in")
+ set (VERSION_FILE_PATH_BASE "${OpenMW_BINARY_DIR}")
+@@ -29,7 +34,7 @@ endif (GIT_CHECKOUT)
+ # source files
+ 
+ add_component_dir (lua
+-    luastate scriptscontainer utilpackage serialization configuration l10n storage
++    luastate scriptscontainer asyncpackage utilpackage serialization configuration l10n storage
+     )
+ 
+ add_component_dir (l10n
+@@ -271,6 +276,7 @@ add_component_dir (lua_ui
+     properties widget element util layers content alignment resources
+     adapter text textedit window image container flex
+     )
++copy_resource_file("lua_ui/content.lua" "${OPENMW_RESOURCES_ROOT}" "resources/lua_libs/content.lua")
+ 
+ 
+ if(WIN32)
+diff --git a/components/lua/asyncpackage.cpp b/components/lua/asyncpackage.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..58e8e3a007083b7e2f1200ddab921e18d2899ae0
+--- /dev/null
++++ b/components/lua/asyncpackage.cpp
+@@ -0,0 +1,93 @@
++#include "asyncpackage.hpp"
++
++namespace sol
++{
++    template <>
++    struct is_automagical<LuaUtil::AsyncPackageId> : std::false_type
++    {
++    };
++
++    template <>
++    struct is_automagical<LuaUtil::Callback> : std::false_type
++    {
++    };
++}
++
++namespace LuaUtil
++{
++
++    struct TimerCallback
++    {
++        AsyncPackageId mAsyncId;
++        std::string mName;
++    };
++
++    Callback Callback::fromLua(const sol::table& t)
++    {
++        return Callback{ t.raw_get<sol::main_protected_function>(1), t.raw_get<AsyncPackageId>(2).mHiddenData };
++    }
++
++    bool Callback::isLuaCallback(const sol::object& t)
++    {
++        if (!t.is<sol::table>())
++            return false;
++        sol::object meta = sol::table(t)[sol::metatable_key];
++        if (!meta.is<sol::table>())
++            return false;
++        return sol::table(meta).raw_get_or<bool, std::string_view, bool>("isCallback", false);
++    }
++
++    sol::function getAsyncPackageInitializer(
++        lua_State* L, std::function<double()> simulationTimeFn, std::function<double()> gameTimeFn)
++    {
++        sol::state_view lua(L);
++        using TimerType = ScriptsContainer::TimerType;
++        sol::usertype<AsyncPackageId> api = lua.new_usertype<AsyncPackageId>("AsyncPackage");
++        api["registerTimerCallback"]
++            = [](const AsyncPackageId& asyncId, std::string_view name, sol::main_protected_function callback) {
++                  asyncId.mContainer->registerTimerCallback(asyncId.mScriptId, name, std::move(callback));
++                  return TimerCallback{ asyncId, std::string(name) };
++              };
++        api["newSimulationTimer"] = [simulationTimeFn](const AsyncPackageId&, double delay,
++                                        const TimerCallback& callback, sol::main_object callbackArg) {
++            callback.mAsyncId.mContainer->setupSerializableTimer(TimerType::SIMULATION_TIME, simulationTimeFn() + delay,
++                callback.mAsyncId.mScriptId, callback.mName, std::move(callbackArg));
++        };
++        api["newGameTimer"] = [gameTimeFn](const AsyncPackageId&, double delay, const TimerCallback& callback,
++                                  sol::main_object callbackArg) {
++            callback.mAsyncId.mContainer->setupSerializableTimer(TimerType::GAME_TIME, gameTimeFn() + delay,
++                callback.mAsyncId.mScriptId, callback.mName, std::move(callbackArg));
++        };
++        api["newUnsavableSimulationTimer"]
++            = [simulationTimeFn](const AsyncPackageId& asyncId, double delay, sol::main_protected_function callback) {
++                  asyncId.mContainer->setupUnsavableTimer(
++                      TimerType::SIMULATION_TIME, simulationTimeFn() + delay, asyncId.mScriptId, std::move(callback));
++              };
++        api["newUnsavableGameTimer"]
++            = [gameTimeFn](const AsyncPackageId& asyncId, double delay, sol::main_protected_function callback) {
++                  asyncId.mContainer->setupUnsavableTimer(
++                      TimerType::GAME_TIME, gameTimeFn() + delay, asyncId.mScriptId, std::move(callback));
++              };
++
++        sol::table callbackMeta = sol::table::create(L);
++        callbackMeta[sol::meta_function::call] = [](const sol::table& callback, sol::variadic_args va) {
++            return Callback::fromLua(callback).call(sol::as_args(va));
++        };
++        callbackMeta[sol::meta_function::to_string] = [] { return "Callback"; };
++        callbackMeta[sol::meta_function::metatable] = false;
++        callbackMeta["isCallback"] = true;
++        api["callback"] = [callbackMeta](const AsyncPackageId& asyncId, sol::main_protected_function fn) -> sol::table {
++            sol::table c = sol::table::create(fn.lua_state(), 2);
++            c.raw_set(1, std::move(fn), 2, asyncId);
++            c[sol::metatable_key] = callbackMeta;
++            return c;
++        };
++
++        auto initializer = [](sol::table hiddenData) {
++            ScriptsContainer::ScriptId id = hiddenData[ScriptsContainer::sScriptIdKey];
++            return AsyncPackageId{ id.mContainer, id.mIndex, hiddenData };
++        };
++        return sol::make_object(lua, initializer);
++    }
++
++}
+diff --git a/components/lua/asyncpackage.hpp b/components/lua/asyncpackage.hpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..24fdb5f8f65636265aec6f99b28e93c293d232ac
+--- /dev/null
++++ b/components/lua/asyncpackage.hpp
+@@ -0,0 +1,56 @@
++#ifndef COMPONENTS_LUA_ASYNCPACKAGE_H
++#define COMPONENTS_LUA_ASYNCPACKAGE_H
++
++#include "scriptscontainer.hpp"
++
++namespace LuaUtil
++{
++    struct AsyncPackageId
++    {
++        ScriptsContainer* mContainer;
++        int mScriptId;
++        sol::table mHiddenData;
++    };
++    sol::function getAsyncPackageInitializer(
++        lua_State* L, std::function<double()> simulationTimeFn, std::function<double()> gameTimeFn);
++
++    // Wrapper for a Lua function.
++    // Holds information about the script the function belongs to.
++    // Needed to prevent callback calls if the script was removed.
++    struct Callback
++    {
++        sol::main_protected_function mFunc;
++        sol::table mHiddenData; // same object as Script::mHiddenData in ScriptsContainer
++
++        static bool isLuaCallback(const sol::object&);
++        static Callback fromLua(const sol::table&);
++
++        bool isValid() const { return mHiddenData[ScriptsContainer::sScriptIdKey] != sol::nil; }
++
++        template <typename... Args>
++        sol::object call(Args&&... args) const
++        {
++            if (isValid())
++                return LuaUtil::call(mFunc, std::forward<Args>(args)...);
++            else
++                Log(Debug::Debug) << "Ignored callback to the removed script "
++                                  << mHiddenData.get<std::string>(ScriptsContainer::sScriptDebugNameKey);
++            return sol::nil;
++        }
++
++        template <typename... Args>
++        void tryCall(Args&&... args) const
++        {
++            try
++            {
++                this->call(std::forward<Args>(args)...);
++            }
++            catch (std::exception& e)
++            {
++                Log(Debug::Error) << "Error in callback: " << e.what();
++            }
++        }
++    };
++}
++
++#endif // COMPONENTS_LUA_ASYNCPACKAGE_H
+diff --git a/components/lua/luastate.cpp b/components/lua/luastate.cpp
+index 4b2e099e05bd12d75b3c354f5859e1ce6251974d..0d106cb11976d6d54bc62dea6cda970ba4227bc7 100644
+--- a/components/lua/luastate.cpp
++++ b/components/lua/luastate.cpp
+@@ -60,6 +60,13 @@ namespace LuaUtil
+ 
+         mLua["writeToLog"] = [](std::string_view s) { Log(Debug::Level::Info) << s; };
+ 
++        mLua["setEnvironment"]
++            = [](const sol::environment& env, const sol::function& fn) { sol::set_environment(env, fn); };
++        mLua["loadFromVFS"] = [this](std::string_view packageName) {
++            return loadScriptAndCache(packageNameToVfsPath(packageName, mVFS));
++        };
++        mLua["loadInternalLib"] = [this](std::string_view packageName) { return loadInternalLib(packageName); };
++
+         // Some fixes for compatibility between different Lua versions
+         if (mLua["unpack"] == sol::nil)
+             mLua["unpack"] = mLua["table"]["unpack"];
+@@ -85,6 +92,19 @@ namespace LuaUtil
+             end
+             printGen = function(name) return function(...) return printToLog(name, ...) end end
+ 
++            function requireGen(env, loaded, loadFn)
++                return function(packageName)
++                    local p = loaded[packageName]
++                    if p == nil then
++                        local loader = loadFn(packageName)
++                        setEnvironment(env, loader)
++                        p = loader(packageName)
++                        loaded[packageName] = p
++                    end
++                    return p
++                end
++            end
++
+             function createStrictIndexFn(tbl)
+                 return function(_, key)
+                     local res = tbl[key]
+@@ -207,17 +227,7 @@ namespace LuaUtil
+             loaded[key] = maybeRunLoader(value);
+         for (const auto& [key, value] : packages)
+             loaded[key] = maybeRunLoader(value);
+-        env["require"] = [this, env, loaded, hiddenData](std::string_view packageName) mutable
+-        {
+-            sol::object package = loaded[packageName];
+-            if (package != sol::nil)
+-                return package;
+-            sol::protected_function packageLoader = loadScriptAndCache(packageNameToVfsPath(packageName, mVFS));
+-            sol::set_environment(env, packageLoader);
+-            package = call(packageLoader, packageName);
+-            loaded[packageName] = package;
+-            return package;
+-        };
++        env["require"] = mLua["requireGen"](env, loaded, mLua["loadFromVFS"]);
+ 
+         sol::set_environment(env, script);
+         return call(script);
+@@ -229,15 +239,7 @@ namespace LuaUtil
+         sol::table loaded(mLua, sol::create);
+         for (const std::string& s : safePackages)
+             loaded[s] = static_cast<sol::object>(mSandboxEnv[s]);
+-        env["require"] = [this, loaded, env](const std::string& module) mutable
+-        {
+-            if (loaded[module] != sol::nil)
+-                return loaded[module];
+-            sol::protected_function initializer = loadInternalLib(module);
+-            sol::set_environment(env, initializer);
+-            loaded[module] = call(initializer, module);
+-            return loaded[module];
+-        };
++        env["require"] = mLua["requireGen"](env, loaded, mLua["loadInternalLib"]);
+         return env;
+     }
+ 
+diff --git a/components/lua/scriptscontainer.hpp b/components/lua/scriptscontainer.hpp
+index 201218a6e230e6efef69c8255133f7957bef79cc..c20b369176743ae807c874e443a41a3859de8062 100644
+--- a/components/lua/scriptscontainer.hpp
++++ b/components/lua/scriptscontainer.hpp
+@@ -246,38 +246,6 @@ namespace LuaUtil
+         int64_t mTemporaryCallbackCounter = 0;
+     };
+ 
+-    // Wrapper for a Lua function.
+-    // Holds information about the script the function belongs to.
+-    // Needed to prevent callback calls if the script was removed.
+-    struct Callback
+-    {
+-        sol::main_protected_function mFunc;
+-        sol::table mHiddenData; // same object as Script::mHiddenData in ScriptsContainer
+-
+-        bool isValid() const { return mHiddenData[ScriptsContainer::sScriptIdKey] != sol::nil; }
+-
+-        template <typename... Args>
+-        sol::object call(Args&&... args) const
+-        {
+-            if (isValid())
+-                return LuaUtil::call(mFunc, std::forward<Args>(args)...);
+-            else
+-                Log(Debug::Debug) << "Ignored callback to the removed script "
+-                                  << mHiddenData.get<std::string>(ScriptsContainer::sScriptDebugNameKey);
+-            return sol::nil;
+-        }
+-
+-        template <typename... Args>
+-        void tryCall(Args&&... args) const
+-        {
+-            try { this->call(std::forward<Args>(args)...); }
+-            catch (std::exception& e)
+-            {
+-                Log(Debug::Error) << "Error in callback: " << e.what();
+-            }
+-        }
+-    };
+-
+ }
+ 
+ #endif // COMPONENTS_LUA_SCRIPTSCONTAINER_H
+diff --git a/components/lua/storage.cpp b/components/lua/storage.cpp
+index 51c06e9325c4de2c17427ae025ac2465ff81deb8..11ab18601841586d9b48ad290a3f495bdece772a 100644
+--- a/components/lua/storage.cpp
++++ b/components/lua/storage.cpp
+@@ -108,8 +108,7 @@ namespace LuaUtil
+             return section.mSection->get(key).getCopy(s);
+         };
+         sview["asTable"] = [](const SectionView& section) { return section.mSection->asTable(); };
+-        sview["subscribe"] = [](const SectionView& section, const Callback& callback)
+-        {
++        sview["subscribe"] = [](const SectionView& section, const sol::table& callback) {
+             std::vector<Callback>& callbacks = section.mSection->mCallbacks;
+             if (!callbacks.empty() && callbacks.size() == callbacks.capacity())
+             {
+@@ -117,7 +116,7 @@ namespace LuaUtil
+                                                [&](const Callback& c) { return !c.isValid(); }),
+                                 callbacks.end());
+             }
+-            callbacks.push_back(callback);
++            callbacks.push_back(Callback::fromLua(callback));
+         };
+         sview["reset"] = [](const SectionView& section, const sol::optional<sol::table>& newValues)
+         {
+diff --git a/components/lua/storage.hpp b/components/lua/storage.hpp
+index b2fbde4abe8fbf6848a7e2712a3ac6039c81af43..e1a257298c32365b6e6c28cfadf56ed4e0c3be16 100644
+--- a/components/lua/storage.hpp
++++ b/components/lua/storage.hpp
+@@ -6,7 +6,7 @@
+ 
+ #include <boost/filesystem/path.hpp>
+ 
+-#include "scriptscontainer.hpp"
++#include "asyncpackage.hpp"
+ #include "serialization.hpp"
+ 
+ namespace LuaUtil
+diff --git a/components/lua_ui/content.cpp b/components/lua_ui/content.cpp
+index e7cf474bc997a50de2e7a2d125bcb8f3e831837d..2e1d4ca0c4ef6cb8ad41529241fd62098e639105 100644
+--- a/components/lua_ui/content.cpp
++++ b/components/lua_ui/content.cpp
+@@ -2,104 +2,21 @@
+ 
+ namespace LuaUi
+ {
+-    Content::Content(const sol::table& table)
++    sol::protected_function loadContentConstructor(LuaUtil::LuaState* state)
+     {
+-        size_t size = table.size();
+-        for (size_t index = 0; index < size; ++index)
+-        {
+-            sol::object value = table.get<sol::object>(index + 1);
+-            if (value.is<sol::table>())
+-                assign(index, value.as<sol::table>());
+-            else
+-                throw std::logic_error("UI Content children must all be tables.");
+-        }
++        sol::function loader = state->loadInternalLib("content");
++        sol::set_environment(state->newInternalLibEnvironment(), loader);
++        sol::table metatable = loader().get<sol::table>();
++        if (metatable["new"].get_type() != sol::type::function)
++            throw std::logic_error("Expected function");
++        return metatable["new"].get<sol::protected_function>();
+     }
+ 
+-    void Content::assign(size_t index, const sol::table& table)
++    bool isValidContent(const sol::object& object)
+     {
+-        if (mOrdered.size() < index)
+-            throw std::logic_error("Can't have gaps in UI Content.");
+-        if (index == mOrdered.size())
+-            mOrdered.push_back(table);
+-        else
+-        {
+-            sol::optional<std::string> oldName = mOrdered[index]["name"];
+-            if (oldName.has_value())
+-                mNamed.erase(oldName.value());
+-            mOrdered[index] = table;
+-        }
+-        sol::optional<std::string> name = table["name"];
+-        if (name.has_value())
+-            mNamed[name.value()] = index;
+-    }
+-
+-    void Content::assign(std::string_view name, const sol::table& table)
+-    {
+-        auto it = mNamed.find(name);
+-        if (it != mNamed.end())
+-            assign(it->second, table);
+-        else
+-            throw std::logic_error(std::string("Can't find a UI Content child with name ") += name);
+-    }
+-
+-    void Content::insert(size_t index, const sol::table& table)
+-    {
+-        if (mOrdered.size() < index)
+-            throw std::logic_error("Can't have gaps in UI Content.");
+-        mOrdered.insert(mOrdered.begin() + index, table);
+-        for (size_t i = index; i < mOrdered.size(); ++i)
+-        {
+-            sol::optional<std::string> name = mOrdered[i]["name"];
+-            if (name.has_value())
+-                mNamed[name.value()] = index;
+-        }
+-    }
+-
+-    sol::table Content::at(size_t index) const
+-    {
+-        if (index > size())
+-            throw std::logic_error("Invalid UI Content index.");
+-        return mOrdered.at(index);
+-    }
+-
+-    sol::table Content::at(std::string_view name) const
+-    {
+-        auto it = mNamed.find(name);
+-        if (it == mNamed.end())
+-            throw std::logic_error("Invalid UI Content name.");
+-        return mOrdered.at(it->second);
+-    }
+-
+-    size_t Content::remove(size_t index)
+-    {
+-        sol::table table = at(index);
+-        sol::optional<std::string> name = table["name"];
+-        if (name.has_value())
+-        {
+-            auto it = mNamed.find(name.value());
+-            if (it != mNamed.end())
+-                mNamed.erase(it);
+-        }
+-        mOrdered.erase(mOrdered.begin() + index);
+-        return index;
+-    }
+-
+-    size_t Content::remove(std::string_view name)
+-    {
+-        auto it = mNamed.find(name);
+-        if (it == mNamed.end())
+-            throw std::logic_error("Invalid UI Content name.");
+-        size_t index = it->second;
+-        remove(index);
+-        return index;
+-    }
+-
+-    size_t Content::indexOf(const sol::table& table)
+-    {
+-        auto it = std::find(mOrdered.begin(), mOrdered.end(), table);
+-        if (it == mOrdered.end())
+-            return size();
+-        else
+-            return it - mOrdered.begin();
++        if (object.get_type() != sol::type::table)
++            return false;
++        sol::table table = object;
++        return table.traverse_get<sol::optional<bool>>(sol::metatable_key, "__Content").value_or(false);
+     }
+ }
+diff --git a/components/lua_ui/content.hpp b/components/lua_ui/content.hpp
+index e970744b3dd94959dd7a1abc389cfd36a86f3da7..2caa1ff8dc8614c54a86e427f1a6d26cf91c2bc9 100644
+--- a/components/lua_ui/content.hpp
++++ b/components/lua_ui/content.hpp
+@@ -6,36 +6,105 @@
+ 
+ #include <sol/sol.hpp>
+ 
++#include <components/lua/luastate.hpp>
++
+ namespace LuaUi
+ {
+-    class Content
++    sol::protected_function loadContentConstructor(LuaUtil::LuaState* state);
++
++    bool isValidContent(const sol::object& object);
++
++    class ContentView
+     {
+-        public:
+-            using iterator = std::vector<sol::table>::iterator;
++    public:
++        // accepts only Lua tables returned by ui.content
++        explicit ContentView(sol::table table)
++            : mTable(std::move(table))
++        {
++            if (!isValidContent(mTable))
++                throw std::domain_error("Expected a Content table");
++        }
+ 
+-            Content() {}
++        size_t size() const { return mTable.size(); }
+ 
+-            // expects a Lua array - a table with keys from 1 to n without any nil values in between
+-            // any other keys are ignored
+-            explicit Content(const sol::table&);
++        void assign(std::string_view name, const sol::table& table)
++        {
++            if (indexOf(name).has_value())
++                mTable[name] = table;
++            else
++                throw std::domain_error("Invalid Content key");
++        }
++        void assign(size_t index, const sol::table& table)
++        {
++            if (index <= size())
++                mTable[toLua(index)] = table;
++            else
++                throw std::range_error("Invalid Content index");
++        }
++        void insert(size_t index, const sol::table& table) { callMethod("insert", toLua(index), table); }
+ 
+-            size_t size() const { return mOrdered.size(); }
++        sol::table at(size_t index) const
++        {
++            if (index < size())
++                return mTable.get<sol::table>(toLua(index));
++            else
++                throw std::range_error("Invalid Content index");
++        }
++        sol::table at(std::string_view name) const
++        {
++            if (indexOf(name).has_value())
++                return mTable.get<sol::table>(name);
++            else
++                throw std::range_error("Invalid Content key");
++        }
++        void remove(size_t index)
++        {
++            if (index < size())
++                // for some reason mTable[key] = value doesn't call __newindex
++                getMetatable()[sol::meta_function::new_index].get<sol::protected_function>()(
++                    mTable, toLua(index), sol::nil);
++            else
++                throw std::range_error("Invalid Content index");
++        }
++        void remove(std::string_view name)
++        {
++            auto index = indexOf(name);
++            if (index.has_value())
++                remove(index.value());
++            else
++                throw std::domain_error("Invalid Content key");
++        }
++        std::optional<size_t> indexOf(std::string_view name) const
++        {
++            sol::object result = callMethod("indexOf", name);
++            if (result.is<size_t>())
++                return fromLua(result.as<size_t>());
++            else
++                return std::nullopt;
++        }
++        std::optional<size_t> indexOf(const sol::table& table) const
++        {
++            sol::object result = callMethod("indexOf", table);
++            if (result.is<size_t>())
++                return fromLua(result.as<size_t>());
++            else
++                return std::nullopt;
++        }
+ 
+-            void assign(std::string_view name, const sol::table& table);
+-            void assign(size_t index, const sol::table& table);
+-            void insert(size_t index, const sol::table& table);
++        sol::table getMetatable() const { return mTable[sol::metatable_key].get<sol::table>(); }
+ 
+-            sol::table at(size_t index) const;
+-            sol::table at(std::string_view name) const;
+-            size_t remove(size_t index);
+-            size_t remove(std::string_view name);
+-            size_t indexOf(const sol::table& table);
++    private:
++        sol::table mTable;
+ 
+-        private:
+-            std::map<std::string, size_t, std::less<>> mNamed;
+-            std::vector<sol::table> mOrdered;
+-    };
++        template <typename... Arg>
++        sol::object callMethod(std::string_view name, Arg&&... arg) const
++        {
++            return mTable.get<sol::protected_function>(name)(mTable, arg...);
++        }
+ 
++        static inline size_t toLua(size_t index) { return index + 1; }
++        static inline size_t fromLua(size_t index) { return index - 1; }
++    };
+ }
+ 
+ #endif // COMPONENTS_LUAUI_CONTENT
+diff --git a/components/lua_ui/content.lua b/components/lua_ui/content.lua
+new file mode 100644
+index 0000000000000000000000000000000000000000..fbd39d5f689e4ac529fa92aee78df6e98b558c0f
+--- /dev/null
++++ b/components/lua_ui/content.lua
+@@ -0,0 +1,140 @@
++local M = {}
++M.__Content = true
++M.new = function(source)
++    local result = {}
++    result.__nameIndex = {}
++    for i, v in ipairs(source) do
++        if type(v) ~= 'table' then
++            error('Content can only contain tables')
++        end
++        result[i] = v
++        if type(v.name) == 'string' then
++            result.__nameIndex[v.name] = i
++        end
++    end
++    return setmetatable(result, M)
++end
++local function validateIndex(self, index)
++    if type(index) ~= 'number' then
++        error('Unexpected Content key: ' .. tostring(index))
++    end
++    if index < 1 or (#self + 1) < index then
++        error('Invalid Content index: ' .. tostring(index))
++    end
++end
++
++local function getIndexFromKey(self, key)
++    local index = key
++    if type(key) == 'string' then
++        index = self.__nameIndex[key]
++        if not index then
++            error('Unexpected content key:' .. key)
++        end
++    end
++    validateIndex(self, index)
++    return index
++end
++
++local methods = {
++    insert = function(self, index, value)
++        validateIndex(self, index)
++        if type(value) ~= 'table' then
++            error('Content can only contain tables')
++        end
++        for i = #self, index, -1 do
++            rawset(self, i + 1, rawget(self, i))
++            local name = rawget(self, i + 1)
++            if name then
++                self.__nameIndex[name] = i + 1
++            end
++        end
++        rawset(self, index, value)
++        if value.name then
++            self.__nameIndex[value.name] = index
++        end
++    end,
++    indexOf = function(self, value)
++        if type(value) == 'string' then
++            return self.__nameIndex[value]
++        elseif type(value) == 'table' then
++            for i = 1, #self do
++                if rawget(self, i) == value then
++                    return i
++                end
++            end
++        end
++        return nil
++    end,
++    add = function(self, value)
++        self:insert(#self + 1, value)
++        return #self
++    end,
++}
++M.__index = function(self, key)
++    if methods[key] then return methods[key] end
++    local index = getIndexFromKey(self, key)
++    return rawget(self, index)
++end
++local function nameAt(self, index)
++    local v = rawget(self, index)
++    return v and type(v.name) == 'string' and v.name
++end
++
++local function remove(self, index)
++    local oldName = nameAt(self, index)
++    if oldName then
++        self.__nameIndex[oldName] = nil
++    end
++    if index > #self then
++        error('Invalid Content index:' .. tostring(index))
++    end
++    for i = index, #self - 1 do
++        local v = rawget(self, i + 1)
++        rawset(self, i, v)
++        if type(v.name) == 'string' then
++            self.__nameIndex[v.name] = i
++        end
++    end
++    rawset(self, #self, nil)
++end
++
++local function assign(self, index, value)
++    local oldName = nameAt(self, index)
++    if oldName then
++        self.__nameIndex[oldName] = nil
++    end
++    rawset(self, index, value)
++    if value.name then
++        self.__nameIndex[value.name] = index
++    end
++end
++
++M.__newindex = function(self, key, value)
++    local index = getIndexFromKey(self, key)
++    if value == nil then
++        remove(self, index)
++    elseif type(value) == 'table' then
++        assign(self, index, value)
++    else
++        error('Content can only contain tables')
++    end
++end
++M.__tostring = function(self)
++    return ('UiContent{%d layouts}'):format(#self)
++end
++local function next(self, index)
++    local v = rawget(self, index)
++    if v then
++        return index + 1, v
++    else
++        return nil, nil
++    end
++end
++
++M.__pairs = function(self)
++    return next, self, 1
++end
++M.__ipairs = M.__pairs
++M.__metatable = false
++
++return M
+diff --git a/components/lua_ui/element.cpp b/components/lua_ui/element.cpp
+index bd9f84fec2489830c49981b3578f6670028aad9c..738bf5228b7eee39c33242dc10d6aabaa9bc9f66 100644
+--- a/components/lua_ui/element.cpp
++++ b/components/lua_ui/element.cpp
+@@ -62,9 +62,7 @@ namespace LuaUi
+                     destroyWidget(w);
+                 return result;
+             }
+-            if (!contentObj.is<Content>())
+-                throw std::logic_error("Layout content field must be a openmw.ui.content");
+-            Content content = contentObj.as<Content>();
++            ContentView content(contentObj.as<sol::table>());
+             result.resize(content.size());
+             size_t minSize = std::min(children.size(), content.size());
+             for (size_t i = 0; i < minSize; i++)
+@@ -106,13 +104,12 @@ namespace LuaUi
+             if (!eventsObj.is<sol::table>())
+                 throw std::logic_error("The \"events\" layout field must be a table of callbacks");
+             auto events = eventsObj.as<sol::table>();
+-            events.for_each([ext](const sol::object& name, const sol::object& callback)
+-            {
+-                if (name.is<std::string>() && callback.is<LuaUtil::Callback>())
+-                    ext->setCallback(name.as<std::string>(), callback.as<LuaUtil::Callback>());
++            events.for_each([ext](const sol::object& name, const sol::object& callback) {
++                if (name.is<std::string>() && LuaUtil::Callback::isLuaCallback(callback))
++                    ext->setCallback(name.as<std::string>(), LuaUtil::Callback::fromLua(callback));
+                 else if (!name.is<std::string>())
+                     Log(Debug::Warning) << "UI event key must be a string";
+-                else if (!callback.is<LuaUtil::Callback>())
++                else
+                     Log(Debug::Warning) << "UI event handler for key \"" << name.as<std::string>()
+                                         << "\" must be an openmw.async.callback";
+             });
+@@ -193,8 +190,8 @@ namespace LuaUi
+         assert(!mRoot);
+         if (!mRoot)
+         {
+-            mRoot = createWidget(mLayout, 0);
+-            mLayer = setLayer(mRoot, mLayout);
++            mRoot = createWidget(layout(), 0);
++            mLayer = setLayer(mRoot, layout());
+             updateAttachment();
+         }
+     }
+@@ -203,16 +200,16 @@ namespace LuaUi
+     {
+         if (mRoot && mUpdate)
+         {
+-            if (mRoot->widget()->getTypeName() != widgetType(mLayout))
++            if (mRoot->widget()->getTypeName() != widgetType(layout()))
+             {
+                 destroyWidget(mRoot);
+-                mRoot = createWidget(mLayout, 0);
++                mRoot = createWidget(layout(), 0);
+             }
+             else
+             {
+-                updateWidget(mRoot, mLayout, 0);
++                updateWidget(mRoot, layout(), 0);
+             }
+-            mLayer = setLayer(mRoot, mLayout);
++            mLayer = setLayer(mRoot, layout());
+             updateAttachment();
+         }
+         mUpdate = false;
+@@ -220,9 +217,11 @@ namespace LuaUi
+ 
+     void Element::destroy()
+     {
+-        if (mRoot)
+-            destroyWidget(mRoot);
++        if (!mRoot)
++            return;
++        destroyWidget(mRoot);
+         mRoot = nullptr;
++        mLayout = sol::make_object(mLayout.lua_state(), sol::nil);
+         sAllElements.erase(this);
+     }
+ 
+diff --git a/components/lua_ui/element.hpp b/components/lua_ui/element.hpp
+index 1387a1b51e51e275ee90acdc30ea5483db0b2ede..8151b4f88cd0713f121c3be388f1b1388be89782 100644
+--- a/components/lua_ui/element.hpp
++++ b/components/lua_ui/element.hpp
+@@ -18,7 +18,7 @@ namespace LuaUi
+ 
+         WidgetExtension* mRoot;
+         WidgetExtension* mAttachedTo;
+-        sol::table mLayout;
++        sol::object mLayout;
+         std::string mLayer;
+         bool mUpdate;
+         bool mDestroy;
+@@ -34,10 +34,11 @@ namespace LuaUi
+         void attachToWidget(WidgetExtension* w);
+         void detachFromWidget();
+ 
+-        private:
+-            Element(sol::table layout);
+-            static std::map<Element*, std::shared_ptr<Element>> sAllElements;
+-            void updateAttachment();
++    private:
++        Element(sol::table layout);
++        sol::table layout() { return mLayout.as<sol::table>(); }
++        static std::map<Element*, std::shared_ptr<Element>> sAllElements;
++        void updateAttachment();
+     };
+ }
+ 
+diff --git a/components/lua_ui/widget.hpp b/components/lua_ui/widget.hpp
+index 3285f629acedc45a1a1fcb9e4e0185d9a78853b5..5bba387070a112d3b9313b83ce5fd49ae0171a04 100644
+--- a/components/lua_ui/widget.hpp
++++ b/components/lua_ui/widget.hpp
+@@ -7,7 +7,7 @@
+ #include <MyGUI_Widget.h>
+ #include <sol/sol.hpp>
+ 
+-#include <components/lua/scriptscontainer.hpp>
++#include <components/lua/asyncpackage.hpp>
+ 
+ #include "properties.hpp"
+ 
+diff --git a/files/lua_api/CMakeLists.txt b/files/lua_api/CMakeLists.txt
+index 2e8d3d7b83a0e0c20f33f97a9d712c280ff0f9b6..a0d757088490046b1cdffff6ea974d12809d9612 100644
+--- a/files/lua_api/CMakeLists.txt
++++ b/files/lua_api/CMakeLists.txt
+@@ -1,3 +1,7 @@
++if (NOT DEFINED OPENMW_RESOURCES_ROOT)
++    return()
++endif()
++
+ set(LUA_API_FILES
+     README.md
+     coroutine.doclua
+@@ -18,5 +22,5 @@ set(LUA_API_FILES
+ )
+ 
+ foreach (f ${LUA_API_FILES})
+-    copy_resource_file("${CMAKE_CURRENT_SOURCE_DIR}/${f}" "${OpenMW_BINARY_DIR}" "resources/lua_api/${f}")
++    copy_resource_file("${CMAKE_CURRENT_SOURCE_DIR}/${f}" "${OPENMW_RESOURCES_ROOT}" "resources/lua_api/${f}")
+ endforeach (f)
+diff --git a/files/lua_api/openmw/ui.lua b/files/lua_api/openmw/ui.lua
+index 164d8768a90ededf864624c8a7a5d2f70f077d86..2b067b0a20e75e81807cd1489c488f78c3e4160e 100644
+--- a/files/lua_api/openmw/ui.lua
++++ b/files/lua_api/openmw/ui.lua
+@@ -172,6 +172,12 @@
+ -- for i = 1, #content do
+ --    print('widget',content[i].name,'at',i)
+ -- end
++-- @usage
++-- -- Note: layout names can collide with method names. Because of that you can't use a layout name such as "insert":
++-- local content = ui.content {
++--     { name = 'insert '}
++-- }
++-- content.insert.content = ui.content {} -- fails here, content.insert is a function!
+ 
+ ---
+ -- Puts the layout at given index by shifting all the elements after it
+@@ -210,6 +216,7 @@
+ 
+ ---
+ -- Access or replace the element's layout
++--   Note: Is reset to `nil` on `destroy`
+ -- @field [parent=#Element] #Layout layout
+ 
+ ---

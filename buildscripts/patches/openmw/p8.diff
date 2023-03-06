@@ -1,0 +1,22 @@
+diff --git a/apps/openmw/mwrender/skyutil.cpp b/apps/openmw/mwrender/skyutil.cpp
+index 3c2cd1c6e98c12d22f7659a1a193a27e91ca00e7..5971e50571057f36d6bb9d522c410feafe22e1de 100644
+--- a/apps/openmw/mwrender/skyutil.cpp
++++ b/apps/openmw/mwrender/skyutil.cpp
+@@ -10,6 +10,7 @@
+ #include <osg/TexMat>
+ #include <osg/OcclusionQueryNode>
+ #include <osg/ColorMask>
++#include <osg/ColorMaski>
+ #include <osg/BlendFunc>
+ #include <osg/AlphaFunc>
+ #include <osg/observer_ptr>
+@@ -794,7 +795,8 @@ namespace MWRender
+         // Disable writing to the color buffer. We are using this geometry for visibility tests only.
+         osg::ref_ptr<osg::ColorMask> colormask = new osg::ColorMask(0, 0, 0, 0);
+         stateset->setAttributeAndModes(colormask);
+-
++        if (sceneManager.getSupportsNormalsRT())
++            stateset->setAttributeAndModes(new osg::ColorMaski(1, false, false, false, false));
+         mTransform->addChild(queryNode);
+ 
+         mOcclusionQueryVisiblePixels = createOcclusionQueryNode(queryNode, true);

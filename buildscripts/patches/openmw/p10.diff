@@ -1,0 +1,223 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 5a14e21bfcb97f4c706b123322c45d1d1ceeb2f6..7bb62bc564e113912cdc6ec5163ec115db5d6bcb 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -157,6 +157,7 @@
+     Bug #6937: Divided by Nix Hounds quest is broken
+     Bug #7008: Race condition on initializing a vector of reserved node names
+     Bug #7121: Crash on TimeStamp construction with invalid hour value
++    Bug #7251: Force shaders setting still renders some drawables with FFP
+     Feature #890: OpenMW-CS: Column filtering
+     Feature #1465: "Reset" argument for AI functions
+     Feature #2491: Ability to make OpenMW "portable"
+diff --git a/components/sceneutil/morphgeometry.cpp b/components/sceneutil/morphgeometry.cpp
+index 39102b575a95a0d1556a49bb24204fcc078cf253..3efccfd6e6fa6e75e515b599e0d3cb3cf2401ff3 100644
+--- a/components/sceneutil/morphgeometry.cpp
++++ b/components/sceneutil/morphgeometry.cpp
+@@ -1,5 +1,7 @@
+ #include "morphgeometry.hpp"
+ 
++#include <osgUtil/CullVisitor>
++
+ #include <cassert>
+ #include <components/resource/scenemanager.hpp>
+ 
+@@ -87,7 +89,18 @@ void MorphGeometry::accept(osg::NodeVisitor &nv)
+     nv.pushOntoNodePath(this);
+ 
+     if (nv.getVisitorType() == osg::NodeVisitor::CULL_VISITOR)
++    {
++        // The cull visitor won't be applied to the node itself,
++        // but we want to use its state to render the child geometry.
++        osg::StateSet* stateset = getStateSet();
++        osgUtil::CullVisitor* cv = static_cast<osgUtil::CullVisitor*>(&nv);
++        if (stateset)
++            cv->pushStateSet(stateset);
++
+         cull(&nv);
++        if (stateset)
++            cv->popStateSet();
++    }
+     else
+         nv.apply(*this);
+ 
+diff --git a/components/sceneutil/riggeometry.cpp b/components/sceneutil/riggeometry.cpp
+index 5fca26587786fd60c12ccbdf905c464e7d8ca269..38a35f2a127554fa6485228cff18f8005eebea04 100644
+--- a/components/sceneutil/riggeometry.cpp
++++ b/components/sceneutil/riggeometry.cpp
+@@ -1,8 +1,11 @@
+ #include "riggeometry.hpp"
+ 
++#include <osg/MatrixTransform>
++
++#include <osgUtil/CullVisitor>
++
+ #include <components/debug/debuglog.hpp>
+ #include <components/resource/scenemanager.hpp>
+-#include <osg/MatrixTransform>
+ 
+ #include "skeleton.hpp"
+ #include "util.hpp"
+@@ -387,7 +390,18 @@ void RigGeometry::accept(osg::NodeVisitor &nv)
+     nv.pushOntoNodePath(this);
+ 
+     if (nv.getVisitorType() == osg::NodeVisitor::CULL_VISITOR)
++    {
++        // The cull visitor won't be applied to the node itself,
++        // but we want to use its state to render the child geometry.
++        osg::StateSet* stateset = getStateSet();
++        osgUtil::CullVisitor* cv = static_cast<osgUtil::CullVisitor*>(&nv);
++        if (stateset)
++            cv->pushStateSet(stateset);
++
+         cull(&nv);
++        if (stateset)
++            cv->popStateSet();
++    }
+     else if (nv.getVisitorType() == osg::NodeVisitor::UPDATE_VISITOR)
+         updateBounds(&nv);
+     else
+diff --git a/components/sceneutil/riggeometryosgaextension.cpp b/components/sceneutil/riggeometryosgaextension.cpp
+index 8768eb403ff3c280119b72ca6959781d35f050cd..3389a6ba5d82ac16ea3c6f5d688f2e087ea63d91 100644
+--- a/components/sceneutil/riggeometryosgaextension.cpp
++++ b/components/sceneutil/riggeometryosgaextension.cpp
+@@ -5,6 +5,8 @@
+ #include <osg/Drawable>
+ #include <osg/NodeVisitor>
+ 
++#include <osgUtil/CullVisitor>
++
+ #include <components/debug/debuglog.hpp>
+ #include <components/resource/scenemanager.hpp>
+ 
+@@ -220,6 +222,13 @@ void RigGeometryHolder::accept(osg::NodeVisitor &nv)
+ 
+     if (nv.getVisitorType() == osg::NodeVisitor::CULL_VISITOR && mSourceRigGeometry.get())
+     {
++        // The cull visitor won't be applied to the node itself,
++        // but we want to use its state to render the child geometry.
++        osg::StateSet* stateset = getStateSet();
++        osgUtil::CullVisitor* cv = static_cast<osgUtil::CullVisitor*>(&nv);
++        if (stateset)
++            cv->pushStateSet(stateset);
++
+         unsigned int traversalNumber = nv.getTraversalNumber();
+         if (mLastFrameNumber == traversalNumber)
+         {
+@@ -255,6 +264,8 @@ void RigGeometryHolder::accept(osg::NodeVisitor &nv)
+             nv.apply(geom);
+             nv.popFromNodePath();
+         }
++        if (stateset)
++            cv->popStateSet();
+     }
+     else if (nv.getVisitorType() == osg::NodeVisitor::UPDATE_VISITOR)
+     {
+diff --git a/components/shader/shadervisitor.cpp b/components/shader/shadervisitor.cpp
+index 7a949aac809d11efa378d3fc8ca7f402e9afedf2..d3dbb1d373e1fef9c16a01fa6c713f198ae6222d 100644
+--- a/components/shader/shadervisitor.cpp
++++ b/components/shader/shadervisitor.cpp
+@@ -820,74 +820,50 @@ namespace Shader
+ 
+     void ShaderVisitor::apply(osg::Geometry& geometry)
+     {
+-        bool needPop = (geometry.getStateSet() != nullptr);
++        pushRequirements(geometry);
+         if (geometry.getStateSet()) // TODO: check if stateset affects shader permutation before pushing it
+-        {
+-            pushRequirements(geometry);
+             applyStateSet(geometry.getStateSet(), geometry);
+-        }
+-
+-        if (!mRequirements.empty())
+-        {
+-            const ShaderRequirements& reqs = mRequirements.back();
+ 
+-            adjustGeometry(geometry, reqs);
+-
+-            createProgram(reqs);
+-        }
+-        else
+-            ensureFFP(geometry);
++        const ShaderRequirements& reqs = mRequirements.back();
++        adjustGeometry(geometry, reqs);
++        createProgram(reqs);
+ 
+-        if (needPop)
+-            popRequirements();
++        popRequirements();
+     }
+ 
+     void ShaderVisitor::apply(osg::Drawable& drawable)
+     {
+-        bool needPop = drawable.getStateSet();
++        pushRequirements(drawable);
+ 
+-        if (needPop)
+-        {
+-            pushRequirements(drawable);
++        if (drawable.getStateSet())
++            applyStateSet(drawable.getStateSet(), drawable);
+ 
+-            if (drawable.getStateSet())
+-                applyStateSet(drawable.getStateSet(), drawable);
+-        }
++        const ShaderRequirements& reqs = mRequirements.back();
++        createProgram(reqs);
+ 
+-        if (!mRequirements.empty())
++        if (auto rig = dynamic_cast<SceneUtil::RigGeometry*>(&drawable))
+         {
+-            const ShaderRequirements& reqs = mRequirements.back();
+-            createProgram(reqs);
+-
+-            if (auto rig = dynamic_cast<SceneUtil::RigGeometry*>(&drawable))
+-            {
+-                osg::ref_ptr<osg::Geometry> sourceGeometry = rig->getSourceGeometry();
+-                if (sourceGeometry && adjustGeometry(*sourceGeometry, reqs))
+-                    rig->setSourceGeometry(sourceGeometry);
+-            }
+-            else if (auto morph = dynamic_cast<SceneUtil::MorphGeometry*>(&drawable))
+-            {
+-                osg::ref_ptr<osg::Geometry> sourceGeometry = morph->getSourceGeometry();
+-                if (sourceGeometry && adjustGeometry(*sourceGeometry, reqs))
+-                    morph->setSourceGeometry(sourceGeometry);
+-            }
+-            else if (auto osgaRig = dynamic_cast<SceneUtil::RigGeometryHolder*>(&drawable))
++            osg::ref_ptr<osg::Geometry> sourceGeometry = rig->getSourceGeometry();
++            if (sourceGeometry && adjustGeometry(*sourceGeometry, reqs))
++                rig->setSourceGeometry(sourceGeometry);
++        }
++        else if (auto morph = dynamic_cast<SceneUtil::MorphGeometry*>(&drawable))
++        {
++            osg::ref_ptr<osg::Geometry> sourceGeometry = morph->getSourceGeometry();
++            if (sourceGeometry && adjustGeometry(*sourceGeometry, reqs))
++                morph->setSourceGeometry(sourceGeometry);
++        }
++        else if (auto osgaRig = dynamic_cast<SceneUtil::RigGeometryHolder*>(&drawable))
++        {
++            osg::ref_ptr<SceneUtil::OsgaRigGeometry> sourceOsgaRigGeometry = osgaRig->getSourceRigGeometry();
++            osg::ref_ptr<osg::Geometry> sourceGeometry = sourceOsgaRigGeometry->getSourceGeometry();
++            if (sourceGeometry && adjustGeometry(*sourceGeometry, reqs))
+             {
+-                osg::ref_ptr<SceneUtil::OsgaRigGeometry> sourceOsgaRigGeometry = osgaRig->getSourceRigGeometry();
+-                osg::ref_ptr<osg::Geometry> sourceGeometry = sourceOsgaRigGeometry->getSourceGeometry();
+-                if (sourceGeometry && adjustGeometry(*sourceGeometry, reqs))
+-                {
+-                    sourceOsgaRigGeometry->setSourceGeometry(sourceGeometry);
+-                    osgaRig->setSourceRigGeometry(sourceOsgaRigGeometry);
+-                }
++                sourceOsgaRigGeometry->setSourceGeometry(sourceGeometry);
++                osgaRig->setSourceRigGeometry(sourceOsgaRigGeometry);
+             }
+-
+         }
+-        else
+-            ensureFFP(drawable);
+-
+-        if (needPop)
+-            popRequirements();
++        popRequirements();
+     }
+ 
+     void ShaderVisitor::setAllowedToModifyStateSets(bool allowed)

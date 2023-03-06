@@ -1,0 +1,23 @@
+diff --git a/components/lua/luastate.cpp b/components/lua/luastate.cpp
+index 0d106cb11976d6d54bc62dea6cda970ba4227bc7..76c574a334ca26c48d1b5b6c4d21d1e2e853e403 100644
+--- a/components/lua/luastate.cpp
++++ b/components/lua/luastate.cpp
+@@ -5,6 +5,7 @@
+ #endif // NO_LUAJIT
+ 
+ #include <boost/filesystem.hpp>
++#include <fstream>
+ 
+ #include <components/debug/debuglog.hpp>
+ #include <components/vfs/manager.hpp>
+@@ -273,7 +274,9 @@ namespace LuaUtil
+     sol::function LuaState::loadInternalLib(std::string_view libName)
+     {
+         std::string path = packageNameToPath(libName, mLibSearchPaths);
+-        sol::load_result res = mLua.load_file(path, sol::load_mode::text);
++        std::ifstream stream(path);
++        std::string fileContent(std::istreambuf_iterator<char>(stream), {});
++        sol::load_result res = mLua.load(fileContent, path, sol::load_mode::text);
+         if (!res.valid())
+             throw std::runtime_error("Lua error: " + res.get<std::string>());
+         return res;
