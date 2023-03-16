@@ -286,7 +286,7 @@ ExternalProject_Add(boost
 	COMMAND llvm-ranlib ${prefix}/lib/libboost_program_options.a
 	COMMAND llvm-ranlib ${prefix}/lib/libboost_system.a
 	COMMAND llvm-ranlib ${prefix}/lib/libboost_iostreams.a
-#	COMMAND llvm-ranlib ${prefix}/lib/libboost_regex.a
+	COMMAND llvm-ranlib ${prefix}/lib/libboost_regex.a
 )
 
 ExternalProject_Add(ffmpeg
