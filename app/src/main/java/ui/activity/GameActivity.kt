@@ -82,6 +82,8 @@ class GameActivity : SDLActivity() {
         }
 
         System.loadLibrary("c++_shared")
+        System.loadLibrary("libpng")
+        System.loadLibrary("libjpeg")
         System.loadLibrary("openal")
         System.loadLibrary("SDL2")
         if (graphicsLibrary != "gles1") {
