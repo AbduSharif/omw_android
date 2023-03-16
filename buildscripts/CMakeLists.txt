@@ -124,7 +124,7 @@ if ((${ARCH} STREQUAL "x86_64") OR (${ARCH} STREQUAL "x86") OR (${ARCH} STREQUAL
 endif()
 
 set(COMMON_AUTOCONF_FLAGS
-        --host=aarch64-linux-android
+	--host=${host}
 	${COMMON_AUTOCONF_FLAGS}
 )
 
