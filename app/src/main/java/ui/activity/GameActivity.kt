@@ -111,6 +111,7 @@ class GameActivity : SDLActivity() {
         }
 
         System.loadLibrary("GL")
+        System.loadLibrary("libcollada-dom2.5-dp")
         System.loadLibrary("openmw")
     }
 
