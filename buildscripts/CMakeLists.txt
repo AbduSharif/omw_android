@@ -145,7 +145,10 @@ ExternalProject_Add(libjpeg-turbo
 	DOWNLOAD_DIR ${download_dir}
 
 	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
-	${COMMON_AUTOCONF_FLAGS}
+	--enable-shared
+	--disable-static
+	--prefix=${prefix}
+	--host=${host}
 	${libjpeg_turbo_flags}
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE) PROGRAMS=
@@ -186,7 +189,10 @@ ExternalProject_Add(libpng
 	DOWNLOAD_DIR ${download_dir}
 
 	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
-	${COMMON_AUTOCONF_FLAGS}
+	--enable-shared
+	--disable-static
+	--prefix=${prefix}
+	--host=${host}
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE) check_PROGRAMS= bin_PROGRAMS=
 
@@ -736,7 +742,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit libicu libcollada
+	DEPENDS libjpeg-turbo libpng zlib boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit libicu libcollada
 
 	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
