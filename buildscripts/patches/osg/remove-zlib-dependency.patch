@@ -1,5 +1,5 @@
 diff --git a/src/osgPlugins/CMakeLists.txt b/src/osgPlugins/CMakeLists.txt
-index 277dbebd5..4982847ce 100644
+index 277dbebd5..4ed55dacb 100644
 --- a/src/osgPlugins/CMakeLists.txt
 +++ b/src/osgPlugins/CMakeLists.txt
 @@ -111,7 +111,7 @@ ENDIF()
@@ -11,3 +11,19 @@ index 277dbebd5..4982847ce 100644
      ADD_PLUGIN_DIRECTORY(png)
  ENDIF()
  IF(TIFF_FOUND)
+@@ -161,9 +161,13 @@ IF(NOT OSG_GLES1_AVAILABLE AND NOT OSG_GLES2_AVAILABLE)
+     ENDIF()
+ ENDIF()
+
+-IF(COLLADA_FOUND AND OSG_CPP_EXCEPTIONS_AVAILABLE)
++#fix me
++#IF(COLLADA_FOUND AND OSG_CPP_EXCEPTIONS_AVAILABLE)
++#    ADD_PLUGIN_DIRECTORY(dae)
++#ENDIF()
++
++    SET(COLLADA_DOM_2_4_OR_LATER TRUE)
+     ADD_PLUGIN_DIRECTORY(dae)
+-ENDIF()
+
+ IF(FBX_FOUND AND OSG_CPP_EXCEPTIONS_AVAILABLE)
+     ADD_PLUGIN_DIRECTORY(fbx)
