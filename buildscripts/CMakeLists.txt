@@ -16,7 +16,7 @@ set(FREETYPE2_VERSION 2.10.4)
 set(FREETYPE2_HASH SHA256=5eab795ebb23ac77001cfb68b7d4d50b5d6c7469247b0b01b2c953269f658dac)
 
 # https://github.com/kcat/openal-soft/releases
-set(OPENAL_VERSION 1.22.0)
+set(OPENAL_VERSION 1.23.0)
 #set(OPENAL_HASH SHA256=8ac17e4e3b32c1af3d5508acfffb838640669b4274606b7892aa796ca9d7467f)
 
 # http://www.boost.org/users/download/
@@ -290,8 +290,8 @@ ExternalProject_Add(boost
 )
 
 ExternalProject_Add(ffmpeg
-	URL https://www.ffmpeg.org/releases/ffmpeg-4.4.2.tar.gz
-	https://github.com/xyzz/openmw-deps/releases/download/v0/ffmpeg-4.4.2.tar.gz
+	URL https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n6.0.tar.gz
+	https://github.com/xyzz/openmw-deps/releases/download/v0/FFmpeg-n6.0.tar.gz
 #	URL_HASH ${FFMPEG_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
