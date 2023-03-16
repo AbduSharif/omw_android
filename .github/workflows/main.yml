@@ -33,7 +33,7 @@ jobs:
         wget https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
         unzip release-70-1.zip
         ICU_SOURCE_DIR=./icu-release-70-1/icu4c/source
-        ${ICU_SOURCE_DIR}/configure --host=aarch64-linux-android --disable-tests --disable-samples --disable-icuio --disable-extras CC="gcc" CXX="g++"
+        ${ICU_SOURCE_DIR}/configure --disable-tests --disable-samples --disable-icuio --disable-extras CC="gcc" CXX="g++"
         make -j $(nproc)
         cd ..
 
