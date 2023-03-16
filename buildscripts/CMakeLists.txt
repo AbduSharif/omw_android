@@ -4,6 +4,9 @@ cmake_minimum_required(VERSION 3.13)
 set(LIBJPEG_TURBO_VERSION 1.5.3)
 set(LIBJPEG_TURBO_HASH SHA256=b24890e2bb46e12e72a79f7e965f409f4e16466d00e1dd15d93d73ee6b592523)
 
+set(LIBICU_VERSION 70-1)
+set(LIBICU_HASH SHA256=4013d7aff8a34bae410664bdb16554d7eda03654b22627b9284ab55a685492d4)
+
 # http://www.libpng.org/pub/png/libpng.html
 set(LIBPNG_VERSION 1.6.37)
 set(LIBPNG_HASH SHA256=505e70834d35383537b6491e7ae8641f1a4bed1876dbfe361201fc80868d88ca)
@@ -121,7 +124,7 @@ if ((${ARCH} STREQUAL "x86_64") OR (${ARCH} STREQUAL "x86") OR (${ARCH} STREQUAL
 endif()
 
 set(COMMON_AUTOCONF_FLAGS
-	--host=${host}
+        --host=aarch64-linux-android
 	${COMMON_AUTOCONF_FLAGS}
 )
 
@@ -150,32 +153,30 @@ ExternalProject_Add(libjpeg-turbo
 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install-libLTLIBRARIES install-data-am
 )
 
-ExternalProject_Add(icu
-            URL https://github.com/unicode-org/icu/archive/refs/tags/release-70-1.zip
-            URL_HASH MD5=49d5e2e5bab93ae1a4b56e916150544c
-            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/icu/
-            BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/icu/
+set(libicu_flags
+		--disable-tests
+		--disable-samples
+		--disable-icuio
+		--disable-extras
+		--with-cross-build=/home/runner/icu-build/)
 
 
-            CONFIGURE_COMMAND <SOURCE_DIR>/icu4c/source/configure
-            --host=aarch64-linux-android
-            --disable-shared
-            --enable-static
-            --disable-tests
-            --disable-samples
-            --disable-icuio
-            --disable-extras
-            --with-cross-build=/home/runner/icu-build/
+ExternalProject_Add(libicu
+		URL https://github.com/unicode-org/icu/archive/refs/tags/release-${LIBICU_VERSION}.zip
+		URL_HASH ${LIBICU_HASH}
+		DOWNLOAD_DIR ${download_dir}
 
 
-            BUILD_COMMAND make -j ${NPROCS}
+		CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/icu4c/source/configure
+		--enable-static
+	        --disable-shared
+	        --prefix=${prefix}
+                --host=${host}
+		${libicu_flags}
 
-            INSTALL_COMMAND ""
+		BUILD_COMMAND ${wrapper_command} $(MAKE) check_PROGRAMS= bin_PROGRAMS=
 
-set(ICU_INCLUDE_DIRS
-        <SOURCE_DIR>/icu4c/source/common
-        <SOURCE_DIR>/icu4c/source/i18
-    )
+		INSTALL_COMMAND ${wrapper_command} $(MAKE) install check_PROGRAMS= bin_PROGRAMS=
 )
 
 ExternalProject_Add(libpng
@@ -734,7 +735,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit icu
+	DEPENDS boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit libcu
 
 	URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
