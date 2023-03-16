@@ -44,7 +44,7 @@ set(MYGUI_VERSION 3.4.1)
 #set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
 
 # https://github.com/openscenegraph/OpenSceneGraph/releases
-set(OSG_VERSION dd803bc1e6bc5aa5ab499b9501e3e52df7360cd6)
+set(OSG_VERSION 69cfecebfb6dc703b42e8de39eed750a84a87489)
 #set(OSG_HASH SHA256=aea196550f02974d6d09291c5d83b51ca6a03b3767e234a8c0e21322927d1e12)
 
 # https://github.com/lz4/lz4/releases
