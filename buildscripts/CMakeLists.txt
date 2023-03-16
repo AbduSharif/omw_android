@@ -483,6 +483,7 @@ set(LUAJIT_MAKE_FLAGS
 	DYNAMIC_CC=${host}-clang\ -fPIC
 	TARGET_LD=${host}-clang
 	PREFIX=${prefix}
+        XCFLAGS='-DLUAJIT_ENABLE_GC64'
 )
 
 ExternalProject_Add(luajit
