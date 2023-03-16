@@ -610,9 +610,9 @@ set(OSG_COMMON
 	-DFREETYPE_DIR=${prefix}
         -DCOLLADA_INCLUDE_DIR=${prefix}/include/collada-dom2.5
         -DCOLLADA_DIR=${prefix}/include/collada-dom2.5/1.4
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 	-DOSG_CPP_EXCEPTIONS_AVAILABLE=TRUE
 	-DOSG_GL1_AVAILABLE=ON
 	-DOSG_GL2_AVAILABLE=OFF
@@ -702,10 +702,10 @@ set(OPENMW_COMMON
 	-DBUILD_UNITTESTS=0
 	-DBUILD_MYGUI_PLUGIN=0
 #	-DOPENMW_LTO_BUILD=ON
-	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
-	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
-	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
+#	-DOPENMW_VERSION_COMMITHASH=${OPENMW_VERSION}
+#	-DOPENGL_opengl_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_glx_LIBRARY=${prefix}/lib/libGL.so
+#	-DOPENGL_INCLUDE_DIR=${prefix}/include/gl4es/
 #	-DOPENMW_GL4ES_MANUAL_INIT=ON
 	-DOPENAL_INCLUDE_DIR=${prefix}/include/AL/
 	-DBullet_INCLUDE_DIR=${prefix}/include/bullet/
