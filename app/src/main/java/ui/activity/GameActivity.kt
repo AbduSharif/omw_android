@@ -109,8 +109,6 @@ class GameActivity : SDLActivity() {
         }
 
         System.loadLibrary("GL")
-        System.loadLibrary("libjpeg")
-        System.loadLibrary("libpng")
         System.loadLibrary("openmw")
     }
 
