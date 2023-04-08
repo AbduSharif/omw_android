@@ -148,10 +148,7 @@ ExternalProject_Add(libjpeg-turbo
 	DOWNLOAD_DIR ${download_dir}
 
 	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
-	--enable-shared
-	--disable-static
-	--prefix=${prefix}
-	--host=${host}
+	${COMMON_AUTOCONF_FLAGS}
 	${libjpeg_turbo_flags}
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE) PROGRAMS=
@@ -192,10 +189,7 @@ ExternalProject_Add(libpng
 	DOWNLOAD_DIR ${download_dir}
 
 	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/configure
-	--enable-shared
-	--disable-static
-	--prefix=${prefix}
-	--host=${host}
+	${COMMON_AUTOCONF_FLAGS}
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE) check_PROGRAMS= bin_PROGRAMS=
 
