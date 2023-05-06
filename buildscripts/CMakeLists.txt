@@ -506,8 +506,8 @@ ExternalProject_Add(luajit
 )
 
 ExternalProject_Add(zlib
-		URL https://github.com/madler/zlib/archive/refs/tags/v1.2.11.tar.gz
-		URL_HASH SHA256=629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff
+		URL https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz
+#		URL_HASH SHA256=629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff
 		DOWNLOAD_DIR ${download_dir}
 
 		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
