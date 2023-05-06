@@ -6,7 +6,7 @@ ANDROID_API="21"
 
 # End of configurable options
 
-NDK_FILE="ndk-$NDK_VERSION.zip"
+NDK_FILE="android-ndk-10078971-linux-x86_64.zip"
 
 if [[ $ARCH = "arm" ]]; then
 	ABI="armeabi-v7a"
