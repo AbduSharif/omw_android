@@ -13,6 +13,6 @@ if [[ -f $NDK_FILE ]]; then
 	exit 0
 fi
 
-curl --http1.1 "https://www.mediafire.com/file/y5dr1bj869b8622/android-ndk-10078971-linux-x86_64.zip" > $NDK_FILE
+wget "https://github.com/Sisah2/openmw-android/releases/download/2019-05-01/android-ndk-10078971-linux-x86_64.zip"
 
 popd
