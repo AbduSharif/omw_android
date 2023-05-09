@@ -13,6 +13,15 @@ if [[ -f $NDK_FILE ]]; then
 	exit 0
 fi
 
-wget "https://github.com/Sisah2/openmw-android/releases/download/2019-05-01/android-ndk-10078971-linux-x86_64.zip"
+curl --http1.1 "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip" > $NDK_FILE
+
+echo "==> Checking NDK zip file integrity"
+
+FILE_HASH=$(sha256sum $NDK_FILE | awk '{print $1}' )
+
+if [[ $FILE_HASH != $NDK_HASH ]]; then
+	echo "Failed, expected $NDK_HASH got $FILE_HASH"
+	exit 1
+fi
 
 popd
