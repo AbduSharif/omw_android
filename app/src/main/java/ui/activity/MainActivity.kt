@@ -507,6 +507,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_reset_config -> {
+                removeUserConfig()
+                removeStaticFiles()
+                Toast.makeText(this, getString(R.string.config_was_reset), Toast.LENGTH_SHORT).show()
+                true
+            }
 
             R.id.action_about -> {
                 val text = assets.open("libopenmw/3rdparty-licenses.txt")
