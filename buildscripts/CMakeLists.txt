@@ -20,7 +20,7 @@ set(OPENAL_VERSION 1.23.0)
 #set(OPENAL_HASH SHA256=8ac17e4e3b32c1af3d5508acfffb838640669b4274606b7892aa796ca9d7467f)
 
 # http://www.boost.org/users/download/
-set(BOOST_VERSION 1.69.0)
+set(BOOST_VERSION 1.82.0)
 set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648b04406)
 
 # https://www.ffmpeg.org/download.html
@@ -249,7 +249,7 @@ string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION})
 ExternalProject_Add(boost
 	URL https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_UNDERSCORE}.tar.bz2
 	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_${BOOST_VERSION_UNDERSCORE}.tar.bz2
-	URL_HASH ${BOOST_HASH}
+#	URL_HASH ${BOOST_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
 	BUILD_IN_SOURCE 1
