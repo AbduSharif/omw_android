@@ -247,9 +247,8 @@ ExternalProject_Add(openal
 
 string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION})
 ExternalProject_Add(boost
-	URL https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_UNDERSCORE}.tar.bz2
-	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_${BOOST_VERSION_UNDERSCORE}.tar.bz2
-#	URL_HASH ${BOOST_HASH}
+	URL https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.bz2
+	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_1_82_0.tar.bz2
 	DOWNLOAD_DIR ${download_dir}
 
 	BUILD_IN_SOURCE 1
