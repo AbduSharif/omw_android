@@ -519,7 +519,7 @@ ExternalProject_Add(zlib
 	-DANDROID_LD=deprecated
 	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
-	-DCMAKE_SHARED_LINKER_FLAGS=-flto=thin\ -fwhole-program\ -Wl
+	-DCMAKE_SHARED_LINKER_FLAGS=-flto=thin\ -fwhole-program\ -Wl\ -fuse-ld=bfd
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 	-DCMAKE_DEBUG_POSTFIX=
 	-DCMAKE_INSTALL_PREFIX=${prefix}
