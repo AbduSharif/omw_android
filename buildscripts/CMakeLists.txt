@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.13.0)
 
-find_package(ZLIB REQUIRED)
-
 # https://github.com/libjpeg-turbo/libjpeg-turbo/releases
 set(LIBJPEG_TURBO_VERSION 1.5.3)
 set(LIBJPEG_TURBO_HASH SHA256=b24890e2bb46e12e72a79f7e965f409f4e16466d00e1dd15d93d73ee6b592523)
