@@ -273,7 +273,7 @@ ExternalProject_Add(boost
 	architecture=${BOOST_ARCH}
 	address-model=${BOOST_ADDRESS_MODEL}
 	cflags=$ENV{CFLAGS}
-	cxxflags==-std=gnu++17\ $ENV{CXXFLAGS}
+	cxxflags=-std=gnu++17\ $ENV{CXXFLAGS}
 	variant=release
 	target-os=android
 	threading=multi
