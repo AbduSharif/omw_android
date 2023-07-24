@@ -508,30 +508,6 @@ ExternalProject_Add(luajit
 	COMMAND bash -c "rm ${prefix}/lib/libluajit*.so*"
 )
 
-ExternalProject_Add(zlib
-		URL https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz
-#		URL_HASH SHA256=629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff
-		DOWNLOAD_DIR ${download_dir}
-
-		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
-	-DANDROID_ABI=${app_abi}
-	-DANDROID_PLATFORM=${android_platform}
-	-DANDROID_STL=c++_shared
-	-DANDROID_CPP_FEATURES=rtti\ exceptions
-	-DANDROID_LD=deprecated
-	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
-	-DCMAKE_SHARED_LINKER_FLAGS=-flto=thin\ -fwhole-program\ -Wl\ -fuse-ld=gold
-	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
-	-DCMAKE_DEBUG_POSTFIX=
-	-DCMAKE_INSTALL_PREFIX=${prefix}
-	-DCMAKE_FIND_ROOT_PATH=${prefix}
-
-		BUILD_COMMAND ${wrapper_command} $(MAKE)
-		INSTALL_COMMAND ${wrapper_command} $(MAKE) install
-)
-
 ExternalProject_Add(libxml
 		DEPENDS zlib
 
