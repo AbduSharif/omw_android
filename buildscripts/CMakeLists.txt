@@ -266,7 +266,7 @@ ExternalProject_Add(boost
 	--with-iostreams
 	--with-regex
 	--ignore-site-config
-        --with-toolset=clang-android
+        --with-toolset=clang
 	toolset=clang-android
 	architecture=${BOOST_ARCH}
 	address-model=${BOOST_ADDRESS_MODEL}
