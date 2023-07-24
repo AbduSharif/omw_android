@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.0)
+cmake_minimum_required(VERSION 3.13.0)
 
 find_package(ZLIB REQUIRED)
 
@@ -22,7 +22,7 @@ set(OPENAL_VERSION 1.23.0)
 #set(OPENAL_HASH SHA256=8ac17e4e3b32c1af3d5508acfffb838640669b4274606b7892aa796ca9d7467f)
 
 # http://www.boost.org/users/download/
-set(BOOST_VERSION 1.82.0)
+set(BOOST_VERSION 1.69.0)
 set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648b04406)
 
 # https://www.ffmpeg.org/download.html
@@ -250,8 +250,9 @@ ExternalProject_Add(openal
 
 string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION})
 ExternalProject_Add(boost
-	URL https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.bz2
-	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_1_82_0.tar.bz2
+	URL https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_UNDERSCORE}.tar.bz2
+	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_${BOOST_VERSION_UNDERSCORE}.tar.bz2
+ 	URL_HASH ${BOOST_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
 	BUILD_IN_SOURCE 1
@@ -269,12 +270,12 @@ ExternalProject_Add(boost
 	--with-iostreams
 	--with-regex
 	--ignore-site-config
-        --with-toolset=clang
-	toolset=clang
+        --with-toolset=clang-android
+	toolset=clang-android
 	architecture=${BOOST_ARCH}
 	address-model=${BOOST_ADDRESS_MODEL}
 	cflags=$ENV{CFLAGS}
-	cxxflags=$ENV{CXXFLAGS}
+	cxxflags==-std=gnu++17\ $ENV{CXXFLAGS}
 	variant=release
 	target-os=android
 	threading=multi
@@ -506,6 +507,30 @@ ExternalProject_Add(luajit
 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
 	${LUAJIT_MAKE_FLAGS}
 	COMMAND bash -c "rm ${prefix}/lib/libluajit*.so*"
+)
+
+ExternalProject_Add(zlib
+		URL https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz
+#		URL_HASH SHA256=629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff
+		DOWNLOAD_DIR ${download_dir}
+
+		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
+	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	-DANDROID_ABI=${app_abi}
+	-DANDROID_PLATFORM=${android_platform}
+	-DANDROID_STL=c++_shared
+	-DANDROID_CPP_FEATURES=rtti\ exceptions
+	-DANDROID_LD=default
+	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-std=gnu++17\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
+	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	-DCMAKE_DEBUG_POSTFIX=
+	-DCMAKE_INSTALL_PREFIX=${prefix}
+	-DCMAKE_FIND_ROOT_PATH=${prefix}
+
+		BUILD_COMMAND ${wrapper_command} $(MAKE)
+		INSTALL_COMMAND ${wrapper_command} $(MAKE) install
 )
 
 ExternalProject_Add(libxml
