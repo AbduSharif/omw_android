@@ -511,7 +511,19 @@ ExternalProject_Add(zlib
 		DOWNLOAD_DIR ${download_dir}
 
 		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-		${COMMON_CMAKE_ARGS}
+	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	-DANDROID_ABI=${app_abi}
+	-DANDROID_PLATFORM=${android_platform}
+	-DANDROID_STL=c++_shared
+	-DANDROID_CPP_FEATURES=rtti\ exceptions
+	-DANDROID_LD=deprecated
+	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_SHARED_LINKER_FLAGS=-flto=thin\ -fwhole-program\ -Wl\ -plugin-opt=-emulated-tls
+	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	-DCMAKE_DEBUG_POSTFIX=
+	-DCMAKE_INSTALL_PREFIX=${prefix}
+	-DCMAKE_FIND_ROOT_PATH=${prefix}
 
 		BUILD_COMMAND ${wrapper_command} $(MAKE)
 		INSTALL_COMMAND ${wrapper_command} $(MAKE) install
