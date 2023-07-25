@@ -262,6 +262,7 @@ ExternalProject_Add(boost
 
 	INSTALL_COMMAND ${wrapper_command} ./b2
 	-j4
+        -DBOOST_NO_CXX98_FUNCTION_BASE=true
 	--with-filesystem
 	--with-program_options
 	--with-system
