@@ -268,7 +268,7 @@ ExternalProject_Add(boost
 	--with-iostreams
 	--with-regex
 	--ignore-site-config
-	toolset=clang-android
+	toolset=clang
 	architecture=${BOOST_ARCH}
 	address-model=${BOOST_ADDRESS_MODEL}
 	cflags=$ENV{CFLAGS}
