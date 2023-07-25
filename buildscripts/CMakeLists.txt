@@ -268,12 +268,11 @@ ExternalProject_Add(boost
 	--with-iostreams
 	--with-regex
 	--ignore-site-config
-        --with-toolset=clang-android
 	toolset=clang-android
 	architecture=${BOOST_ARCH}
 	address-model=${BOOST_ADDRESS_MODEL}
 	cflags=$ENV{CFLAGS}
-	cxxflags=-std=gnu++17\ $ENV{CXXFLAGS}
+	cxxflags=$ENV{CXXFLAGS}
 	variant=release
 	target-os=android
 	threading=multi
