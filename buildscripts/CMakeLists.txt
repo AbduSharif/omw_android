@@ -257,7 +257,6 @@ ExternalProject_Add(boost
 
 	CONFIGURE_COMMAND ${wrapper_command} <SOURCE_DIR>/bootstrap.sh
 	--prefix=${prefix}
-        -DBOOST_NO_CXX98_FUNCTION_BASE=true
 	
 	BUILD_COMMAND ""
 
