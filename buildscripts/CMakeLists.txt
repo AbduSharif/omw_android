@@ -87,7 +87,8 @@ set(COMMON_CMAKE_ARGS
 	-DANDROID_PLATFORM=${android_platform}
 	-DANDROID_STL=c++_shared
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
-	-DANDROID_LD=deprecated
+	-DANDROID_LD=default
+        -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
 	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
@@ -105,6 +106,7 @@ set(COMMON_NDK_BUILD_FLAGS
 	APP_LD=deprecated
         APP_OPTIM=release
 	LOCAL_LDFLAGS=$ENV{LDFLAGS}
+        LOCAL_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=true
         LIBS += -lz
 	-j4
 )
@@ -248,8 +250,8 @@ ExternalProject_Add(openal
 
 string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION})
 ExternalProject_Add(boost
-	URL https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_UNDERSCORE}.tar.bz2
-	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_${BOOST_VERSION_UNDERSCORE}.tar.bz2
+	URL https://boostorg.jfrog.io/artifactory/main/release/1.83.0/source/boost_1_83_0.tar.bz2
+	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_1_83_0.tar.bz2
  	URL_HASH ${BOOST_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
