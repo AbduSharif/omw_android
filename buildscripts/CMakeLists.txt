@@ -40,7 +40,7 @@ set(BULLET_VERSION 3.22b)
 #set(BULLET_HASH SHA256=baa642c906576d4d98d041d0acb80d85dd6eff6e3c16a009b1abf1ccd2bc0a61)
 
 # https://github.com/MyGUI/mygui/releases
-set(MYGUI_VERSION 3.4.3)
+set(MYGUI_VERSION 3.4.2)
 #set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
 
 # https://github.com/openscenegraph/OpenSceneGraph/releases
