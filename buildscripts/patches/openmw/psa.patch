@@ -1,8 +1,8 @@
 diff --git a/apps/openmw/mwstate/statemanagerimp.cpp b/apps/openmw/mwstate/statemanagerimp.cpp
-index c8cd53a3310fb69efcfc37029b0420e0ef65a380..6bb9a7a3a93b553fd702060adc030940be441ba8 100644
+index 50fd123b4f5f66ac510f2ae5b135cf6884e533b9..af46afb308acd5c800eeffc85cae2a3f3eb9a99a 100644
 --- a/apps/openmw/mwstate/statemanagerimp.cpp
 +++ b/apps/openmw/mwstate/statemanagerimp.cpp
-@@ -12,6 +12,7 @@
+@@ -17,6 +17,7 @@
  #include <components/settings/settings.hpp>
  
  #include <osg/Image>
@@ -10,10 +10,10 @@ index c8cd53a3310fb69efcfc37029b0420e0ef65a380..6bb9a7a3a93b553fd702060adc030940
  
  #include <osgDB/Registry>
  
-@@ -311,6 +312,8 @@ void MWState::StateManager::saveGame (const std::string& description, const Slot
- 
+@@ -322,6 +323,8 @@ void MWState::StateManager::saveGame(std::string_view description, const Slot* s
          Log(Debug::Info) << '\'' << description << "' is saved in "
-             << std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(finish - start).count() << "ms";
+                          << std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(finish - start).count()
+                          << "ms";
 +
 +        osg::Hint::GL4ES_SavePSA();
      }
