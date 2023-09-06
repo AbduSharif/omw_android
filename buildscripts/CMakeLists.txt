@@ -40,7 +40,7 @@ set(BULLET_VERSION 3.22b)
 #set(BULLET_HASH SHA256=baa642c906576d4d98d041d0acb80d85dd6eff6e3c16a009b1abf1ccd2bc0a61)
 
 # https://github.com/MyGUI/mygui/releases
-set(MYGUI_VERSION 3.4.1)
+set(MYGUI_VERSION 3.4.3)
 #set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
 
 # https://github.com/openscenegraph/OpenSceneGraph/releases
@@ -414,7 +414,7 @@ ExternalProject_Add(mygui
 
 	URL https://github.com/MyGUI/mygui/archive/MyGUI${MYGUI_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/MyGUI${MYGUI_VERSION}.tar.gz
-	URL_HASH ${MYGUI_HASH}
+#	URL_HASH ${MYGUI_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
 #	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/mygui-dont-set-debug-postfix.patch
