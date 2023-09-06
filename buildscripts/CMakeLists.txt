@@ -99,11 +99,12 @@ set(COMMON_CMAKE_ARGS
 )
 
 set(COMMON_NDK_BUILD_FLAGS
+        NDK_DEBUG=0
 	NDK_PROJECT_PATH=.
 	APP_BUILD_SCRIPT=<SOURCE_DIR>/Android.mk
 	APP_PLATFORM=${android_platform}
 	APP_ABI=${app_abi}
-	APP_LD=deprecated
+	APP_LD=lld
         APP_OPTIM=release
 	LOCAL_LDFLAGS=$ENV{LDFLAGS}
 	-j4
