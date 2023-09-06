@@ -1,8 +1,8 @@
 diff --git a/components/fx/pass.cpp b/components/fx/pass.cpp
-index e0489fe0c892bb9ba3f4ffeda40d454ce5b18018..246221eb8448fd4b95ef8e6202080f540f6082fb 100644
+index 7a7329d755ea1de19348465eec1acf2142b00f6b..ba8044b7a5f2354a490a3d043ea6dc9446112ed6 100644
 --- a/components/fx/pass.cpp
 +++ b/components/fx/pass.cpp
-@@ -75,7 +75,7 @@ namespace fx
+@@ -88,7 +88,7 @@ namespace fx
  
  uniform @builtinSampler omw_SamplerLastShader;
  uniform @builtinSampler omw_SamplerLastPass;
