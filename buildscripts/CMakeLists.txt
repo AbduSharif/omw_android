@@ -106,7 +106,6 @@ set(COMMON_NDK_BUILD_FLAGS
 	APP_LD=deprecated
         APP_OPTIM=release
 	LOCAL_LDFLAGS=$ENV{LDFLAGS}
-        LOCAL_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=true
         LIBS += -lz
 	-j4
 )
