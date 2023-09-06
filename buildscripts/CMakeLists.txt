@@ -252,7 +252,7 @@ string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION})
 ExternalProject_Add(boost
 	URL https://boostorg.jfrog.io/artifactory/main/release/1.83.0/source/boost_1_83_0.tar.bz2
 	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_1_83_0.tar.bz2
- 	URL_HASH ${BOOST_HASH}
+# 	URL_HASH ${BOOST_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
 	BUILD_IN_SOURCE 1
