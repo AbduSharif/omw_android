@@ -1,8 +1,8 @@
 diff --git a/apps/openmw/engine.cpp b/apps/openmw/engine.cpp
-index 9fedd8f909798816eda9d7aad99d7593bd982679..a2739eaaf2b5224789d33add97785cf6f08d13f1 100644
+index 3e7f151fadfe13ee11ffc533f9a6b0ec32fcdb09..8c15f1f223783ef2a1e3cb1fdc4e26d9a1b08049 100644
 --- a/apps/openmw/engine.cpp
 +++ b/apps/openmw/engine.cpp
-@@ -544,6 +544,8 @@ void OMW::Engine::setSkipMenu (bool skipMenu, bool newGame)
+@@ -450,6 +450,8 @@ void OMW::Engine::setSkipMenu(bool skipMenu, bool newGame)
      mNewGame = newGame;
  }
  
@@ -11,46 +11,46 @@ index 9fedd8f909798816eda9d7aad99d7593bd982679..a2739eaaf2b5224789d33add97785cf6
  void OMW::Engine::createWindow()
  {
      int screen = Settings::Manager::getInt("screen", "Video");
-@@ -680,6 +682,7 @@ void OMW::Engine::createWindow()
-     mViewer->realize();
+@@ -600,6 +602,7 @@ void OMW::Engine::createWindow()
  
-     mViewer->getEventQueue()->getCurrentEventState()->setWindowRectangle(0, 0, graphicsWindow->getTraits()->width, graphicsWindow->getTraits()->height);
+     mViewer->getEventQueue()->getCurrentEventState()->setWindowRectangle(
+         0, 0, graphicsWindow->getTraits()->width, graphicsWindow->getTraits()->height);
 +    g_viewer = mViewer;
  }
  
  void OMW::Engine::setWindowIcon()
-@@ -1103,6 +1106,8 @@ void OMW::Engine::go()
+@@ -970,6 +973,8 @@ void OMW::Engine::go()
  
-     luaWorker.join();
+     mLuaWorker->join();
  
 +    g_viewer.release();
 +
      // Save user settings
-     Settings::Manager::saveUser((mCfgMgr.getUserConfigPath() / "settings.cfg").string());
+     Settings::Manager::saveUser(mCfgMgr.getUserConfigPath() / "settings.cfg");
      Settings::ShaderManager::get().save();
 diff --git a/components/debug/debugging.cpp b/components/debug/debugging.cpp
-index 62d1bc716db2fb7dce571038f81ca037179fd63e..524ae0b9fa8aec18343d3f46df4c3dca06d6c0ad 100644
+index 0bec74ce73b7660e377dfddcbb6e67760dc5f977..0bd0d70fcefb140fb2ad35011cd84e2c80e86821 100644
 --- a/components/debug/debugging.cpp
 +++ b/components/debug/debugging.cpp
-@@ -11,6 +11,8 @@
- #include <components/windows.hpp>
- #endif
+@@ -34,6 +34,8 @@
+ 
+ #include <SDL_messagebox.h>
  
 +#include <osgViewer/Viewer>
 +
  namespace Debug
  {
  #ifdef _WIN32
-@@ -186,6 +188,8 @@ void setupLogging(const std::string& logDir, const std::string& appName, std::io
+@@ -323,6 +325,8 @@ void setupLogging(const std::filesystem::path& logDir, std::string_view appName,
  #endif
  }
  
 +extern osg::ref_ptr<osgViewer::Viewer> g_viewer;
 +
- int wrapApplication(int (*innerApplication)(int argc, char *argv[]), int argc, char *argv[],
-                     const std::string& appName, bool autoSetupLogging)
+ int wrapApplication(int (*innerApplication)(int argc, char* argv[]), int argc, char* argv[], std::string_view appName)
  {
-@@ -225,6 +229,7 @@ int wrapApplication(int (*innerApplication)(int argc, char *argv[]), int argc, c
+ #if defined _WIN32
+@@ -362,6 +366,7 @@ int wrapApplication(int (*innerApplication)(int argc, char* argv[]), int argc, c
      }
      catch (const std::exception& e)
      {
@@ -58,3 +58,16 @@ index 62d1bc716db2fb7dce571038f81ca037179fd63e..524ae0b9fa8aec18343d3f46df4c3dca
  #if (defined(__APPLE__) || defined(__linux) || defined(__unix) || defined(__posix))
          if (!isatty(fileno(stdin)))
  #endif
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index adfb7ca7f57a99a5531082e9ad5971082093d119..406e9ea6d8abcaa4c58b8f4a1e18fbc301cfb966 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -472,7 +472,7 @@ else(USE_LUAJIT)
+     find_package(Lua REQUIRED)
+     add_compile_definitions(NO_LUAJIT)
+ endif(USE_LUAJIT)
+-if (NOT WIN32)
++if (WIN32)
+     include(cmake/CheckLuaCustomAllocator.cmake)
+ endif()
+ 
