@@ -28,7 +28,7 @@ set(FFMPEG_VERSION 4.4)
 set(FFMPEG_HASH SHA256=42093549751b582cf0f338a21a3664f52e0a9fbe0d238d3c992005e493607d0e)
 
 # https://github.com/ptitSeb/gl4es/releases
-set(GL4ES_VERSION b6eea776f974e7a1e47c9c7bea9a02add1ccda20)
+set(GL4ES_VERSION 0d6df0afc878a63b4b9f464eb4e4a0e314406a11)
 #set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
 
 # https://www.libsdl.org/download-2.0.php
