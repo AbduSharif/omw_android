@@ -12,7 +12,7 @@ LTO="false"
 BUILD_TYPE="release"
 CFLAGS="-fPIC"
 CXXFLAGS="-fPIC -frtti -fexceptions"
-LDFLAGS="-fPIC -Wl,--undefined-version"
+LDFLAGS="-fPIC -Wl,--undefined-version -Wl,--rosegment"
 
 usage() {
 	echo "Usage: ./build.sh [--help] [--asan] [--arch arch] [--debug|--release]"
@@ -96,7 +96,7 @@ if [[ $LTO = "true" ]]; then
 	CFLAGS="$CFLAGS -flto=thin"
 	CXXFLAGS="$CXXFLAGS -flto=thin"
 	# emulated-tls should not be needed in ndk r18 https://github.com/android-ndk/ndk/issues/498#issuecomment-327825754
-	LDFLAGS="$LDFLAGS -flto=thin -fwhole-program -Wl,--undefined-version -Wl,-plugin-opt=-emulated-tls -fuse-ld=lld"
+	LDFLAGS="$LDFLAGS -flto=thin -fwhole-program -Wl,-plugin-opt=-emulated-tls -fuse-ld=lld"
 fi
 
 if [[ $ARCH = "arm" ]]; then
