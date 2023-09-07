@@ -245,7 +245,7 @@ ExternalProject_Add(openal
 	-DANDROID_PLATFORM=${android_platform}
 	-DANDROID_STL=c++_shared
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
-	-DANDROID_LD=lld
+	-DANDROID_LD=default
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
 	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
