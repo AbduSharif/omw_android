@@ -213,7 +213,27 @@ ExternalProject_Add(freetype2
 	INSTALL_COMMAND ${wrapper_command} $(MAKE) install
 )
 
+ExternalProject_Add(sdl2
+	URL https://www.libsdl.org/release/SDL2-${SDL2_VERSION}.tar.gz
+	https://github.com/xyzz/openmw-deps/releases/download/v0/SDL2-${SDL2_VERSION}.tar.gz
+	URL_HASH ${SDL2_HASH}
+	DOWNLOAD_DIR ${download_dir}
+
+#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/sdl2-android-120hz-gyroscope.patch
+
+	CONFIGURE_COMMAND ""
+
+	BUILD_COMMAND ${wrapper_command} ndk-build
+	${COMMON_NDK_BUILD_FLAGS}
+
+	INSTALL_COMMAND mkdir -p ${prefix}/lib/
+	COMMAND cp libs/${app_abi}/libSDL2.so ${prefix}/lib/
+	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
+)
+
 ExternalProject_Add(openal
+	DEPENDS sdl2
+ 
 	URL https://github.com/kcat/openal-soft/archive/${OPENAL_VERSION}.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/openal-soft-${OPENAL_VERSION}.tar.gz
 	URL_HASH ${OPENAL_HASH}
@@ -353,24 +373,6 @@ ExternalProject_Add(gl4es
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/
 	COMMAND cp libs/${app_abi}/libGL.so ${prefix}/lib/
 	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/include/gl4es/
-	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
-)
-
-ExternalProject_Add(sdl2
-	URL https://www.libsdl.org/release/SDL2-${SDL2_VERSION}.tar.gz
-	https://github.com/xyzz/openmw-deps/releases/download/v0/SDL2-${SDL2_VERSION}.tar.gz
-	URL_HASH ${SDL2_HASH}
-	DOWNLOAD_DIR ${download_dir}
-
-#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/sdl2-android-120hz-gyroscope.patch
-
-	CONFIGURE_COMMAND ""
-
-	BUILD_COMMAND ${wrapper_command} ndk-build
-	${COMMON_NDK_BUILD_FLAGS}
-
-	INSTALL_COMMAND mkdir -p ${prefix}/lib/
-	COMMAND cp libs/${app_abi}/libSDL2.so ${prefix}/lib/
 	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
 )
 
