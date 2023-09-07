@@ -245,7 +245,7 @@ ExternalProject_Add(openal
 	-DANDROID_PLATFORM=${android_platform}
 	-DANDROID_STL=c++_shared
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
-	-DANDROID_LD=default
+	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
 	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
@@ -351,6 +351,8 @@ ExternalProject_Add(ffmpeg
 )
 
 ExternalProject_Add(gl4es
+	DEPENDS sdl2
+ 
 #	URL https://github.com/ptitSeb/gl4es/archive/${GL4ES_VERSION}.tar.gz
 	URL https://github.com/AbduSharif/gl4es/archive/${GL4ES_VERSION}.tar.gz
 #	URL https://github.com/AbduSharif/VGPU/archive/${GL4ES_VERSION}.tar.gz
