@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NDK_VERSION="r26-rc1"
+NDK_VERSION="r26b"
 NDK_HASH="af112624f8c5d893d4892ef4867e79def8bdc70d7eee6814e847beffd7f0d83e"
 ANDROID_API="21"
 
