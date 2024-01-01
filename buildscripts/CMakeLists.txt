@@ -21,7 +21,7 @@ set(OPENAL_VERSION 1.23.0)
 
 # http://www.boost.org/users/download/
 set(BOOST_VERSION 1.69.0)
-set(BOOST_HASH SHA256=8f32d4617390d1c2d16f26a27ab60d97807b35440d45891fa340fc2648b04406)
+set(BOOST_HASH SHA256=a5800f405508f5df8114558ca9855d2640a2de8f0445f051fa1c7c3383045724)
 
 # https://www.ffmpeg.org/download.html
 set(FFMPEG_VERSION 4.4)
@@ -272,7 +272,7 @@ string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION})
 ExternalProject_Add(boost
 	URL https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.gz
 	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_1_84_0.tar.xfz
-# 	URL_HASH ${BOOST_HASH}
+ 	URL_HASH ${BOOST_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
 	BUILD_IN_SOURCE 1
