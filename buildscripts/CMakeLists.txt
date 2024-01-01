@@ -270,8 +270,8 @@ ExternalProject_Add(openal
 
 string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION})
 ExternalProject_Add(boost
-	URL https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2
-	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_1_84_0.tar.bz2
+	URL https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.gz
+	https://github.com/xyzz/openmw-deps/releases/download/v0/boost_1_84_0.tar.gz
 # 	URL_HASH ${BOOST_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
