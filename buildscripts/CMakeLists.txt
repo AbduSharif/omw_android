@@ -59,7 +59,7 @@ set(LIBICU_VERSION 70-1)
 set(LIBICU_HASH SHA256=4013d7aff8a34bae410664bdb16554d7eda03654b22627b9284ab55a685492d4)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 4dfe6078c8c62bfe3a02bfb0984559dafaad1c42)
+set(OPENMW_VERSION 1338e884a94383ad9ea5c3acb265904e9304e0fc)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
