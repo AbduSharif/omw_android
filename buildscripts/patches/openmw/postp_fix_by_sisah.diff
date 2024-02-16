@@ -1,3 +1,18 @@
+diff --git a/apps/openmw/mwrender/renderingmanager.cpp b/apps/openmw/mwrender/renderingmanager.cpp
+index 224774d1029ff3ffe5ad757df303648f3e5c99cd..0eca81d24700e8c88852f13379090b52dd406230 100644
+--- a/apps/openmw/mwrender/renderingmanager.cpp
++++ b/apps/openmw/mwrender/renderingmanager.cpp
+@@ -464,8 +464,8 @@ namespace MWRender
+ 
+         mPostProcessor = new PostProcessor(*this, viewer, mRootNode, resourceSystem->getVFS());
+         resourceSystem->getSceneManager()->setOpaqueDepthTex(
+-            mPostProcessor->getTexture(PostProcessor::Tex_OpaqueDepth, 0),
+-            mPostProcessor->getTexture(PostProcessor::Tex_OpaqueDepth, 1));
++            mPostProcessor->getTexture(PostProcessor::Tex_Depth, 0),
++            mPostProcessor->getTexture(PostProcessor::Tex_Depth, 1));
+         resourceSystem->getSceneManager()->setSoftParticles(Settings::shaders().mSoftParticles);
+         resourceSystem->getSceneManager()->setSupportsNormalsRT(mPostProcessor->getSupportsNormalsRT());
+         resourceSystem->getSceneManager()->setWeatherParticleOcclusion(Settings::shaders().mWeatherParticleOcclusion);
 diff --git a/apps/openmw/mwrender/postprocessor.cpp b/apps/openmw/mwrender/postprocessor.cpp
 index 1aaeb460b7d..d3f4ed092c3 100644
 --- a/apps/openmw/mwrender/postprocessor.cpp
