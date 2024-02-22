@@ -52,7 +52,7 @@ set(LZ4_VERSION 1.9.3)
 set(LZ4_HASH SHA256=030644df4611007ff7dc962d981f390361e6c97a34e5cbc393ddfbe019ffe2c1)
 
 # https://luajit.org/download.html
-set(LUAJIT_VERSION 505e2c03de35e2718eef0d2d3660712e06dadf1f)
+set(LUAJIT_VERSION v2.1.0-ROLLING)
 #set(LUAJIT_HASH SHA256=1ad2e34b111c802f9d0cdf019e986909123237a28c746b21295b63c9e785d9c3)
 
 set(LIBICU_VERSION 70-1)
@@ -87,7 +87,7 @@ set(COMMON_CMAKE_ARGS
 	-DANDROID_PLATFORM=${android_platform}
 	-DANDROID_STL=c++_shared
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
-	-DANDROID_LD=default
+	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
 	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
@@ -247,8 +247,8 @@ ExternalProject_Add(openal
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 	-DCMAKE_DEBUG_POSTFIX=
@@ -393,8 +393,8 @@ ExternalProject_Add(bullet
 	-DANDROID_STL=c++_shared
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
-	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 	-DCMAKE_DEBUG_POSTFIX=
@@ -471,8 +471,8 @@ ExternalProject_Add(lz4
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 	-DCMAKE_DEBUG_POSTFIX=
@@ -498,8 +498,8 @@ set(LUAJIT_MAKE_FLAGS
 )
 
 ExternalProject_Add(luajit
-	URL https://github.com/luaJit/LuaJIT/archive/${LUAJIT_VERSION}.tar.gz
-#	URL_HASH ${LUAJIT_HASH}
+	URL https://github.com/LuaJIT/LuaJIT/archive/refs/tags/v2.1.ROLLING.tar.gz
+ #	URL_HASH ${LUAJIT_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
 	BUILD_IN_SOURCE 1
@@ -515,25 +515,25 @@ ExternalProject_Add(luajit
 )
 
 ExternalProject_Add(zlib
-		URL https://github.com/madler/zlib/releases/download/v1.3/zlib-1.3.tar.gz
-#		URL_HASH SHA256=629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff
+	        URL https://github.com/madler/zlib/archive/refs/tags/v1.3.1.tar.gz
+ #		URL_HASH SHA256=629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff
 		DOWNLOAD_DIR ${download_dir}
 
 		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
-	-DANDROID_ABI=${app_abi}
-	-DANDROID_PLATFORM=${android_platform}
-	-DANDROID_STL=c++_shared
-	-DANDROID_CPP_FEATURES=rtti\ exceptions
- 	-DANDROID_LD=lld
-        -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
-	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
-	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
-	-DCMAKE_DEBUG_POSTFIX=
-	-DCMAKE_INSTALL_PREFIX=${prefix}
-	-DCMAKE_FIND_ROOT_PATH=${prefix}
+	        -DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	        -DANDROID_ABI=${app_abi}
+	        -DANDROID_PLATFORM=${android_platform}
+	        -DANDROID_STL=c++_shared
+	        -DANDROID_CPP_FEATURES=rtti\ exceptions
+ 	        -DANDROID_LD=lld
+                -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
+	        -DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	        -DCMAKE_CXX_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	        -DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
+	        -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	        -DCMAKE_DEBUG_POSTFIX=
+	        -DCMAKE_INSTALL_PREFIX=${prefix}
+	        -DCMAKE_FIND_ROOT_PATH=${prefix}
 
 		BUILD_COMMAND ${wrapper_command} $(MAKE)
 		INSTALL_COMMAND ${wrapper_command} $(MAKE) install
@@ -542,25 +542,25 @@ ExternalProject_Add(zlib
 ExternalProject_Add(libxml
 		DEPENDS zlib
 
-		URL https://github.com/GNOME/libxml2/archive/refs/tags/v2.9.12.tar.gz
-		URL_HASH SHA256=8a4ddd706419c210b30b8978a51388937fd9362c34fc9a3d69e4fcc6f8055ee0
+	        URL https://github.com/GNOME/libxml2/archive/refs/tags/v2.12.5.tar.gz
+#	        URL_HASH SHA256=8a4ddd706419c210b30b8978a51388937fd9362c34fc9a3d69e4fcc6f8055ee0
 		DOWNLOAD_DIR ${download_dir}
 
 		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
-	-DANDROID_ABI=${app_abi}
-	-DANDROID_PLATFORM=${android_platform}
-	-DANDROID_STL=c++_shared
-	-DANDROID_CPP_FEATURES=rtti\ exceptions
-	-DANDROID_LD=lld
-        -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
-	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
-	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
-	-DCMAKE_DEBUG_POSTFIX=
-	-DCMAKE_INSTALL_PREFIX=${prefix}
-	-DCMAKE_FIND_ROOT_PATH=${prefix}
+	        -DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	        -DANDROID_ABI=${app_abi}
+	        -DANDROID_PLATFORM=${android_platform}
+	        -DANDROID_STL=c++_shared
+	        -DANDROID_CPP_FEATURES=rtti\ exceptions
+	        -DANDROID_LD=lld
+                -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
+	        -DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	        -DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	        -DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
+	        -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	        -DCMAKE_DEBUG_POSTFIX=
+	        -DCMAKE_INSTALL_PREFIX=${prefix}
+	        -DCMAKE_FIND_ROOT_PATH=${prefix}
 		-DBUILD_SHARED_LIBS=OFF
 		-DLIBXML2_WITH_CATALOG=OFF
 		-DLIBXML2_WITH_ICONV=OFF
@@ -587,20 +587,20 @@ ExternalProject_Add(libcollada
 		PATCH_COMMAND ${LIBCOLLADA_PATCH}
 
 		CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
-	-DANDROID_ABI=${app_abi}
-	-DANDROID_PLATFORM=${android_platform}
-	-DANDROID_STL=c++_shared
-	-DANDROID_CPP_FEATURES=rtti\ exceptions
-	-DANDROID_LD=lld
-        -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-std=gnu++11\ -ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
-	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
-	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
-	-DCMAKE_DEBUG_POSTFIX=
-	-DCMAKE_INSTALL_PREFIX=${prefix}
-	-DCMAKE_FIND_ROOT_PATH=${prefix}
+	        -DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
+	        -DANDROID_ABI=${app_abi}
+	        -DANDROID_PLATFORM=${android_platform}
+	        -DANDROID_STL=c++_shared
+	        -DANDROID_CPP_FEATURES=rtti\ exceptions
+	        -DANDROID_LD=lld
+                -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
+	        -DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	        -DCMAKE_CXX_FLAGS=-Dauto_ptr=unique_ptr\ -ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	        -DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
+	        -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+	        -DCMAKE_DEBUG_POSTFIX=
+	        -DCMAKE_INSTALL_PREFIX=${prefix}
+	        -DCMAKE_FIND_ROOT_PATH=${prefix}
 		-DBoost_USE_STATIC_LIBS=ON
 		-DBoost_USE_STATIC_RUNTIME=ON
 		-DBoost_NO_SYSTEM_PATHS=ON
@@ -689,8 +689,8 @@ ExternalProject_Add(osg
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-std=gnu++11\ -ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-Dauto_ptr=unique_ptr\ -ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 	-DCMAKE_DEBUG_POSTFIX=
@@ -780,8 +780,8 @@ ExternalProject_Add(openmw
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 	-DCMAKE_DEBUG_POSTFIX=
