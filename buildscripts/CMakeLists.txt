@@ -247,7 +247,7 @@ ExternalProject_Add(openal
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_C_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
@@ -393,7 +393,7 @@ ExternalProject_Add(bullet
 	-DANDROID_STL=c++_shared
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
-	-DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_C_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
@@ -432,7 +432,7 @@ ExternalProject_Add(mygui
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_C_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
@@ -471,7 +471,7 @@ ExternalProject_Add(lz4
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_C_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
@@ -527,7 +527,7 @@ ExternalProject_Add(zlib
 	        -DANDROID_CPP_FEATURES=rtti\ exceptions
  	        -DANDROID_LD=lld
                 -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	        -DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	        -DCMAKE_C_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CFLAGS}
 	        -DCMAKE_CXX_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	        -DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	        -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
@@ -554,14 +554,13 @@ ExternalProject_Add(libxml
 	        -DANDROID_CPP_FEATURES=rtti\ exceptions
 	        -DANDROID_LD=lld
                 -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	        -DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
-	        -DCMAKE_CXX_FLAGS=-ffast-math\ -DMYGUI_DONT_REPLACE_NULLPTR\ -I${prefix}/include/\ $ENV{CXXFLAGS}
+	        -DCMAKE_C_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CFLAGS}
+	        -DCMAKE_CXX_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	        -DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	        -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 	        -DCMAKE_DEBUG_POSTFIX=
 	        -DCMAKE_INSTALL_PREFIX=${prefix}
 	        -DCMAKE_FIND_ROOT_PATH=${prefix}
-#	 	--with-threads
 		-DBUILD_SHARED_LIBS=OFF
 		-DLIBXML2_WITH_CATALOG=OFF
 		-DLIBXML2_WITH_ICONV=OFF
@@ -595,7 +594,7 @@ ExternalProject_Add(libcollada
 	        -DANDROID_CPP_FEATURES=rtti\ exceptions
 	        -DANDROID_LD=lld
                 -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	        -DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	        -DCMAKE_C_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CFLAGS}
 	        -DCMAKE_CXX_FLAGS=-Dauto_ptr=unique_ptr\ -ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	        -DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	        -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
@@ -690,7 +689,7 @@ ExternalProject_Add(osg
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_C_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CFLAGS}
 	-DCMAKE_CXX_FLAGS=-Dauto_ptr=unique_ptr\ -ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
