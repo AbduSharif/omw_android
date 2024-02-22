@@ -605,8 +605,8 @@ ExternalProject_Add(libcollada
 		-DBoost_USE_STATIC_RUNTIME=ON
 		-DBoost_NO_SYSTEM_PATHS=ON
 		-DBoost_INCLUDE_DIR=${prefix}/include
-		-DHAVE_STRTOQ=0
-		-DUSE_FILE32API=1
+#		-DHAVE_STRTOQ=0
+#		-DUSE_FILE32API=1
 
 		BUILD_COMMAND ${wrapper_command} $(MAKE)
 
