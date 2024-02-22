@@ -780,8 +780,8 @@ ExternalProject_Add(openmw
 	-DANDROID_CPP_FEATURES=rtti\ exceptions
 	-DANDROID_LD=lld
         -DANDROID_ALLOW_UNDEFINED_VERSION_SCRIPT_SYMBOLS=ON
-	-DCMAKE_C_FLAGS=-I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-I${prefix}/include/\ $ENV{CXXFLAGS}
+	-DCMAKE_C_FLAGS=-funsafe-math-optimizations\ -I${prefix}/include/\ $ENV{CFLAGS}
+	-DCMAKE_CXX_FLAGS=-funsafe-math-optimizations\ -I${prefix}/include/\ $ENV{CXXFLAGS}
 	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 	-DCMAKE_DEBUG_POSTFIX=
