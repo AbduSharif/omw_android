@@ -561,7 +561,7 @@ ExternalProject_Add(libxml
 	        -DCMAKE_DEBUG_POSTFIX=
 	        -DCMAKE_INSTALL_PREFIX=${prefix}
 	        -DCMAKE_FIND_ROOT_PATH=${prefix}
-	 	--with-threads
+#	 	--with-threads
 		-DBUILD_SHARED_LIBS=OFF
 		-DLIBXML2_WITH_CATALOG=OFF
 		-DLIBXML2_WITH_ICONV=OFF
