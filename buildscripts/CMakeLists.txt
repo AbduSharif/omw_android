@@ -35,10 +35,6 @@ set(GL4ES_VERSION 3d3b8b926452c331d6e4ecf29d2699e7934b7093)
 set(SDL2_VERSION 2.0.22)
 #set(SDL2_HASH SHA256=349268f695c02efbc9b9148a70b85e58cefbbf704abd3e91be654db7f1e2c863)
 
-# https://github.com/bulletphysics/bullet3/releases
-set(BULLET_VERSION 3.22b)
-#set(BULLET_HASH SHA256=baa642c906576d4d98d041d0acb80d85dd6eff6e3c16a009b1abf1ccd2bc0a61)
-
 # https://github.com/MyGUI/mygui/releases
 set(MYGUI_VERSION 3.4.3)
 #set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
@@ -59,7 +55,7 @@ set(LIBICU_VERSION 70-1)
 set(LIBICU_HASH SHA256=4013d7aff8a34bae410664bdb16554d7eda03654b22627b9284ab55a685492d4)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 38c590f36d328ea6b6dd0f0b03010409ebd2559e)
+set(OPENMW_VERSION 94dfb38a82aab5b75a8abe8ba3607c6060e42474)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -378,42 +374,6 @@ ExternalProject_Add(gl4es
 	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
 )
 
-ExternalProject_Add(bullet
-	URL https://github.com/bulletphysics/bullet3/archive/${BULLET_VERSION}.tar.gz
-	https://github.com/xyzz/openmw-deps/releases/download/v0/bullet3-${BULLET_VERSION}.tar.gz
-	URL_HASH ${BULLET_HASH}
-	DOWNLOAD_DIR ${download_dir}
-
-#	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/bullet-fix-cmake.patch
-
-	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
-	-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/toolchain/ndk/build/cmake/android.toolchain.cmake
-	-DANDROID_ABI=${app_abi}
-	-DANDROID_PLATFORM=${android_platform}
-	-DANDROID_STL=c++_shared
-	-DANDROID_CPP_FEATURES=rtti\ exceptions
-	-DANDROID_LD=lld
-	-DCMAKE_C_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CFLAGS}
-	-DCMAKE_CXX_FLAGS=-ffast-math\ -I${prefix}/include/\ $ENV{CXXFLAGS}
-	-DCMAKE_SHARED_LINKER_FLAGS=$ENV{LDFLAGS}
-	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}
-	-DCMAKE_DEBUG_POSTFIX=
-	-DCMAKE_INSTALL_PREFIX=${prefix}
-	-DCMAKE_FIND_ROOT_PATH=${prefix}
-#	-DCMAKE_POLICY_DEFAULT_CMP0069=NEW
-# 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
-	-DBUILD_BULLET2_DEMOS=OFF
-	-DBUILD_CPU_DEMOS=OFF
-	-DBUILD_UNIT_TESTS=OFF
-	-DBUILD_EXTRAS=OFF
-        -DUSE_DOUBLE_PRECISION=ON
-        -DBULLET2_MULTITHREADING=ON
-
-	BUILD_COMMAND ${wrapper_command} $(MAKE)
-
-	INSTALL_COMMAND $(MAKE) install
-)
-
 ExternalProject_Add(mygui
 	DEPENDS freetype2 gl4es
 
@@ -714,7 +674,8 @@ set(OPENMW_COMMON
 	-DBUILD_MWINIIMPORTER=0
 	-DBUILD_ESSIMPORTER=0
 	-DBUILD_NAVMESHTOOL=OFF
-	-DBUILD_BULLETOBJECTTOOL=OFF
+	-DBUILD_PHYSICSOBJECTTOOL=OFF
+        -DOPENMW_USE_SYSTEM_JOLT=OFF
 #        -DBUILD_SIMPLIFIEDMESHTOOL=0
         -DOPENMW_USE_SYSTEM_SQLITE3=OFF
 	-DBUILD_OPENCS=0
@@ -760,7 +721,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS libjpeg-turbo libpng zlib boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit libicu libcollada
+	DEPENDS libjpeg-turbo libpng zlib boost openal osg mygui ffmpeg sdl2 lz4 luajit libicu libcollada
 
        URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
