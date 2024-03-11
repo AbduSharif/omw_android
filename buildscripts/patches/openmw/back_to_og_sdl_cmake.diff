@@ -201,19 +201,6 @@ index 7e3c7aea23c2c4084145ed828adbadac1dc1b890..543aaa3afd90b7984d6363b02fbb0803
      ${OPENGL_gl_LIBRARY}
      ${MyGUI_LIBRARIES}
      ${LUA_LIBRARIES}
-diff --git a/extern/oics/CMakeLists.txt b/extern/oics/CMakeLists.txt
-index 4bd3bc51ad68b27d19dec0d77703f0abcdbb0cca..1b9fea9217f7bae64bf67e224145d038782b8e75 100644
---- a/extern/oics/CMakeLists.txt
-+++ b/extern/oics/CMakeLists.txt
-@@ -20,8 +20,6 @@ else()
-     target_link_libraries(oics local_tinyxml)
- endif()
- 
--target_link_libraries(oics SDL2::SDL2)
--
- if (MSVC)
-     target_precompile_headers(oics PUBLIC <algorithm> <string>)
- endif()
 diff --git a/extern/osg-ffmpeg-videoplayer/CMakeLists.txt b/extern/osg-ffmpeg-videoplayer/CMakeLists.txt
 index 10c8d356a075f32c97559ace749c1ac99ecc9027..7e2712f19b7b4e5ea0bad7e6adf337f8b953b349 100644
 --- a/extern/osg-ffmpeg-videoplayer/CMakeLists.txt
