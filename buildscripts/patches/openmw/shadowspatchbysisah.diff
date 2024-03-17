@@ -26,21 +26,6 @@ index 06930ebe595..7ee6d636885 100644
  
      // the shadow comparison should fail if object is outside the texture
      _texture->setWrap(osg::Texture2D::WRAP_S,osg::Texture2D::CLAMP_TO_BORDER);
-diff --git a/files/shaders/compatibility/shadowcasting.vert b/files/shaders/compatibility/shadowcasting.vert
-index 0cbcc63fbf5..90882c09797 100644
---- a/files/shaders/compatibility/shadowcasting.vert
-+++ b/files/shaders/compatibility/shadowcasting.vert
-@@ -6,8 +6,8 @@ varying float alphaPassthrough;
- 
- uniform int colorMode;
- uniform bool useTreeAnim;
--uniform bool useDiffuseMapForShadowAlpha// = true;
--uniform bool alphaTestShadows// = true;
-+uniform bool useDiffuseMapForShadowAlpha;// = true;
-+uniform bool alphaTestShadows;// = true;
- 
- void main(void)
- {
 diff --git a/files/shaders/compatibility/shadows_fragment.glsl b/files/shaders/compatibility/shadows_fragment.glsl
 index 2945edff3dc..08a53248ff9 100644
 --- a/files/shaders/compatibility/shadows_fragment.glsl
