@@ -53,21 +53,6 @@ index 2c306bf1aec..370ed3e8edc 100644
  [Physics]
  # Set the number of background threads used for physics.
  # If no background threads are used, physics calculations are processed in the main thread
-diff --git a/files/shaders/compatibility/shadowcasting.vert b/files/shaders/compatibility/shadowcasting.vert
-index 0cbcc63fbf5..90882c09797 100644
---- a/files/shaders/compatibility/shadowcasting.vert
-+++ b/files/shaders/compatibility/shadowcasting.vert
-@@ -6,8 +6,8 @@ varying float alphaPassthrough;
- 
- uniform int colorMode;
- uniform bool useTreeAnim;
--uniform bool useDiffuseMapForShadowAlpha// = true;
--uniform bool alphaTestShadows// = true;
-+uniform bool useDiffuseMapForShadowAlpha;// = true;
-+uniform bool alphaTestShadows;// = true;
- 
- void main(void)
- {
 diff --git a/files/shaders/compatibility/shadows_fragment.glsl b/files/shaders/compatibility/shadows_fragment.glsl
 index 2945edff3dc..b99184f222c 100644
 --- a/files/shaders/compatibility/shadows_fragment.glsl
