@@ -59,7 +59,7 @@ set(LIBICU_VERSION 70-1)
 set(LIBICU_HASH SHA256=4013d7aff8a34bae410664bdb16554d7eda03654b22627b9284ab55a685492d4)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION 854b4f226b1f1bb1db531a1458e255a691163cbf)
+set(OPENMW_VERSION 0b63a3926b9c34b8a88b8449794d5109df777161)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -763,11 +763,11 @@ ExternalProject_Add(openmw
 	DEPENDS libjpeg-turbo libpng zlib boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit libicu libcollada
 
 #       URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
-	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+#	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://github.com/AbduSharif/openmw/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://github.com/annalithic/openmw/archive/${OPENMW_VERSION}.tar.gz
 #	URL https://gitlab.com/glassmancody.info/openmw/-/archive/${OPENMW_VERSION}.tar.gz
-#	URL https://gitlab.com/Capostrophic/openmw/-/archive/${OPENMW_VERSION}.tar.gz
+	URL https://gitlab.com/cykoder/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL_HASH ${OPENMW_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
