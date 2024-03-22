@@ -14,7 +14,7 @@ index 224774d1029ff3ffe5ad757df303648f3e5c99cd..0eca81d24700e8c88852f13379090b52
          resourceSystem->getSceneManager()->setSupportsNormalsRT(mPostProcessor->getSupportsNormalsRT());
          resourceSystem->getSceneManager()->setWeatherParticleOcclusion(Settings::shaders().mWeatherParticleOcclusion);
 diff --git a/apps/openmw/mwrender/postprocessor.cpp b/apps/openmw/mwrender/postprocessor.cpp
-index 89c1b2b39bc78778f7e52856f492e179d3f6f943..3e6d068a11b48110094aae58d4f081e6d65402b5 100644
+index bf8df4a85a35411629992024cd35a5dcb662d779..46b708c66edbcd7fbc2779a1654b3603b390abc7 100644
 --- a/apps/openmw/mwrender/postprocessor.cpp
 +++ b/apps/openmw/mwrender/postprocessor.cpp
 @@ -302,7 +302,7 @@ namespace MWRender
