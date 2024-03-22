@@ -1,0 +1,15 @@
+diff --git a/apps/openmw/mwrender/postprocessor.cpp b/apps/openmw/mwrender/postprocessor.cpp
+index b27bde1ae41561c471f03ca973823da180afcfd7..89c1b2b39bc78778f7e52856f492e179d3f6f943 100644
+--- a/apps/openmw/mwrender/postprocessor.cpp
++++ b/apps/openmw/mwrender/postprocessor.cpp
+@@ -459,8 +459,8 @@ namespace MWRender
+ 
+                 if (Settings::shaders().mUseHDR && !Settings::shaders().mClampLighting)
+         {
+-            textures[Tex_Scene]->setSourceFormat(GL_RGB16F);
+-            textures[Tex_Scene]->setInternalFormat(GL_RGB16F);
++            textures[Tex_Scene]->setSourceFormat(GL_RGB32F);
++            textures[Tex_Scene]->setInternalFormat(GL_RGB32F);
+         }
+ 
+         textures[Tex_Normal]->setSourceFormat(GL_RGB);
