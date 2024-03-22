@@ -51,13 +51,13 @@ jobs:
         ARCH=${{ matrix.arch }} source buildscripts/include/version.sh
         sed -i "s/abiFilters.*/abiFilters '$ABI'/" app/build.gradle
         export ANDROID_NDK_HOME=$(pwd)/buildscripts/toolchain/ndk/
-        ./gradlew assembleMainline
+        ./gradlew assembleNightlyRelease
 
     - name: Collect outputs
       id: getfilename
       run: |
-        mv app/build/outputs/apk/nightly/debug/omw_debug_*.apk omw-debug-$(git rev-parse --short "$GITHUB_SHA")-${{ matrix.arch }}.apk
-        echo "apk_file=$(ls omw-debug-*.apk | sed 's/\(.*\)\..*/\1/')" >> $GITHUB_ENV
+        mv app/build/outputs/apk/nightly/release/omw_release_*.apk omw-release-$(git rev-parse --short "$GITHUB_SHA")-${{ matrix.arch }}.apk
+        echo "apk_file=$(ls omw-release-*.apk | sed 's/\(.*\)\..*/\1/')" >> $GITHUB_ENV
 
     - name: Upload the APK
       uses: actions/upload-artifact@v3
