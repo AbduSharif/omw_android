@@ -27,7 +27,7 @@ android {
 
     defaultConfig {
         applicationId "is.xyz.omw"
-        versionCode 46
+        versionCode 48
         versionName calculateVersion()
 
         minSdkVersion 21
@@ -54,7 +54,7 @@ android {
         }
 
         debug {
-            applicationIdSuffix ".debug"
+            applicationIdSuffix ""
             debuggable false
         }
     }
@@ -68,8 +68,8 @@ android {
 
         nightly {
             dimension "version"
-            applicationId "is.xyz.omw_nightly"
-            versionNameSuffix "-nightly"
+            applicationId "is.xyz.omw_release"
+            versionNameSuffix "-release"
         }
     }
 
