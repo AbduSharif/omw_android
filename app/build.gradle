@@ -54,7 +54,7 @@ android {
         }
 
         debug {
-            applicationIdSuffix ""
+            applicationIdSuffix ".debug"
             debuggable false
         }
     }
@@ -68,8 +68,8 @@ android {
 
         nightly {
             dimension "version"
-            applicationId "is.xyz.omw_release"
-            versionNameSuffix "-release"
+            applicationId "is.xyz.omw_nightly"
+            versionNameSuffix "-nightly"
         }
     }
 
