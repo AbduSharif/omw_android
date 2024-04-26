@@ -59,7 +59,7 @@ set(LIBICU_VERSION 70-1)
 set(LIBICU_HASH SHA256=4013d7aff8a34bae410664bdb16554d7eda03654b22627b9284ab55a685492d4)
 
 # https://github.com/OpenMW/openmw/commits/master
-set(OPENMW_VERSION a2119f035859b032c8cb1c8edc4e3abbef558c91)
+set(OPENMW_VERSION 59b04c2bc8123f607c458cfbd3f8c00fe4c5c001)
 #set(OPENMW_HASH SHA256=c3a277f718ab8b7760834ee8a55fad32b079b032f4b112b005f038b5afd98994)
 
 # End of configurable options
@@ -714,9 +714,9 @@ set(OPENMW_COMMON
 	-DBUILD_MWINIIMPORTER=0
 	-DBUILD_ESSIMPORTER=0
 	-DBUILD_NAVMESHTOOL=OFF
-	-DBUILD_PHYSICSOBJECTTOOL=OFF
-        -DOPENMW_USE_SYSTEM_JOLT=OFF
-#	-DBUILD_BULLETOBJECTTOOL=OFF
+#	-DBUILD_PHYSICSOBJECTTOOL=OFF
+#        -DOPENMW_USE_SYSTEM_JOLT=OFF
+	-DBUILD_BULLETOBJECTTOOL=OFF
 #        -DBUILD_SIMPLIFIEDMESHTOOL=0
         -DOPENMW_USE_SYSTEM_SQLITE3=OFF
 	-DBUILD_OPENCS=0
@@ -763,7 +763,7 @@ set(OPENMW_PATCH
 )
 
 ExternalProject_Add(openmw
-	DEPENDS libjpeg-turbo libpng zlib boost openal osg mygui ffmpeg sdl2 lz4 luajit libicu libcollada
+	DEPENDS libjpeg-turbo libpng zlib boost openal osg mygui ffmpeg sdl2 bullet lz4 luajit libicu libcollada
 
 #       URL https://gitlab.com/AbduSharif/openmw/-/archive/${OPENMW_VERSION}.tar.gz
 	URL https://gitlab.com/OpenMW/openmw/-/archive/${OPENMW_VERSION}.tar.gz
