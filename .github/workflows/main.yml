@@ -10,11 +10,13 @@ jobs:
 
     runs-on: ubuntu-20.04
 
+    using: 'node20'
+
     env:
       CMAKE_VERSION: 3.19.7
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install dependencies
       run: |
@@ -60,7 +62,7 @@ jobs:
         echo "apk_file=$(ls omw-release-*.apk | sed 's/\(.*\)\..*/\1/')" >> $GITHUB_ENV
 
     - name: Upload the APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ env.apk_file }}
         path: ${{ env.apk_file }}.apk
