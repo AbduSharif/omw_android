@@ -56,7 +56,7 @@ jobs:
     - name: Collect outputs
       id: getfilename
       run: |
-        mv app/build/outputs/apk/nightly/release/omw_release_*.apk omw-release-$(git rev-parse --short "$GITHUB_SHA")-${{ matrix.arch }}.apk
+        mv app/build/outputs/apk/nightly/debug/omw_release_*.apk omw-release-$(git rev-parse --short "$GITHUB_SHA")-${{ matrix.arch }}.apk
         echo "apk_file=$(ls omw-release-*.apk | sed 's/\(.*\)\..*/\1/')" >> $GITHUB_ENV
 
     - name: Upload the APK
