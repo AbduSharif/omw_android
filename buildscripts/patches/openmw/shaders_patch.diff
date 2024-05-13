@@ -1,3 +1,86 @@
+diff --git a/files/shaders/lib/core/fragment.h.glsl b/files/shaders/lib/core/fragment.h.glsl
+index b8c3f9a32b575fe630f85640d4d20bcda3e7f39a..5e21b638eb99702ae54882f26fcda1bc8b4bb601 100644
+--- a/files/shaders/lib/core/fragment.h.glsl
++++ b/files/shaders/lib/core/fragment.h.glsl
+@@ -1,20 +1,43 @@
+ #ifndef OPENMW_FRAGMENT_H_GLSL
+ #define OPENMW_FRAGMENT_H_GLSL
+ 
+-@link "lib/core/fragment.glsl" if !@useOVR_multiview
+-@link "lib/core/fragment_multiview.glsl" if @useOVR_multiview
++uniform sampler2D reflectionMap;
+ 
+-vec4 sampleReflectionMap(vec2 uv);
++vec4 sampleReflectionMap(vec2 uv)
++{
++    return texture2D(reflectionMap, uv);
++}
+ 
+ #if @waterRefraction
+-vec4 sampleRefractionMap(vec2 uv);
+-float sampleRefractionDepthMap(vec2 uv);
++uniform sampler2D refractionMap;
++uniform highp sampler2D refractionDepthMap;
++
++vec4 sampleRefractionMap(vec2 uv)
++{
++    return texture2D(refractionMap, uv);
++}
++
++highp float sampleRefractionDepthMap(vec2 uv)
++{
++    return texture2D(refractionDepthMap, uv).x;
++}
++
+ #endif
+ 
+-vec4 samplerLastShader(vec2 uv);
++uniform sampler2D lastShader;
++
++vec4 samplerLastShader(vec2 uv)
++{
++    return texture2D(lastShader, uv);
++}
+ 
+ #if @skyBlending
+-vec3 sampleSkyColor(vec2 uv);
++uniform sampler2D sky;
++
++vec3 sampleSkyColor(vec2 uv)
++{
++    return texture2D(sky, uv).xyz;
++}
+ #endif
+ 
+ #endif  // OPENMW_FRAGMENT_H_GLSL
+diff --git a/files/shaders/lib/core/vertex.h.glsl b/files/shaders/lib/core/vertex.h.glsl
+index 6e22f6deb157c48fc1f2c62d9f738d0e3d45135a..95a167c2a5db60677064c24f5f859d3aec49cad5 100644
+--- a/files/shaders/lib/core/vertex.h.glsl
++++ b/files/shaders/lib/core/vertex.h.glsl
+@@ -1,6 +1,18 @@
+-@link "lib/core/vertex.glsl" if !@useOVR_multiview
+-@link "lib/core/vertex_multiview.glsl" if @useOVR_multiview
++#version 120
+ 
+-vec4 modelToClip(vec4 pos);
+-vec4 modelToView(vec4 pos);
+-vec4 viewToClip(vec4 pos);
++uniform mat4 projectionMatrix;
++
++vec4 modelToView(vec4 pos)
++{
++    return gl_ModelViewMatrix * pos;
++}
++
++vec4 modelToClip(vec4 pos)
++{
++    return projectionMatrix * modelToView(pos);
++}
++
++vec4 viewToClip(vec4 pos)
++{
++    return projectionMatrix * pos;
++}
 diff --git a/files/shaders/compatibility/objects.frag b/files/shaders/compatibility/objects.frag
 index 7f163580cce149dd432749cf0ef9ee7cc83de9ce..51ecf41d9ddbb64803540636acbf0cebf099e321 100644
 --- a/files/shaders/compatibility/objects.frag
