@@ -1,0 +1,115 @@
+diff --git a/files/shaders/compatibility/objects.frag b/files/shaders/compatibility/objects.frag
+index 7f163580cce149dd432749cf0ef9ee7cc83de9ce..51ecf41d9ddbb64803540636acbf0cebf099e321 100644
+--- a/files/shaders/compatibility/objects.frag
++++ b/files/shaders/compatibility/objects.frag
+@@ -109,11 +109,11 @@ uniform float softFalloffDepth;
+ 
+ #if @particleOcclusion
+ #include "lib/particle/occlusion.glsl"
+-uniform sampler2D orthoDepthMap;
++uniform highp sampler2D orthoDepthMap;
+ varying vec3 orthoDepthMapCoord;
+ #endif
+ 
+-uniform sampler2D opaqueDepthTex;
++uniform highp sampler2D opaqueDepthTex;
+ 
+ void main()
+ {
+diff --git a/files/shaders/compatibility/fog.glsl b/files/shaders/compatibility/fog.glsl
+index a7cccbf7876332cdcbf23969292d94cdd88afe47..19a6d87a0e4b1a83d1c10fa32e2e8948471467ec 100644
+--- a/files/shaders/compatibility/fog.glsl
++++ b/files/shaders/compatibility/fog.glsl
+@@ -17,7 +17,7 @@ vec4 applyFogAtDist(vec4 color, float euclideanDist, float linearDist, float far
+     float fogValue = clamp((dist - gl_Fog.start) * gl_Fog.scale, 0.0, 1.0);
+ #endif
+ #ifdef ADDITIVE_BLENDING
+-    color.xyz *= 1.0 - fogValue;
++    color.xyz = mix(color.xyz, gl_Fog.color.xyz, fogValue);
+ #else
+     color.xyz = mix(color.xyz, gl_Fog.color.xyz, fogValue);
+ #endif
+@@ -26,7 +26,7 @@ vec4 applyFogAtDist(vec4 color, float euclideanDist, float linearDist, float far
+     float fadeValue = clamp((far - dist) / (far - skyBlendingStart), 0.0, 1.0);
+     fadeValue *= fadeValue;
+ #ifdef ADDITIVE_BLENDING
+-    color.xyz *= fadeValue;
++    color.xyz = mix(sampleSkyColor(gl_FragCoord.xy / screenRes), color.xyz, fadeValue);
+ #else
+     color.xyz = mix(sampleSkyColor(gl_FragCoord.xy / screenRes), color.xyz, fadeValue);
+ #endif
+diff --git a/files/shaders/compatibility/debug.frag b/files/shaders/compatibility/debug.frag
+index a92b406d46b6c41f47d6de15659bf46b17a6e082..041562fc0e2477221be49ca54148ccd0761272b0 100644
+--- a/files/shaders/compatibility/debug.frag
++++ b/files/shaders/compatibility/debug.frag
+@@ -4,7 +4,7 @@
+ 
+ varying vec3 vertexNormal;
+ 
+-uniform bool useAdvancedShader = false;
++uniform bool useAdvancedShader;
+ 
+ void main()
+ {
+diff --git a/files/shaders/compatibility/debug.vert b/files/shaders/compatibility/debug.vert
+index 47d5337a66f017623e2c13f4749df6134e2c5072..a1fa462f397720b2111afb5ee661990fcba2e514 100644
+--- a/files/shaders/compatibility/debug.vert
++++ b/files/shaders/compatibility/debug.vert
+@@ -6,7 +6,7 @@ uniform vec3 color;
+ uniform vec3 trans;
+ uniform vec3 scale;
+ uniform bool useNormalAsColor;
+-uniform bool useAdvancedShader = false;
++uniform bool useAdvancedShader;
+ 
+ centroid varying vec4 passColor;
+ varying vec3 vertexNormal;
+diff --git a/files/shaders/compatibility/shadows_fragment.glsl b/files/shaders/compatibility/shadows_fragment.glsl
+index 3c7a37a1628124b5efc210089a570fd86802985f..bcd3361b65b00067ba5167049359d8a29f391941 100644
+--- a/files/shaders/compatibility/shadows_fragment.glsl
++++ b/files/shaders/compatibility/shadows_fragment.glsl
+@@ -4,7 +4,7 @@
+     uniform float maximumShadowMapDistance;
+     uniform float shadowFadeStart;
+     @foreach shadow_texture_unit_index @shadow_texture_unit_list
+-        uniform sampler2DShadow shadowTexture@shadow_texture_unit_index;
++        uniform sampler2D shadowTexture@shadow_texture_unit_index;
+         varying vec4 shadowSpaceCoords@shadow_texture_unit_index;
+ 
+ #if @perspectiveShadowMaps
+@@ -32,7 +32,7 @@ float unshadowedLightRatio(float distance)
+ #endif
+             if (all(lessThan(shadowXYZ.xy, vec2(1.0, 1.0))) && all(greaterThan(shadowXYZ.xy, vec2(0.0, 0.0))))
+             {
+-                shadowing = min(shadow2DProj(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
++                shadowing = min(texture2DProj(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
+ 
+                 doneShadows = all(lessThan(shadowXYZ, vec3(0.95, 0.95, 1.0))) && all(greaterThan(shadowXYZ, vec3(0.05, 0.05, 0.0)));
+ #if @perspectiveShadowMaps
+diff --git a/files/shaders/compatibility/shadowcasting.vert b/files/shaders/compatibility/shadowcasting.vert
+index c68bdd5c1775a58de3969547a0dcfb9394a31bf1..41136c2d42debac0d4be748b7ae77d046b67753d 100644
+--- a/files/shaders/compatibility/shadowcasting.vert
++++ b/files/shaders/compatibility/shadowcasting.vert
+@@ -6,8 +6,8 @@ varying float alphaPassthrough;
+ 
+ uniform int colorMode;
+ uniform bool useTreeAnim;
+-uniform bool useDiffuseMapForShadowAlpha = true;
+-uniform bool alphaTestShadows = true;
++uniform bool useDiffuseMapForShadowAlpha;
++uniform bool alphaTestShadows;
+ 
+ void main(void)
+ {
+diff --git a/files/shaders/compatibility/fullscreen_tri.vert b/files/shaders/compatibility/fullscreen_tri.vert
+index 3174384212ed7628a93dd07fb4ee211573f4cba6..751bf693345d4b99afc6827b437082577838e504 100644
+--- a/files/shaders/compatibility/fullscreen_tri.vert
++++ b/files/shaders/compatibility/fullscreen_tri.vert
+@@ -1,6 +1,6 @@
+ #version 120
+ 
+-uniform vec2 scaling = vec2(1.0, 1.0);
++uniform vec2 scaling; // = vec2(1.0, 1.0);
+ 
+ varying vec2 uv;
+ 
