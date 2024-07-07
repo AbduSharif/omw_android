@@ -1,63 +1,101 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 34df0216da1d4371d56a55e990d7dba9518aa390..13dce30702780017ad3ac795c928a8feecc271f2 100644
+index 9e56a4eb8a310e3e259fa691755bb2c1426a19c2..854bcba15c80e9f91d309c847885448654cb34f1 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -114,6 +114,7 @@ include(WholeArchive)
+@@ -125,6 +125,11 @@ include(WholeArchive)
  configure_file ("${OpenMW_SOURCE_DIR}/docs/mainpage.hpp.cmake" "${OpenMW_BINARY_DIR}/docs/mainpage.hpp")
  
  option(BOOST_STATIC "Link static build of Boost into the binaries" FALSE)
-+option(SDL2_STATIC "Link static build of SDL into the binaries" FALSE)
++
++if (ANDROID)
++    option(SDL2_STATIC "Link static build of SDL into the binaries" FALSE)
++endif()
++
  option(QT_STATIC "Link static build of Qt into the binaries" FALSE)
  
  option(OPENMW_USE_SYSTEM_BULLET "Use system provided bullet physics library" ON)
-@@ -482,6 +483,7 @@ set(SOL_CONFIG_DIR ${OpenMW_SOURCE_DIR}/extern/sol_config)
- include_directories(
-     BEFORE SYSTEM
-     "."
-+    ${SDL2_INCLUDE_DIR}
-     ${Boost_INCLUDE_DIR}
-     ${MyGUI_INCLUDE_DIRS}
-     ${OPENAL_INCLUDE_DIR}
-@@ -493,7 +495,7 @@ include_directories(
+@@ -478,7 +483,13 @@ find_package(Boost 1.6.2 REQUIRED COMPONENTS ${BOOST_COMPONENTS} OPTIONAL_COMPON
+ if(OPENMW_USE_SYSTEM_MYGUI)
+     find_package(MyGUI 3.4.3 REQUIRED)
+ endif()
+-find_package(SDL2 2.0.9 REQUIRED)
++
++if (ANDROID)    
++    find_package(SDL2Android REQUIRED)    
++else ()
++    find_package(SDL2 2.0.9 REQUIRED)
++endif()
++
+ find_package(OpenAL REQUIRED)
+ find_package(ZLIB REQUIRED)
+ 
+@@ -513,7 +524,14 @@ include_directories(
      ${ICU_INCLUDE_DIRS}
  )
  
 -link_directories(${Boost_LIBRARY_DIRS} ${COLLADA_DOM_LIBRARY_DIRS})
-+link_directories(${SDL2_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS} ${COLLADA_DOM_LIBRARY_DIRS})
++if (ANDROID)
++    include_directories(
++    BEFORE SYSTEM
++    ${SDL2_INCLUDE_DIR})
++    link_directories(${SDL2_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS} ${COLLADA_DOM_LIBRARY_DIRS})
++else ()
++    link_directories(${Boost_LIBRARY_DIRS} ${COLLADA_DOM_LIBRARY_DIRS})
++endif()
  
  if(MYGUI_STATIC)
      add_definitions(-DMYGUI_STATIC)
 diff --git a/apps/launcher/CMakeLists.txt b/apps/launcher/CMakeLists.txt
-index daae65dc66880d45cef7ca47e7194b886d92bcf4..87cee06e5d5f764e4562c49357b629fce0cf38b7 100644
+index 967373de0c6e52c1f6b7fb9a3dcf5e7e424b9b55..3b60817fceb740f632490a954d65f69c4349cf29 100644
 --- a/apps/launcher/CMakeLists.txt
 +++ b/apps/launcher/CMakeLists.txt
-@@ -77,7 +77,7 @@ if (WIN32)
+@@ -80,8 +80,14 @@ if (WIN32)
+     INSTALL(TARGETS openmw-launcher RUNTIME DESTINATION ".")
  endif (WIN32)
  
++if (ANDROID)
++    set(SDL2_LIB ${SDL2_LIBRARY_ONLY})
++else()
++    set(SDL2_LIB SDL2::SDL2)
++endif()
++
  target_link_libraries(openmw-launcher
 -    SDL2::SDL2
-+    ${SDL2_LIBRARY_ONLY}
++    ${SDL2_LIB}
      ${OPENAL_LIBRARY}
      components_qt
  )
 diff --git a/apps/openmw/CMakeLists.txt b/apps/openmw/CMakeLists.txt
-index db44b91159e88a4cb22b386c55f4fe19f61d6d62..7e1c39f3df1bf2caebc903cc17a7e16ef992b94b 100644
+index 3c5a6423fdabd1431f6111c5ff4a1f30d8d090aa..1407da2118ab4103b7343fdcea610904b79870d3 100644
 --- a/apps/openmw/CMakeLists.txt
 +++ b/apps/openmw/CMakeLists.txt
-@@ -150,7 +150,7 @@ target_link_libraries(openmw
+@@ -157,6 +157,12 @@ include_directories(
+     ${FFmpeg_INCLUDE_DIRS}
+ )
+ 
++if (ANDROID)
++    set(SDL2_LIB ${SDL2_LIBRARY})
++else()
++    set(SDL2_LIB SDL2::SDL2)
++endif()
++
+ target_link_libraries(openmw-lib
+     # CMake's built-in OSG finder does not use pkgconfig, so we have to
+     # manually ensure the order is correct for inter-library dependencies.
+@@ -173,7 +179,7 @@ target_link_libraries(openmw-lib
      ${OPENAL_LIBRARY}
      ${FFmpeg_LIBRARIES}
      ${MyGUI_LIBRARIES}
 -    SDL2::SDL2
-+    ${SDL2_LIBRARY}
++    ${SDL2_LIB}
      ${RecastNavigation_LIBRARIES}
      "osg-ffmpeg-videoplayer"
      "oics"
-diff --git a/cmake/FindSDL2.cmake b/cmake/FindSDL2.cmake
+diff --git a/cmake/FindSDL2Android.cmake b/cmake/FindSDL2Android.cmake
 new file mode 100644
 index 0000000000000000000000000000000000000000..4f2be8c421ac5157353be2619428fffcc2a864b5
 --- /dev/null
-+++ b/cmake/FindSDL2.cmake
++++ b/cmake/FindSDL2Android.cmake
 @@ -0,0 +1,129 @@
 +# Locate SDL2 library
 +# This module defines
@@ -189,40 +227,58 @@ index 0000000000000000000000000000000000000000..4f2be8c421ac5157353be2619428fffc
 +    set(SDL2_LIBRARIES ${SDL2_STATIC_FLAGS})
 +endif()
 diff --git a/components/CMakeLists.txt b/components/CMakeLists.txt
-index 7e3c7aea23c2c4084145ed828adbadac1dc1b890..543aaa3afd90b7984d6363b02fbb0803f02089e4 100644
+index fb5718a979bc83be6ba71b866452aca00d8777dc..5ab24b0eda344d133f151fb75d343361ca65d01a 100644
 --- a/components/CMakeLists.txt
 +++ b/components/CMakeLists.txt
-@@ -556,7 +556,7 @@ target_link_libraries(components
+@@ -565,7 +565,10 @@ add_library(components STATIC ${COMPONENT_FILES})
+ 
+ if (ANDROID)
+     set_property(TARGET components PROPERTY POSITION_INDEPENDENT_CODE ON)
+-endif()
++    set(SDL2_LIB ${SDL2_LIBRARIES})
++else()
++    set(SDL2_LIB SDL2::SDL2)
++endif() 
+ 
+ target_link_libraries(components
+     ${COLLADA_DOM_LIBRARIES}
+@@ -590,7 +593,7 @@ target_link_libraries(components
      ${Boost_PROGRAM_OPTIONS_LIBRARY}
      ${Boost_IOSTREAMS_LIBRARY}
  
 -    SDL2::SDL2
-+    ${SDL2_LIBRARIES}
++    ${SDL2_LIB}
      ${OPENGL_gl_LIBRARY}
      ${MyGUI_LIBRARIES}
      ${LUA_LIBRARIES}
 diff --git a/extern/oics/CMakeLists.txt b/extern/oics/CMakeLists.txt
-index 2d34f3f3e6638af16caedf2df55412f3caae3dd6..64b7c3383fe1d4de4e15a8735639d7c5be858af9 100644
+index 2d34f3f3e6638af16caedf2df55412f3caae3dd6..b52496c2415c460441855b2c24c54700a0334a9b 100644
 --- a/extern/oics/CMakeLists.txt
 +++ b/extern/oics/CMakeLists.txt
-@@ -20,8 +20,6 @@ else()
+@@ -20,7 +20,9 @@ else()
      target_link_libraries(oics local_tinyxml)
  endif()
  
 -target_link_libraries(oics SDL2::SDL2)
--
++if (NOT ANDROID)
++    target_link_libraries(oics SDL2::SDL2)
++endif()
+ 
  if (MSVC AND PRECOMPILE_HEADERS_WITH_MSVC)
      target_precompile_headers(oics PUBLIC <algorithm> <string>)
- endif()
 diff --git a/extern/osg-ffmpeg-videoplayer/CMakeLists.txt b/extern/osg-ffmpeg-videoplayer/CMakeLists.txt
-index 10c8d356a075f32c97559ace749c1ac99ecc9027..7e2712f19b7b4e5ea0bad7e6adf337f8b953b349 100644
+index 8ff608bf0467c3b9016d028f713f9eef98979aa2..2aadf44f2f3cf529b201b87c01a696f98c55cd0d 100644
 --- a/extern/osg-ffmpeg-videoplayer/CMakeLists.txt
 +++ b/extern/osg-ffmpeg-videoplayer/CMakeLists.txt
-@@ -14,7 +14,6 @@ include_directories(${FFmpeg_INCLUDE_DIRS})
+@@ -14,7 +14,10 @@ include_directories(${FFmpeg_INCLUDE_DIRS})
  add_library(${OSG_FFMPEG_VIDEOPLAYER_LIBRARY} STATIC ${OSG_FFMPEG_VIDEOPLAYER_SOURCE_FILES})
  target_link_libraries(${OSG_FFMPEG_VIDEOPLAYER_LIBRARY} ${FFmpeg_LIBRARIES})
  target_link_libraries(${OSG_FFMPEG_VIDEOPLAYER_LIBRARY} ${OSG_LIBRARIES})
 -target_link_libraries(${OSG_FFMPEG_VIDEOPLAYER_LIBRARY} SDL2::SDL2)
++
++if (NOT ANDROID)
++    target_link_libraries(${OSG_FFMPEG_VIDEOPLAYER_LIBRARY} SDL2::SDL2)
++endif()
  
  link_directories(${CMAKE_CURRENT_BINARY_DIR})
  
