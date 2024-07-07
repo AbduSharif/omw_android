@@ -110,11 +110,11 @@ class GameActivity : SDLActivity() {
         }
 
         System.loadLibrary("GL")
-        System.loadLibrary("openmw")
+        System.loadLibrary("openmw-lib")
     }
 
     override fun getMainSharedObject(): String {
-        return "libopenmw.so"
+        return "libopenmw-lib.so"
     }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
