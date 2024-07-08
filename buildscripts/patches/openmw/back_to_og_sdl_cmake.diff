@@ -1,3 +1,32 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 43a645ed14ef707b74548f70f70a3bed12663d3a..64696fcc762d1241d04b63de54ef4cfdb4bed297 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -125,6 +125,7 @@ include(WholeArchive)
+ configure_file ("${OpenMW_SOURCE_DIR}/docs/mainpage.hpp.cmake" "${OpenMW_BINARY_DIR}/docs/mainpage.hpp")
+ 
+ option(BOOST_STATIC "Link static build of Boost into the binaries" FALSE)
++option(SDL2_STATIC "Link static build of SDL into the binaries" FALSE)
+ option(QT_STATIC "Link static build of Qt into the binaries" FALSE)
+ 
+ option(OPENMW_USE_SYSTEM_BULLET "Use system provided bullet physics library" ON)
+@@ -502,6 +503,7 @@ set(SOL_CONFIG_DIR ${OpenMW_SOURCE_DIR}/extern/sol_config)
+ include_directories(
+     BEFORE SYSTEM
+     "."
++    ${SDL2_INCLUDE_DIR}
+     ${Boost_INCLUDE_DIR}
+     ${MyGUI_INCLUDE_DIRS}
+     ${OPENAL_INCLUDE_DIR}
+@@ -513,7 +515,7 @@ include_directories(
+     ${ICU_INCLUDE_DIRS}
+ )
+ 
+-link_directories(${Boost_LIBRARY_DIRS} ${COLLADA_DOM_LIBRARY_DIRS})
++link_directories(${SDL2_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS} ${COLLADA_DOM_LIBRARY_DIRS})
+ 
+ if(MYGUI_STATIC)
+     add_definitions(-DMYGUI_STATIC)
 diff --git a/apps/openmw/CMakeLists.txt b/apps/openmw/CMakeLists.txt
 index 3c5a6423fdabd1431f6111c5ff4a1f30d8d090aa..f624d2744c1897d1bd5b849d11655f89d6866158 100644
 --- a/apps/openmw/CMakeLists.txt
