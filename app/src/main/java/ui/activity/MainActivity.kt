@@ -316,8 +316,8 @@ class MainActivity : AppCompatActivity() {
 
         // copy in the new version
         val assetCopier = CopyFilesFromAssets(this)
-        assetCopier.copy("libopenmw-lib/resources", Constants.RESOURCES)
-        assetCopier.copy("libopenmw-lib/openmw-lib", Constants.GLOBAL_CONFIG)
+        assetCopier.copy("libopenmw/resources", Constants.RESOURCES)
+        assetCopier.copy("libopenmw/openmw-lib", Constants.GLOBAL_CONFIG)
 
         // set up user config (if not present)
         File(Constants.USER_CONFIG).mkdirs()
@@ -506,7 +506,7 @@ class MainActivity : AppCompatActivity() {
         return when (item.itemId) {
 
             R.id.action_about -> {
-                val text = assets.open("libopenmw-lib/3rdparty-licenses.txt")
+                val text = assets.open("libopenmw/3rdparty-licenses.txt")
                     .bufferedReader()
                     .use { it.readText() }
 
