@@ -178,7 +178,7 @@ rm -rf ../app/src/main/jniLibs/$ABI/
 mkdir -p ../app/src/main/jniLibs/$ABI/
 
 # libopenmw.so is a special case
-find build/$ARCH/openmw-lib-prefix/ -iname "libopenmw-lib.so" -exec cp "{}" ../app/src/main/jniLibs/$ABI/libopenmw-lib.so \;
+find build/$ARCH/openmw-prefix/ -iname "libopenmw.so" -exec cp "{}" ../app/src/main/jniLibs/$ABI/libopenmw.so \;
 
 # copy over libs we compiled
 cp prefix/$ARCH/lib/{libopenal,libSDL2,libGL,libcollada-dom2.5-dp}.so ../app/src/main/jniLibs/$ABI/
@@ -189,8 +189,8 @@ find ./toolchain/$ARCH/sysroot/usr/lib/$NDK_TRIPLET -iname "libc++_shared.so" -e
 if [[ $DEPLOY_RESOURCES = "true" ]]; then
 	echo "==> Deploying resources"
 
-	DST=$DIR/../app/src/main/assets/libopenmw-lib/
-	SRC=build/$ARCH/openmw-lib-prefix/src/openmw-lib-build/
+	DST=$DIR/../app/src/main/assets/libopenmw/
+	SRC=build/$ARCH/openmw-prefix/src/openmw-build/
 
 	rm -rf "$DST" && mkdir -p "$DST"
 
@@ -198,11 +198,11 @@ if [[ $DEPLOY_RESOURCES = "true" ]]; then
 	cp -r "$SRC/resources" "$DST"
 
 	# global config
-	mkdir -p "$DST/openmw-lib/"
-	cp "$SRC/defaults.bin" "$DST/openmw-lib/"
-	cp "$SRC/gamecontrollerdb.txt" "$DST/openmw-lib/"
-	cat "$SRC/openmw.cfg" | grep -v "data=" | grep -v "data-local=" >> "$DST/openmw-lib/openmw.base.cfg"
-	cat "$DIR/../app/openmw.base.cfg" >> "$DST/openmw-lib/openmw.base.cfg"
+	mkdir -p "$DST/openmw/"
+	cp "$SRC/defaults.bin" "$DST/openmw/"
+	cp "$SRC/gamecontrollerdb.txt" "$DST/openmw/"
+	cat "$SRC/openmw.cfg" | grep -v "data=" | grep -v "data-local=" >> "$DST/openmw/openmw.base.cfg"
+	cat "$DIR/../app/openmw.base.cfg" >> "$DST/openmw/openmw.base.cfg"
 
 	# licensing info
 	cp "$DIR/../3rdparty-licenses.txt" "$DST"
