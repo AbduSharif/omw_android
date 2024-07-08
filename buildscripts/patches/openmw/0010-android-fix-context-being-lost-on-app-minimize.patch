@@ -58,16 +58,3 @@ index 0bec74ce73b7660e377dfddcbb6e67760dc5f977..0bd0d70fcefb140fb2ad35011cd84e2c
  #if (defined(__APPLE__) || defined(__linux) || defined(__unix) || defined(__posix))
          if (!isatty(fileno(stdin)))
  #endif
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index adfb7ca7f57a99a5531082e9ad5971082093d119..406e9ea6d8abcaa4c58b8f4a1e18fbc301cfb966 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -472,7 +472,7 @@ else(USE_LUAJIT)
-     find_package(Lua REQUIRED)
-     add_compile_definitions(NO_LUAJIT)
- endif(USE_LUAJIT)
--if (NOT WIN32)
-+if (WIN32)
-     include(cmake/CheckLuaCustomAllocator.cmake)
- endif()
- 
