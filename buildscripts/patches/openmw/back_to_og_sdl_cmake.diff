@@ -1,37 +1,35 @@
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 34df0216da1d4371d56a55e990d7dba9518aa390..13dce30702780017ad3ac795c928a8feecc271f2 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -114,6 +114,7 @@ include(WholeArchive)
- configure_file ("${OpenMW_SOURCE_DIR}/docs/mainpage.hpp.cmake" "${OpenMW_BINARY_DIR}/docs/mainpage.hpp")
- 
- option(BOOST_STATIC "Link static build of Boost into the binaries" FALSE)
-+option(SDL2_STATIC "Link static build of SDL into the binaries" FALSE)
- option(QT_STATIC "Link static build of Qt into the binaries" FALSE)
- 
- option(OPENMW_USE_SYSTEM_BULLET "Use system provided bullet physics library" ON)
-@@ -482,6 +483,7 @@ set(SOL_CONFIG_DIR ${OpenMW_SOURCE_DIR}/extern/sol_config)
- include_directories(
-     BEFORE SYSTEM
-     "."
-+    ${SDL2_INCLUDE_DIR}
-     ${Boost_INCLUDE_DIR}
-     ${MyGUI_INCLUDE_DIRS}
-     ${OPENAL_INCLUDE_DIR}
-@@ -493,7 +495,7 @@ include_directories(
-     ${ICU_INCLUDE_DIRS}
- )
- 
--link_directories(${Boost_LIBRARY_DIRS} ${COLLADA_DOM_LIBRARY_DIRS})
-+link_directories(${SDL2_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS} ${COLLADA_DOM_LIBRARY_DIRS})
- 
- if(MYGUI_STATIC)
-     add_definitions(-DMYGUI_STATIC)
 diff --git a/apps/openmw/CMakeLists.txt b/apps/openmw/CMakeLists.txt
-index db44b91159e88a4cb22b386c55f4fe19f61d6d62..7e1c39f3df1bf2caebc903cc17a7e16ef992b94b 100644
+index 3c5a6423fdabd1431f6111c5ff4a1f30d8d090aa..f624d2744c1897d1bd5b849d11655f89d6866158 100644
 --- a/apps/openmw/CMakeLists.txt
 +++ b/apps/openmw/CMakeLists.txt
-@@ -150,7 +150,7 @@ target_link_libraries(openmw
+@@ -9,7 +9,7 @@ set(OPENMW_RESOURCES
+ )
+ 
+ if (ANDROID)
+-    set(OPENMW_SOURCES ${OPENMW_SOURCES} android_main.cpp)
++    set(OPENMW_SOURCES ${OPENMW_SOURCES} main.cpp android_main.cpp)
+ endif()
+ 
+ set(OPENMW_HEADERS
+@@ -136,7 +136,7 @@ endif ()
+ 
+ if(BUILD_OPENMW)
+     if (ANDROID)
+-        add_library(openmw-lib SHARED
++        add_library(openmw SHARED
+             ${OPENMW_FILES}
+             ${OPENMW_SOURCES}
+         )
+@@ -157,7 +157,7 @@ include_directories(
+     ${FFmpeg_INCLUDE_DIRS}
+ )
+ 
+-target_link_libraries(openmw-lib
++target_link_libraries(openmw
+     # CMake's built-in OSG finder does not use pkgconfig, so we have to
+     # manually ensure the order is correct for inter-library dependencies.
+     # This only makes a difference with `-DOPENMW_USE_SYSTEM_OSG=ON -DOSG_STATIC=ON`.
+@@ -173,7 +173,7 @@ target_link_libraries(openmw-lib
      ${OPENAL_LIBRARY}
      ${FFmpeg_LIBRARIES}
      ${MyGUI_LIBRARIES}
@@ -40,6 +38,15 @@ index db44b91159e88a4cb22b386c55f4fe19f61d6d62..7e1c39f3df1bf2caebc903cc17a7e16e
      ${RecastNavigation_LIBRARIES}
      "osg-ffmpeg-videoplayer"
      "oics"
+@@ -209,7 +209,7 @@ endif()
+ add_definitions(-DMYGUI_DONT_USE_OBSOLETE=ON)
+ 
+ if (ANDROID)
+-    target_link_libraries(openmw-lib EGL android log z)
++    target_link_libraries(openmw EGL android log z)
+ endif (ANDROID)
+ 
+ if (USE_SYSTEM_TINYXML)
 diff --git a/cmake/FindSDL2.cmake b/cmake/FindSDL2.cmake
 new file mode 100644
 index 0000000000000000000000000000000000000000..4f2be8c421ac5157353be2619428fffcc2a864b5
